@@ -19,3 +19,7 @@
 # Embedded build resources, not build output: Solace.rc compiles this into
 # the exe, so a clone without it does not build.
 !/src/resources/embedded/nvidiaProfileInspector.exe
+
+# Real KeyAuth credentials. Committing a secret makes it public forever, even
+# after the file is deleted, because it stays in the history.
+/src/backend/keyauth_secrets.h

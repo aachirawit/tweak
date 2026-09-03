@@ -12,11 +12,9 @@
 
 #include <windows.h>
 
-#include <bcrypt.h>
 #include <winhttp.h>
 
 #pragma comment(lib, "winhttp.lib")
-#pragma comment(lib, "bcrypt.lib")
 
 namespace szk::backend
 {
@@ -140,64 +138,6 @@ std::string read_machine_guid()
     return wide_to_utf8(buffer);
 }
 
-// ── HMAC-SHA256, for the response signature ─────────────────────────────────
-
-std::string hmac_sha256_hex(const std::string& key, const std::string& message)
-{
-    BCRYPT_ALG_HANDLE algorithm = nullptr;
-    if (!BCRYPT_SUCCESS(::BCryptOpenAlgorithmProvider(&algorithm, BCRYPT_SHA256_ALGORITHM, nullptr,
-                                                      BCRYPT_ALG_HANDLE_HMAC_FLAG)))
-        return {};
-
-    std::string result;
-    BCRYPT_HASH_HANDLE hash = nullptr;
-
-    DWORD hash_length = 0;
-    DWORD copied = 0;
-    if (BCRYPT_SUCCESS(::BCryptGetProperty(algorithm, BCRYPT_HASH_LENGTH,
-                                           reinterpret_cast<PUCHAR>(&hash_length),
-                                           sizeof(hash_length), &copied, 0)) &&
-        BCRYPT_SUCCESS(::BCryptCreateHash(algorithm, &hash, nullptr, 0,
-                                          reinterpret_cast<PUCHAR>(const_cast<char*>(key.data())),
-                                          static_cast<ULONG>(key.size()), 0)))
-    {
-        std::vector<unsigned char> digest(hash_length);
-
-        if (BCRYPT_SUCCESS(
-                ::BCryptHashData(hash, reinterpret_cast<PUCHAR>(const_cast<char*>(message.data())),
-                                 static_cast<ULONG>(message.size()), 0)) &&
-            BCRYPT_SUCCESS(::BCryptFinishHash(hash, digest.data(), hash_length, 0)))
-        {
-            static constexpr char k_hex[] = "0123456789abcdef";
-            result.reserve(static_cast<size_t>(hash_length) * 2);
-            for (const unsigned char byte : digest)
-            {
-                result.push_back(k_hex[byte >> 4]);
-                result.push_back(k_hex[byte & 0x0F]);
-            }
-        }
-    }
-
-    if (hash)
-        ::BCryptDestroyHash(hash);
-    ::BCryptCloseAlgorithmProvider(algorithm, 0);
-    return result;
-}
-
-// Compares in time independent of where the first difference is, so a caller
-// on the same machine cannot learn the expected signature a byte at a time.
-bool constant_time_equal(const std::string& a, const std::string& b)
-{
-    if (a.size() != b.size() || a.empty())
-        return false;
-
-    unsigned char difference = 0;
-    for (size_t i = 0; i < a.size(); i++)
-        difference |= static_cast<unsigned char>(a[i] ^ b[i]);
-
-    return difference == 0;
-}
-
 // ── HTTP ────────────────────────────────────────────────────────────────────
 
 struct http_response
@@ -205,8 +145,61 @@ struct http_response
     bool sent = false; // the request reached KeyAuth and came back
     DWORD status = 0;
     std::string body;
-    std::string signature; // the "signature" response header, if present
+
+    // KeyAuth 1.3 signs responses the way Discord signs interactions: Ed25519
+    // over (timestamp + body), returned in these two headers. The signing key
+    // is KeyAuth's, not the application secret - the secret plays no part in
+    // verifying a response.
+    std::string signature_ed25519;
+    std::string signature_timestamp;
 };
+
+// Reads one response header by name. Returns empty when the header is absent.
+std::string query_header(HINTERNET request, const wchar_t* name)
+{
+    DWORD size = 0;
+    ::WinHttpQueryHeaders(request, WINHTTP_QUERY_CUSTOM, name, WINHTTP_NO_OUTPUT_BUFFER, &size,
+                          WINHTTP_NO_HEADER_INDEX);
+    if (size == 0 || ::GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+        return {};
+
+    std::wstring wide(size / sizeof(wchar_t), L'\0');
+    if (!::WinHttpQueryHeaders(request, WINHTTP_QUERY_CUSTOM, name, wide.data(), &size,
+                               WINHTTP_NO_HEADER_INDEX))
+        return {};
+
+    wide.resize(size / sizeof(wchar_t));
+    while (!wide.empty() && wide.back() == L'\0')
+        wide.pop_back();
+
+    return wide_to_utf8(wide);
+}
+
+// What can be checked without an Ed25519 implementation: that the reply was
+// signed at all, and that it was signed just now.
+//
+// That closes replay - a "success" captured once cannot be served back
+// tomorrow by a local proxy. It does NOT close forgery: anyone who can get a
+// root certificate trusted on this machine can still mint a fresh reply of
+// their own. Verifying the Ed25519 signature against KeyAuth's public key is
+// what closes that, and it needs an Ed25519 implementation this project does
+// not have yet. See keyauth_config.h.
+bool response_is_fresh(const http_response& response)
+{
+    if (response.signature_ed25519.empty() || response.signature_timestamp.empty())
+        return false;
+
+    const long long stamp = ::_strtoi64(response.signature_timestamp.c_str(), nullptr, 10);
+    if (stamp <= 0)
+        return false;
+
+    const long long now = static_cast<long long>(::time(nullptr));
+    const long long drift = now > stamp ? now - stamp : stamp - now;
+
+    // Wide enough that a clock a few minutes out still works, narrow enough
+    // that a saved response is useless by the next session.
+    return drift <= 300;
+}
 
 http_response post_form(const std::string& form)
 {
@@ -258,21 +251,8 @@ http_response post_form(const std::string& form)
                               WINHTTP_HEADER_NAME_BY_INDEX, &out.status, &status_size,
                               WINHTTP_NO_HEADER_INDEX);
 
-        DWORD signature_size = 0;
-        ::WinHttpQueryHeaders(request, WINHTTP_QUERY_CUSTOM, L"signature", WINHTTP_NO_OUTPUT_BUFFER,
-                              &signature_size, WINHTTP_NO_HEADER_INDEX);
-        if (signature_size > 0 && ::GetLastError() == ERROR_INSUFFICIENT_BUFFER)
-        {
-            std::wstring wide(signature_size / sizeof(wchar_t), L'\0');
-            if (::WinHttpQueryHeaders(request, WINHTTP_QUERY_CUSTOM, L"signature", wide.data(),
-                                      &signature_size, WINHTTP_NO_HEADER_INDEX))
-            {
-                wide.resize(signature_size / sizeof(wchar_t));
-                while (!wide.empty() && wide.back() == L'\0')
-                    wide.pop_back();
-                out.signature = wide_to_utf8(wide);
-            }
-        }
+        out.signature_ed25519 = query_header(request, L"x-signature-ed25519");
+        out.signature_timestamp = query_header(request, L"x-signature-timestamp");
 
         for (;;)
         {
@@ -355,23 +335,32 @@ void publish_success(const std::string& subscription, long long expiry)
 // that says what to do next.
 std::string explain(const std::string& keyauth_message)
 {
-    if (keyauth_message.find("Invalid Key") != std::string::npos ||
-        keyauth_message.find("not found") != std::string::npos)
+    // KeyAuth's casing is not consistent between messages - the live reply for
+    // a bad key is "Invalid license key", while its own docs write
+    // "Invalid Key" - so match on a folded copy rather than guessing which.
+    std::string folded;
+    folded.reserve(keyauth_message.size());
+    for (const unsigned char c : keyauth_message)
+        folded.push_back(static_cast<char>(c >= 'A' && c <= 'Z' ? c + ('a' - 'A') : c));
+
+    auto says = [&folded](const char* needle) { return folded.find(needle) != std::string::npos; };
+
+    if (says("invalid") || says("not found"))
         return "That key was not recognised. Check for a typo, or paste it again from your "
                "purchase email.";
 
-    if (keyauth_message.find("HWID") != std::string::npos ||
-        keyauth_message.find("hwid") != std::string::npos)
+    if (says("hwid") || says("hardware"))
         return "This key is locked to a different machine. Send the hardware ID shown below to "
                "support for a reset.";
 
-    if (keyauth_message.find("expired") != std::string::npos ||
-        keyauth_message.find("Expired") != std::string::npos)
+    if (says("expired"))
         return "This key has expired. Renew it to sign in again.";
 
-    if (keyauth_message.find("banned") != std::string::npos ||
-        keyauth_message.find("Banned") != std::string::npos)
+    if (says("banned") || says("blacklist"))
         return "This key has been banned. Contact support if you think that is a mistake.";
+
+    if (says("used") || says("in use"))
+        return "That key is already in use on another machine.";
 
     if (keyauth_message.empty())
         return "KeyAuth rejected the key but did not say why. Try again in a moment.";
@@ -400,17 +389,13 @@ void run_check(std::string key)
         return;
     }
 
-    if (keyauth_config::verify_response_signature)
+    if (keyauth_config::check_response_freshness && !response_is_fresh(init))
     {
-        const std::string expected = hmac_sha256_hex(keyauth_config::secret, init.body);
-        if (!constant_time_equal(expected, init.signature))
-        {
-            publish(auth_status::failed,
-                    "The licence server's reply could not be verified. If you are on a public or "
-                    "filtered network, try another connection.");
-            g_running.store(false);
-            return;
-        }
+        publish(auth_status::failed,
+                "The licence server's reply was not signed or was out of date. If you are on a "
+                "public or filtered network, try another connection.");
+        g_running.store(false);
+        return;
     }
 
     if (!json_is_true(init.body, "success"))
@@ -444,16 +429,13 @@ void run_check(std::string key)
         return;
     }
 
-    if (keyauth_config::verify_response_signature)
+    if (keyauth_config::check_response_freshness && !response_is_fresh(check))
     {
-        const std::string expected = hmac_sha256_hex(keyauth_config::secret, check.body);
-        if (!constant_time_equal(expected, check.signature))
-        {
-            publish(auth_status::failed,
-                    "The licence server's reply could not be verified. Nothing was unlocked.");
-            g_running.store(false);
-            return;
-        }
+        publish(auth_status::failed,
+                "The licence server's reply was not signed or was out of date. Nothing was "
+                "unlocked.");
+        g_running.store(false);
+        return;
     }
 
     if (!json_is_true(check.body, "success"))
