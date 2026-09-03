@@ -2273,7 +2273,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
             ImFont* tf = font_semibold(18.f);
             draw_text_tracked(dl, tf, ImVec2(text_x, card.Min.y + px(30.f)),
-                              mo::with_alpha(c_foreground, alpha), title, px(-0.4f));
+                              mo::with_alpha(c_foreground, alpha), headline, px(-0.4f));
 
             char rationale[192];
             ImFormatString(rationale, IM_ARRAYSIZE(rationale),
@@ -2530,11 +2530,30 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                                    mo::with_alpha(c_muted_foreground, alpha), row.cost,
                                    fix_x - tx - px(sp_4));
 
+                // Outlined, not filled. Eight of these sit under one white
+                // "Optimize now", and only one control on a screen gets to be
+                // the loudest.
                 char fid[24];
                 ImFormatString(fid, IM_ARRAYSIZE(fid), "dash-fix%d", m);
-                if (action(fid, ImVec2(fix_x, ry + px(9.f)), fix_w, btn_idle, "Fix") &&
-                    s.dash_fix_request < 0)
+
+                const ImRect fix(ImVec2(fix_x, ry + px(17.f)),
+                                 ImVec2(fix_x + px(fix_w), ry + row_h - px(17.f)));
+                if (row_hit(dl, fid, fix, alpha) && s.dash_fix_request < 0)
                     s.dash_fix_request = m;
+
+                // A real 1px stroke. draw_border() fills the whole box with the
+                // border colour and then paints `inner` inside it, so passing
+                // a transparent inner leaves a filled plate, not an outline.
+                dl->AddRect(ImVec2(fix.Min.x + px(0.5f), fix.Min.y + px(0.5f)),
+                            ImVec2(fix.Max.x - px(0.5f), fix.Max.y - px(0.5f)),
+                            mo::with_alpha(c_border_strong, alpha), px(8.f), px(1.f),
+                            ImDrawFlags_None);
+
+                ImFont* ff = font_medium(text_sm);
+                draw_text(dl, ff,
+                          ImVec2(fix.GetCenter().x - text_width(ff, "Fix") * 0.5f,
+                                 fix.GetCenter().y - ff->LegacySize * 0.5f),
+                          mo::with_alpha(c_foreground, alpha), "Fix");
             }
 
             y = card.Max.y + px(sp_3);

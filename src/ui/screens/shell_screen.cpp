@@ -67,9 +67,9 @@ constexpr nav_item k_items[] = {
      nullptr,
      {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
      0},
-    {"Updates",
+    {"This machine",
      icons::id::inbox,
-     "4",
+     nullptr,
      {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
      0},
     {"Settings",
@@ -205,9 +205,9 @@ constexpr rail_row k_rail_rows[] = {
     {"All tweaks", icons::id::settings, nullptr, route::settings, tab_index(settings_tab::all), 1},
 
     // SYSTEM - what this machine is, rather than how it is tuned
-    {"This machine", icons::id::inbox, nullptr, route::messages, keep_tab, 0},
+    {"This machine", icons::id::inbox, "4", route::messages, keep_tab, 0},
     {"Drivers", icons::id::workflow, nullptr, route::automation, keep_tab, 0},
-    {"About", icons::id::info, "4", route::assistant, keep_tab, 0},
+    {"About", icons::id::info, nullptr, route::assistant, keep_tab, 0},
 };
 
 constexpr int k_rail_count = IM_ARRAYSIZE(k_rail_rows);
