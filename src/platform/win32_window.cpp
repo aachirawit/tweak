@@ -4,7 +4,7 @@
 
 #pragma comment(lib, "dwmapi.lib")
 
-namespace solace::platform
+namespace szk::platform
 {
 win32_window::~win32_window()
 {
@@ -205,4 +205,4 @@ void win32_window::reset() noexcept
     handler_context_ = nullptr;
     pending_resize_.reset();
 }
-} // namespace solace::platform
+} // namespace szk::platform

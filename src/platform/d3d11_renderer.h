@@ -6,7 +6,7 @@
 
 #include <array>
 
-namespace solace::platform
+namespace szk::platform
 {
 class d3d11_renderer final
 {
@@ -40,4 +40,4 @@ class d3d11_renderer final
     bool occluded_ = false;
     HRESULT last_error_ = S_OK;
 };
-} // namespace solace::platform
+} // namespace szk::platform

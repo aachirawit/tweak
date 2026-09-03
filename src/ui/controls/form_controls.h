@@ -8,7 +8,7 @@
 
 #include <string>
 
-namespace solace
+namespace szk
 {
 bool link(const char* id, ImDrawList* draw_list, ImFont* font, const ImVec2& pos, const char* text,
           ImU32 color, float alpha, bool underline = true);
@@ -26,7 +26,7 @@ enum icon_id
 
 struct input_state
 {
-    solace::caret caret;
+    szk::caret caret;
     color_tween border_col, ring_col;
     mo::presence error_presence;
     std::string error_text;
@@ -113,4 +113,4 @@ void stateful_button_update(stateful_button_state& state, button_state status, c
                             float delta_time);
 bool stateful_button_draw(const char* id, stateful_button_state& state, button_state status,
                           const ImVec2& pos, float width, bool disabled);
-} // namespace solace
+} // namespace szk

@@ -13,7 +13,7 @@
 #pragma comment(lib, "powrprof.lib")
 #pragma comment(lib, "advapi32.lib")
 
-namespace solace::backend
+namespace szk::backend
 {
 namespace
 {
@@ -1138,4 +1138,4 @@ bool check_fivem_disable_fullscreen_optimizations()
         L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers",
         exe_path.c_str(), L"DISABLEDXMAXIMIZEDWINDOWEDMODE");
 }
-} // namespace solace::backend
+} // namespace szk::backend

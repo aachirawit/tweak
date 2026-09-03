@@ -9,41 +9,36 @@
 #include <cmath>
 #include <vector>
 
-namespace solace
+namespace szk
 {
 namespace
 {
-struct testimonial
+// What the panel says while the user finds their key. These are statements
+// about what SZK does, not testimonials - inventing customers and quoting
+// them is not something a licence screen should be doing.
+struct highlight
 {
-    const char* quote;
-    const char* name;
-    const char* role;
-    int face;
+    const char* headline;
+    const char* detail;
 };
 
-const testimonial k_testimonials[] = {
-    {"Moved a whole settings profile across in an afternoon. What I did not "
-     "expect was how quiet the support channel got afterwards.",
-     "Ravi Menon", "Support, Vermillion", 0},
+const highlight k_highlights[] = {
+    {"Read the machine before changing it.",
+     "Every tweak on the dashboard is one SZK can verify against the registry, so the score is a "
+     "measurement rather than a promise."},
 
-    {"Two weeks in and nobody has asked me which setting ate the frame time. "
-     "That has never happened on a patch day before.",
-     "Ines Duarte", "Build lead, Kestrel", 1},
+    {"A restore point before anything moves.",
+     "Optimize now takes one first, and stops without touching a single key if Windows refuses."},
 
-    {"The settings handoff finally feels predictable. The team can see what "
-     "changed without digging through a separate report.",
-     "Mira Chen", "Release, SZK Lab", 2},
+    {"Timer resolution, core parking, packet batching.",
+     "The settings that decide frame pacing, grouped by what they change instead of where they "
+     "live in the registry."},
 
-    {"I handed it to the beta testers on a Friday without training anyone. "
-     "There were no questions on Monday.",
-     "Amara Okafor", "Community, Halcyon", 3},
-
-    {"It is the first launcher in years that got faster as the library grew "
-     "rather than slower.",
-     "Julian Reyes", "Packaging, Orrin", 4},
+    {"Built for FiveM, useful on any Windows box.",
+     "QoS marking and process priority target the game; the rest is plain Windows tuning."},
 };
 
-constexpr int k_testimonial_count = (int)(sizeof(k_testimonials) / sizeof(k_testimonials[0]));
+constexpr int k_highlight_count = (int)(sizeof(k_highlights) / sizeof(k_highlights[0]));
 
 float smootherstep(float t)
 {
@@ -166,7 +161,7 @@ void testimonial_grain(ImDrawList* dl, const ImRect& stage, float band_bottom)
 
 void panel_chip(ImDrawList* dl, const ImRect& box, float alpha)
 {
-    using namespace solace;
+    using namespace szk;
     dl->AddRectFilled(box.Min, box.Max,
                       mo::with_alpha(IM_COL32(0x0A, 0x0A, 0x0C, 0xFF), 0.42f * alpha), px(10.f));
     dl->AddRect(ImVec2(box.Min.x + px(0.5f), box.Min.y + px(0.5f)),
@@ -177,7 +172,7 @@ void panel_chip(ImDrawList* dl, const ImRect& box, float alpha)
 
 void auth_stage(ImDrawList* dl, const ImRect& stage, const ImRect& card, float rounding)
 {
-    using namespace solace;
+    using namespace szk;
 
     slides::morph_slider_options slider;
     slider.transition = slides::morph_melt;
@@ -243,7 +238,7 @@ void auth_stage(ImDrawList* dl, const ImRect& stage, const ImRect& card, float r
     }
 
     {
-        const testimonial& q = k_testimonials[st.shown % k_testimonial_count];
+        const highlight& h = k_highlights[st.shown % k_highlight_count];
 
         const float t = mo::EASE_OUT(st.swap);
         const float dy = px(12.f) * (1.f - t);
@@ -251,42 +246,34 @@ void auth_stage(ImDrawList* dl, const ImRect& stage, const ImRect& card, float r
 
         const float content_w = stage.GetWidth() - pad * 2.f;
 
-        ImFont* qf = font_medium(20.f);
-        const float quote_h = px(28.f) * (float)wrapped_line_count(qf, q.quote, content_w);
+        ImFont* hf = font_medium(20.f);
+        ImFont* df = font_regular(text_sm);
 
-        const float block_bottom = stage.Max.y - pad - px(44.f);
-        const float quote_y = block_bottom - px(20.f) - quote_h + dy;
+        const float headline_h = px(28.f) * (float)wrapped_line_count(hf, h.headline, content_w);
+        const float detail_h = px(leading_sm) * (float)wrapped_line_count(df, h.detail, content_w);
+
+        // The block is bottom-aligned so a two-line headline grows upward into
+        // the image instead of pushing the detail off the panel.
+        const float block_bottom = stage.Max.y - pad;
+        const float detail_y = block_bottom - detail_h + dy;
+        const float headline_y = detail_y - px(12.f) - headline_h;
 
         const ImU32 shade = IM_COL32(0x05, 0x06, 0x0A, 0xFF);
         const float drop = px(2.f);
 
-        draw_text_wrapped_blur(dl, qf, ImVec2(stage.Min.x + pad, quote_y + drop),
-                               mo::with_alpha(shade, 0.55f * t), q.quote, content_w, px(28.f),
+        draw_text_wrapped_blur(dl, hf, ImVec2(stage.Min.x + pad, headline_y + drop),
+                               mo::with_alpha(shade, 0.55f * t), h.headline, content_w, px(28.f),
                                blur + px(7.f));
+        draw_text_wrapped_blur(dl, hf, ImVec2(stage.Min.x + pad, headline_y),
+                               mo::with_alpha(c_foreground, t), h.headline, content_w, px(28.f),
+                               blur);
 
-        draw_text_wrapped_blur(dl, qf, ImVec2(stage.Min.x + pad, quote_y),
-                               mo::with_alpha(c_foreground, t), q.quote, content_w, px(28.f), blur);
-
-        const float avatar = px(36.f);
-        const ImVec2 at(stage.Min.x + pad, block_bottom + px(4.f) + dy);
-
-        if (!avatars::draw(dl, avatars::other(q.face), at, avatar, t))
-            dl->AddRectFilled(at, ImVec2(at.x + avatar, at.y + avatar),
-                              mo::with_alpha(c_border_strong, t), avatar * 0.5f);
-
-        ImFont* nf = font_medium(text_sm);
-        const ImVec2 name_at(at.x + avatar + px(12.f),
-                             at.y + px(1.f) + line_top(nf, px(leading_sm)));
-        draw_text_blur(dl, nf, ImVec2(name_at.x, name_at.y + drop), mo::with_alpha(shade, 0.5f * t),
-                       q.name, blur + px(6.f));
-        draw_text_blur(dl, nf, name_at, mo::with_alpha(c_foreground, t), q.name, blur);
-
-        ImFont* rf = font_regular(text_xs);
-        const ImVec2 role_at(at.x + avatar + px(12.f),
-                             at.y + px(20.f) + line_top(rf, px(leading_xs)));
-        draw_text_blur(dl, rf, ImVec2(role_at.x, role_at.y + drop),
-                       mo::with_alpha(shade, 0.45f * t), q.role, blur + px(5.f));
-        draw_text_blur(dl, rf, role_at, mo::with_alpha(c_muted_foreground, t), q.role, blur);
+        draw_text_wrapped_blur(dl, df, ImVec2(stage.Min.x + pad, detail_y + drop),
+                               mo::with_alpha(shade, 0.45f * t), h.detail, content_w,
+                               px(leading_sm), blur + px(5.f));
+        draw_text_wrapped_blur(dl, df, ImVec2(stage.Min.x + pad, detail_y),
+                               mo::with_alpha(c_muted_foreground, t), h.detail, content_w,
+                               px(leading_sm), blur);
     }
 }
 
@@ -325,4 +312,4 @@ void auth_layout::end()
 {
     ImGui::End();
 }
-} // namespace solace
+} // namespace szk

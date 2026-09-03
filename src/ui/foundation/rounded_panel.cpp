@@ -3,7 +3,7 @@
 
 #include <algorithm>
 
-namespace solace::rounded_panel
+namespace szk::rounded_panel
 {
 namespace
 {
@@ -144,4 +144,4 @@ void draw(ImDrawList* draw_list, const ImVec2& min, const ImVec2& max, ImU32 fil
     draw_list->AddRectFilled(min, max, IM_COL32_WHITE);
     draw_list->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
 }
-} // namespace solace::rounded_panel
+} // namespace szk::rounded_panel

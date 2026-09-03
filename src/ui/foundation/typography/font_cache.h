@@ -4,7 +4,7 @@
 
 #include <vector>
 
-namespace solace
+namespace szk
 {
 class font_cache
 {
@@ -31,4 +31,4 @@ class font_cache
 };
 
 inline font_cache fonts;
-} // namespace solace
+} // namespace szk

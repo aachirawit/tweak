@@ -7,7 +7,7 @@
 
 #include <algorithm>
 
-namespace solace
+namespace szk
 {
 namespace
 {
@@ -340,4 +340,4 @@ void theme_reveal_draw(ImDrawList* dl, const ImRect& r)
                      ImVec2((b.Max.x - r.Min.x) / size.x, (b.Max.y - r.Min.y) / size.y));
     }
 }
-} // namespace solace
+} // namespace szk

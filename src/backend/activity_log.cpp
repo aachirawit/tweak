@@ -2,7 +2,7 @@
 
 #include <ctime>
 
-namespace solace::backend
+namespace szk::backend
 {
 namespace
 {
@@ -38,4 +38,4 @@ const std::vector<log_entry>& log_entries()
 {
     return entries_mut();
 }
-} // namespace solace::backend
+} // namespace szk::backend

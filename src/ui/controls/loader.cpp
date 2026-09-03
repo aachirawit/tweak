@@ -3,7 +3,7 @@
 
 #include <vector>
 
-namespace solace
+namespace szk
 {
 namespace
 {
@@ -189,4 +189,4 @@ void metaballs(ImDrawList* dl, const ImVec2& center, float size, float speed, fl
                  ImVec2(IM_ROUND(center.x - half.x) + size, IM_ROUND(center.y - half.y) + size),
                  r.uv0, r.uv1, IM_COL32_WHITE);
 }
-} // namespace solace
+} // namespace szk

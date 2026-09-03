@@ -2,7 +2,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-namespace solace
+namespace szk
 {
 
 struct smooth_scroll
@@ -28,4 +28,4 @@ float scroll_area(smooth_scroll& state, const ImRect& area, float content_height
                   bool owns_pointer = false);
 
 void scrollbar(ImDrawList* dl, const ImRect& area, float content_height, float offset, float alpha);
-} // namespace solace
+} // namespace szk

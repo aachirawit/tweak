@@ -3,7 +3,7 @@
 
 #include "ui/foundation/runtime.h"
 
-namespace solace
+namespace szk
 {
 
 // Every colour below is swapped by set_dark(); the initialisers are the dark
@@ -83,4 +83,4 @@ inline float line_top(ImFont* f, float line_height)
 ImFont* font_regular(float size);
 ImFont* font_medium(float size);
 ImFont* font_semibold(float size);
-} // namespace solace
+} // namespace szk

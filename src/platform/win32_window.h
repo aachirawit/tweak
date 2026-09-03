@@ -5,7 +5,7 @@
 #include <optional>
 #include <string>
 
-namespace solace::platform
+namespace szk::platform
 {
 struct client_extent
 {
@@ -58,4 +58,4 @@ class win32_window final
     void* handler_context_ = nullptr;
     std::optional<client_extent> pending_resize_;
 };
-} // namespace solace::platform
+} // namespace szk::platform

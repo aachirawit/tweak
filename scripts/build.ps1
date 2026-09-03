@@ -11,8 +11,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
-$solutionPath = Join-Path $repositoryRoot "Solace.sln"
-$applicationPath = Join-Path $repositoryRoot "$Configuration\Solace.exe"
+$solutionPath = Join-Path $repositoryRoot "SZK.sln"
+$applicationPath = Join-Path $repositoryRoot "$Configuration\SZK.exe"
 $layoutVerifier = Join-Path $PSScriptRoot "verify-source-layout.ps1"
 
 function Find-MSBuild {
@@ -53,7 +53,7 @@ $target = if ($Rebuild) { "Rebuild" } else { "Build" }
 Write-Host "Verifying source layout..."
 & $layoutVerifier
 
-Write-Host "Building Solace ($Configuration|x64)..."
+Write-Host "Building SZK ($Configuration|x64)..."
 & $msbuild $solutionPath "/t:$target" "/p:Configuration=$Configuration" "/p:Platform=x64" `
     "/m" "/nologo" "/v:minimal"
 if ($LASTEXITCODE -ne 0) {

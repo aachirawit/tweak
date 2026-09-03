@@ -26,7 +26,7 @@
 #pragma comment(lib, "iphlpapi.lib")
 #pragma comment(lib, "ws2_32.lib")
 
-namespace solace::backend
+namespace szk::backend
 {
 namespace
 {
@@ -180,4 +180,4 @@ machine_info system_monitor_machine_info()
 
     return info;
 }
-} // namespace solace::backend
+} // namespace szk::backend

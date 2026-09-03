@@ -5,7 +5,7 @@
 struct ID3D11Device;
 struct ID3D11DeviceContext;
 
-namespace solace::glass
+namespace szk::glass
 {
 struct cursor_options
 {
@@ -55,4 +55,4 @@ cursor_options& settings();
 bool& enabled();
 
 bool cursor_live();
-} // namespace solace::glass
+} // namespace szk::glass

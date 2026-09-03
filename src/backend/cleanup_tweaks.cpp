@@ -11,7 +11,7 @@
 
 #pragma comment(lib, "shell32.lib")
 
-namespace solace::backend
+namespace szk::backend
 {
 namespace
 {
@@ -112,4 +112,4 @@ bool empty_recycle_bin()
     log("Recycle Bin", SUCCEEDED(hr) ? "Emptied" : "Failed to empty");
     return SUCCEEDED(hr);
 }
-} // namespace solace::backend
+} // namespace szk::backend

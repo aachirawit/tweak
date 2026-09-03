@@ -12,7 +12,7 @@
 
 #include "../../thirdparty/stb/stb_image.h"
 
-namespace solace::avatars
+namespace szk::avatars
 {
 namespace
 {
@@ -208,4 +208,4 @@ bool draw(ImDrawList* dl, ImTextureID texture, const ImVec2& top_left, float siz
                         IM_COL32(255, 255, 255, (int)(alpha * 255.f + 0.5f)), radius);
     return true;
 }
-} // namespace solace::avatars
+} // namespace szk::avatars

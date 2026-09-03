@@ -2,7 +2,7 @@
 #include "ui/foundation/motion/motion.h"
 #include "ui/foundation/theme.h"
 
-namespace solace
+namespace szk
 {
 namespace
 {
@@ -50,4 +50,4 @@ void draw_caret(ImDrawList* dl, caret& c, const ImRect& field, float height, boo
     dl->AddRectFilled(ImVec2(x, y - height * 0.5f), ImVec2(x + w, y + height * 0.5f),
                       mo::with_alpha(col, c.alpha * alpha));
 }
-} // namespace solace
+} // namespace szk

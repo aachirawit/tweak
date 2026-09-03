@@ -1,6 +1,6 @@
 #pragma once
 
-namespace solace::backend
+namespace szk::backend
 {
 // Mirrors the NVIDIA scripts under
 // github.com/HickerDicker/SapphireOS/tree/main/src/PostInstall/GPU/Nvidia.
@@ -62,4 +62,4 @@ bool check_nvidia_disable_telemetry();
 bool check_nvidia_unrestricted_pstate();
 bool check_amd_disable_chill();
 bool check_amd_background_services();
-} // namespace solace::backend
+} // namespace szk::backend

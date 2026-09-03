@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-namespace solace::diagnostics
+namespace szk::diagnostics
 {
 namespace
 {
@@ -101,4 +101,4 @@ void error(std::string_view subsystem, std::string_view message, long system_cod
 {
     write("error", subsystem, message, system_code);
 }
-} // namespace solace::diagnostics
+} // namespace szk::diagnostics

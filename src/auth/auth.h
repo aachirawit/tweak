@@ -3,13 +3,12 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-namespace solace
+namespace szk
 {
 enum class auth_action
 {
     none = 0,
     done,
-    switch_form,
     terms,
     privacy,
 };
@@ -39,11 +38,10 @@ frame begin(const char* name, const ImVec2& card_size, bool interactive = true);
 void end();
 } // namespace auth_layout
 
-auth_action signup_screen();
-auth_action signin_screen();
-
-void signup_reset();
-void signin_reset();
+// The one gate into the app: a KeyAuth licence key. There is no account to
+// create here - keys are issued by the seller dashboard, not by this client.
+auth_action license_screen();
+void license_reset();
 
 void auth_stage(ImDrawList* draw_list, const ImRect& stage, const ImRect& card, float rounding);
 
@@ -54,4 +52,4 @@ enum class legal_document
 };
 
 bool legal_screen(legal_document document);
-} // namespace solace
+} // namespace szk

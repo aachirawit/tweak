@@ -6,8 +6,8 @@ $ErrorActionPreference = "Stop"
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $sourceRoot = Join-Path $repositoryRoot "src"
-$projectPath = Join-Path $repositoryRoot "Solace.vcxproj"
-$filtersPath = Join-Path $repositoryRoot "Solace.vcxproj.filters"
+$projectPath = Join-Path $repositoryRoot "SZK.vcxproj"
+$filtersPath = Join-Path $repositoryRoot "SZK.vcxproj.filters"
 $failures = [System.Collections.Generic.List[string]]::new()
 $sourceExtensions = ".c", ".cpp", ".h", ".hpp", ".inl"
 
@@ -58,14 +58,14 @@ $diskItems = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
 $projectItems = @(Get-NormalizedSourceItems $project $projectNamespace)
 $filterItems = @(Get-NormalizedSourceItems $filters $filtersNamespace)
 
-Add-ComparisonFailures $diskItems ($projectItems | Sort-Object -Unique) "Solace.vcxproj"
-Add-ComparisonFailures $diskItems ($filterItems | Sort-Object -Unique) "Solace.vcxproj.filters"
+Add-ComparisonFailures $diskItems ($projectItems | Sort-Object -Unique) "SZK.vcxproj"
+Add-ComparisonFailures $diskItems ($filterItems | Sort-Object -Unique) "SZK.vcxproj.filters"
 
 foreach ($duplicate in @($projectItems | Group-Object | Where-Object Count -gt 1)) {
-    $failures.Add("Solace.vcxproj: $($duplicate.Name) is listed $($duplicate.Count) times.")
+    $failures.Add("SZK.vcxproj: $($duplicate.Name) is listed $($duplicate.Count) times.")
 }
 foreach ($duplicate in @($filterItems | Group-Object | Where-Object Count -gt 1)) {
-    $failures.Add("Solace.vcxproj.filters: $($duplicate.Name) is listed $($duplicate.Count) times.")
+    $failures.Add("SZK.vcxproj.filters: $($duplicate.Name) is listed $($duplicate.Count) times.")
 }
 
 $definedFilters = @($filters.SelectNodes("//m:Filter[@Include]", $filtersNamespace) |
@@ -74,7 +74,7 @@ $usedFilters = @($filters.SelectNodes("//m:ClCompile/m:Filter | //m:ClInclude/m:
     ForEach-Object { $_.InnerText } |
     Sort-Object -Unique)
 foreach ($undefinedFilter in @($usedFilters | Where-Object { $_ -notin $definedFilters })) {
-    $failures.Add("Solace.vcxproj.filters: filter '$undefinedFilter' is used but not defined.")
+    $failures.Add("SZK.vcxproj.filters: filter '$undefinedFilter' is used but not defined.")
 }
 
 $filteredSourceNodes = @($filters.SelectNodes(
@@ -82,7 +82,7 @@ $filteredSourceNodes = @($filters.SelectNodes(
     Where-Object { $_.Include -like "src\*" }
 foreach ($sourceNode in $filteredSourceNodes) {
     if (-not $sourceNode.SelectSingleNode("m:Filter", $filtersNamespace)) {
-        $failures.Add("Solace.vcxproj.filters: $($sourceNode.Include) has no filter assignment.")
+        $failures.Add("SZK.vcxproj.filters: $($sourceNode.Include) has no filter assignment.")
     }
 }
 

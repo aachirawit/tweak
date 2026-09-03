@@ -9,7 +9,7 @@
 #include <fstream>
 #include <limits>
 
-namespace solace::asset_io
+namespace szk::asset_io
 {
 namespace
 {
@@ -49,7 +49,7 @@ bool is_image(const std::filesystem::path& path)
 
 std::filesystem::path asset_directory(const wchar_t* name, const wchar_t* environment_key)
 {
-    if (const std::filesystem::path configured = solace::environment::value(environment_key);
+    if (const std::filesystem::path configured = szk::environment::value(environment_key);
         !configured.empty())
         return configured;
 
@@ -104,4 +104,4 @@ std::string stem_utf8(const std::filesystem::path& path)
     const std::u8string value = path.stem().u8string();
     return std::string(reinterpret_cast<const char*>(value.data()), value.size());
 }
-} // namespace solace::asset_io
+} // namespace szk::asset_io

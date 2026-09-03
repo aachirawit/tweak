@@ -3,7 +3,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-namespace solace
+namespace szk
 {
 namespace shell
 {
@@ -16,4 +16,4 @@ ImRect plate();
 } // namespace shell
 
 bool menu_screen(float alpha);
-} // namespace solace
+} // namespace szk

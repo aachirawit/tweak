@@ -6,7 +6,7 @@
 #include "ui/foundation/motion/motion.h"
 #include "ui/foundation/primitives.h"
 
-namespace solace
+namespace szk
 {
 namespace
 {
@@ -627,4 +627,4 @@ profile_choice profile_menu(const ImRect& viewport, float alpha)
 
     return chosen;
 }
-} // namespace solace
+} // namespace szk

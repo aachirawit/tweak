@@ -1,6 +1,6 @@
 #pragma once
 
-namespace solace::application
+namespace szk::application
 {
 void render_frame();
 }

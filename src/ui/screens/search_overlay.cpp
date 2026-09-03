@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace solace
+namespace szk
 {
 namespace
 {
@@ -65,7 +65,7 @@ struct search_state
     float face_t = 1e6f;
     bool hovered = false;
 
-    solace::caret text_caret;
+    szk::caret text_caret;
     smooth_scroll list_scroll;
     ImRect anchor;
     bool have_anchor = false;
@@ -555,4 +555,4 @@ int morphing_search_overlay(const ImRect& viewport, const search_item* items, in
     }
     return chosen;
 }
-} // namespace solace
+} // namespace szk

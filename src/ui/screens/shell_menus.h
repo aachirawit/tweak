@@ -2,7 +2,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-namespace solace
+namespace szk
 {
 
 bool target_trigger(const ImRect& rect);
@@ -31,4 +31,4 @@ bool profile_trigger(const ImRect& rect);
 bool profile_menu_open();
 
 profile_choice profile_menu(const ImRect& viewport, float alpha);
-} // namespace solace
+} // namespace szk

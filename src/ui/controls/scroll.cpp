@@ -5,7 +5,7 @@
 
 #include <cmath>
 
-namespace solace
+namespace szk
 {
 namespace
 {
@@ -108,4 +108,4 @@ void scrollbar(ImDrawList* dl, const ImRect& area, float content_height, float o
     dl->AddRectFilled(ImVec2(x, y), ImVec2(x + w, y + thumb),
                       mo::with_alpha(c_foreground, 0.16f * alpha), w * 0.5f);
 }
-} // namespace solace
+} // namespace szk

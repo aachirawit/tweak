@@ -5,7 +5,7 @@
 struct ID3D11Device;
 struct ID3D11DeviceContext;
 
-namespace solace::slides
+namespace szk::slides
 {
 enum morph_transition
 {
@@ -67,4 +67,4 @@ void morph_slider_shutdown();
 void morph_slider(ImDrawList* draw_list, const ImRect& rect, const ImRect& card,
                   float card_rounding,
                   const morph_slider_options& options = morph_slider_options());
-} // namespace solace::slides
+} // namespace szk::slides

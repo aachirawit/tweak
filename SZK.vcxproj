@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="src\resources\Solace.rc" />
+    <ResourceCompile Include="src\resources\SZK.rc" />
     <Manifest Include="src\resources\app.manifest" />
-    <Image Include="src\resources\solace.ico" />
+    <Image Include="src\resources\szk.ico" />
     <None Include="src\resources\embedded\nvidiaProfileInspector.exe" />
     <None Include="src\resources\embedded\Reference.xml" />
     <None Include="src\resources\embedded\Settings.nip" />
@@ -29,15 +29,14 @@
     <ClCompile Include="src\backend\debloat_tweaks.cpp" />
     <ClCompile Include="src\backend\gpu_tweaks.cpp" />
     <ClCompile Include="src\backend\hardware_info.cpp" />
+    <ClCompile Include="src\backend\keyauth.cpp" />
     <ClCompile Include="src\backend\os_tweaks.cpp" />
     <ClCompile Include="src\backend\power_plan.cpp" />
     <ClCompile Include="src\backend\reshade_manager.cpp" />
     <ClCompile Include="src\backend\system_monitor.cpp" />
     <ClCompile Include="src\auth\auth_layout.cpp" />
     <ClCompile Include="src\auth\legal.cpp" />
-    <ClCompile Include="src\auth\signin_form.cpp" />
-    <ClCompile Include="src\auth\signup_form.cpp" />
-    <ClCompile Include="src\auth\validation.cpp" />
+    <ClCompile Include="src\auth\license_form.cpp" />
     <ClCompile Include="src\core\diagnostics.cpp" />
     <ClCompile Include="src\core\environment.cpp" />
     <ClCompile Include="src\generated\fonts\geist_data.cpp">
@@ -111,12 +110,13 @@
     <ClInclude Include="src\backend\debloat_tweaks.h" />
     <ClInclude Include="src\backend\gpu_tweaks.h" />
     <ClInclude Include="src\backend\hardware_info.h" />
+    <ClInclude Include="src\backend\keyauth.h" />
+    <ClInclude Include="src\backend\keyauth_config.h" />
     <ClInclude Include="src\backend\os_tweaks.h" />
     <ClInclude Include="src\backend\power_plan.h" />
     <ClInclude Include="src\backend\reshade_manager.h" />
     <ClInclude Include="src\backend\system_monitor.h" />
     <ClInclude Include="src\auth\auth.h" />
-    <ClInclude Include="src\auth\validation.h" />
     <ClInclude Include="src\core\diagnostics.h" />
     <ClInclude Include="src\core\environment.h" />
     <ClInclude Include="src\core\product_info.h" />
@@ -152,8 +152,8 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7D4A1C55-2B93-4A0E-9C41-6F5E1D2A88B1}</ProjectGuid>
-    <RootNamespace>Solace</RootNamespace>
-    <TargetName>Solace</TargetName>
+    <RootNamespace>SZK</RootNamespace>
+    <TargetName>SZK</TargetName>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <VcpkgEnabled>false</VcpkgEnabled>
   </PropertyGroup>
@@ -182,11 +182,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(ProjectDir)$(Configuration)\</OutDir>
-    <IntDir>$(ProjectDir)$(Configuration)\obj\Solace\</IntDir>
+    <IntDir>$(ProjectDir)$(Configuration)\obj\SZK\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(ProjectDir)$(Configuration)\</OutDir>
-    <IntDir>$(ProjectDir)$(Configuration)\obj\Solace\</IntDir>
+    <IntDir>$(ProjectDir)$(Configuration)\obj\SZK\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -230,7 +230,7 @@
       <ControlFlowGuard>Guard</ControlFlowGuard>
       <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)thirdparty\imgui;$(ProjectDir)thirdparty\imgui\backends;$(ProjectDir)thirdparty\imgui\misc\freetype;$(ProjectDir)thirdparty\freetype\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE_FREETYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalOptions>/utf-8 /experimental:deterministic &quot;/pathmap:$(ProjectDir)=Solace/&quot; %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /experimental:deterministic &quot;/pathmap:$(ProjectDir)=SZK/&quot; %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ConformanceMode>true</ConformanceMode>
       <SDLCheck>true</SDLCheck>

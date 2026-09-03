@@ -2,5 +2,5 @@
 
 int main(int, char**)
 {
-    return solace::runtime::run_desktop_app();
+    return szk::runtime::run_desktop_app();
 }

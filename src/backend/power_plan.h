@@ -1,6 +1,6 @@
 #pragma once
 
-namespace solace::backend
+namespace szk::backend
 {
 struct power_plan_info
 {
@@ -15,4 +15,4 @@ power_plan_info power_plan_active();
 // settings, just its display name/description in Windows' own power plan
 // list — verifiable with `powercfg /list`).
 bool power_plan_rename_active(const wchar_t* name, const wchar_t* description);
-} // namespace solace::backend
+} // namespace szk::backend

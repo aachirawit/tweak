@@ -4,7 +4,7 @@
 #include "ui/foundation/primitives.h"
 #include "ui/screens/shell.h"
 
-namespace solace
+namespace szk
 {
 
 namespace
@@ -234,4 +234,4 @@ bool legal_screen(legal_document document)
 
     return back;
 }
-} // namespace solace
+} // namespace szk

@@ -3,7 +3,7 @@
 #include <iterator>
 #include <utility>
 
-namespace solace::platform
+namespace szk::platform
 {
 d3d11_renderer::~d3d11_renderer()
 {
@@ -194,4 +194,4 @@ void d3d11_renderer::reset() noexcept
     occluded_ = false;
     last_error_ = S_OK;
 }
-} // namespace solace::platform
+} // namespace szk::platform

@@ -3,7 +3,7 @@
 #include <map>
 #include <string>
 
-namespace solace::svg
+namespace szk::svg
 {
 namespace
 {
@@ -553,4 +553,4 @@ void stroke(ImDrawList* draw_list, const shape& s, const ImVec2& origin, float s
         }
     }
 }
-} // namespace solace::svg
+} // namespace szk::svg

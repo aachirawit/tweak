@@ -4,7 +4,7 @@
 #include <cmath>
 #include <vector>
 
-namespace solace::ui_runtime
+namespace szk::ui_runtime
 {
 namespace
 {
@@ -76,4 +76,4 @@ void apply_style()
     style.Colors[ImGuiCol_InputTextCursor] = ImColor(176, 180, 255).Value;
     style.Colors[ImGuiCol_NavCursor] = ImVec4(0.f, 0.f, 0.f, 0.f);
 }
-} // namespace solace::ui_runtime
+} // namespace szk::ui_runtime

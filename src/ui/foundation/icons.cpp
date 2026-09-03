@@ -1,7 +1,7 @@
 #include "ui/foundation/icons.h"
 #include "ui/foundation/svg.h"
 
-namespace solace::icons
+namespace szk::icons
 {
 namespace
 {
@@ -332,4 +332,4 @@ void draw(id which, ImDrawList* dl, const ImVec2& tl, float box, ImU32 col)
         break;
     }
 }
-} // namespace solace::icons
+} // namespace szk::icons

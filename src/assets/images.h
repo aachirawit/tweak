@@ -8,7 +8,7 @@
 struct ID3D11Device;
 struct ID3D11DeviceContext;
 
-namespace solace::images
+namespace szk::images
 {
 struct texture
 {
@@ -33,4 +33,4 @@ void update(ID3D11Device* device, ID3D11DeviceContext* context);
 const std::vector<texture>& ready();
 
 void shutdown();
-} // namespace solace::images
+} // namespace szk::images

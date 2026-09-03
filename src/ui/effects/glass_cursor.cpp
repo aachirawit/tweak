@@ -8,7 +8,7 @@
 #include <math.h>
 #include <vector>
 
-namespace solace::glass
+namespace szk::glass
 {
 namespace
 {
@@ -454,7 +454,7 @@ void cursor(ImDrawList* dl, const ImRect& viewport, const cursor_options& o)
     if (!s.seeded || s.points.size() < 2 || s.presence <= 0.004f)
         return;
 
-    const float blob_px = ImMax(solace::px(o.blob_radius), 1.f);
+    const float blob_px = ImMax(szk::px(o.blob_radius), 1.f);
 
     const float warp_px = ImMax(o.warp_amount, 0.f) * 0.15f;
     const int count = (int)s.points.size();
@@ -532,4 +532,4 @@ void cursor(ImDrawList* dl, const ImRect& viewport, const cursor_options& o)
     dl->AddRectFilled(box.Min, box.Max, IM_COL32_WHITE);
     dl->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
 }
-} // namespace solace::glass
+} // namespace szk::glass

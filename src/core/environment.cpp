@@ -6,7 +6,7 @@
 
 #include <vector>
 
-namespace solace::environment
+namespace szk::environment
 {
 namespace
 {
@@ -46,4 +46,4 @@ std::wstring value(std::wstring_view key)
 {
     return read_variable(product_info::environment_prefix_wide + std::wstring(key));
 }
-} // namespace solace::environment
+} // namespace szk::environment

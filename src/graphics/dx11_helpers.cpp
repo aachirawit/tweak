@@ -7,7 +7,7 @@
 #include <string>
 #include <utility>
 
-namespace solace::dx11
+namespace szk::dx11
 {
 Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> create_rgba_texture(
     ID3D11Device* device, ID3D11DeviceContext* context, const unsigned char* pixels,
@@ -184,4 +184,4 @@ void pixel_shader_pass::bind(ID3D11ShaderResourceView* const* resources,
         context_->PSSetSamplers(sampler_slot, 1, &sampler);
     }
 }
-} // namespace solace::dx11
+} // namespace szk::dx11

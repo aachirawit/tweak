@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace solace::draw_utils
+namespace szk::draw_utils
 {
 int rotation_start(const ImDrawList* draw_list)
 {
@@ -28,4 +28,4 @@ void rotate_vertices(ImDrawList* draw_list, int first_vertex, float radians, con
         position.y = center.y + x * sine + y * cosine;
     }
 }
-} // namespace solace::draw_utils
+} // namespace szk::draw_utils

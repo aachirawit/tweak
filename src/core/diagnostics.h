@@ -2,7 +2,7 @@
 
 #include <string_view>
 
-namespace solace::diagnostics
+namespace szk::diagnostics
 {
 enum class exit_code : int
 {
@@ -22,4 +22,4 @@ void error(std::string_view subsystem, std::string_view message, long system_cod
 {
     return static_cast<int>(value);
 }
-} // namespace solace::diagnostics
+} // namespace szk::diagnostics

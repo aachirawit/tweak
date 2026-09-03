@@ -14,7 +14,7 @@
 
 #pragma comment(lib, "shell32.lib")
 
-namespace solace::backend
+namespace szk::backend
 {
 namespace
 {
@@ -283,4 +283,4 @@ void reshade_open_plugins_folder()
 
     ::ShellExecuteW(nullptr, L"open", open_dir.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 }
-} // namespace solace::backend
+} // namespace szk::backend

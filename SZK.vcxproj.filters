@@ -66,13 +66,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="src\resources\Solace.rc">
+    <ResourceCompile Include="src\resources\SZK.rc">
       <Filter>Resources</Filter>
     </ResourceCompile>
     <Manifest Include="src\resources\app.manifest">
       <Filter>Resources</Filter>
     </Manifest>
-    <Image Include="src\resources\solace.ico">
+    <Image Include="src\resources\szk.ico">
       <Filter>Resources</Filter>
     </Image>
     <None Include="src\resources\embedded\nvidiaProfileInspector.exe">
@@ -116,13 +116,7 @@
     <ClCompile Include="src\graphics\dx11_helpers.cpp">
       <Filter>Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="src\auth\validation.cpp">
-      <Filter>Auth</Filter>
-    </ClCompile>
-    <ClCompile Include="src\auth\signup_form.cpp">
-      <Filter>Auth</Filter>
-    </ClCompile>
-    <ClCompile Include="src\auth\signin_form.cpp">
+    <ClCompile Include="src\auth\license_form.cpp">
       <Filter>Auth</Filter>
     </ClCompile>
     <ClCompile Include="src\auth\legal.cpp">
@@ -147,6 +141,9 @@
       <Filter>Backend</Filter>
     </ClCompile>
     <ClCompile Include="src\backend\hardware_info.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\keyauth.cpp">
       <Filter>Backend</Filter>
     </ClCompile>
     <ClCompile Include="src\backend\debloat_tweaks.cpp">
@@ -292,8 +289,11 @@
     <ClInclude Include="src\graphics\dx11_helpers.h">
       <Filter>Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="src\auth\validation.h">
-      <Filter>Auth</Filter>
+    <ClInclude Include="src\backend\keyauth.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\backend\keyauth_config.h">
+      <Filter>Backend</Filter>
     </ClInclude>
     <ClInclude Include="src\auth\auth.h">
       <Filter>Auth</Filter>
@@ -314,6 +314,12 @@
       <Filter>Backend</Filter>
     </ClInclude>
     <ClInclude Include="src\backend\hardware_info.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\backend\keyauth.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\backend\keyauth_config.h">
       <Filter>Backend</Filter>
     </ClInclude>
     <ClInclude Include="src\backend\debloat_tweaks.h">

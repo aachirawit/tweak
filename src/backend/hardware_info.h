@@ -1,6 +1,6 @@
 #pragma once
 
-namespace solace::backend
+namespace szk::backend
 {
 struct motherboard_info
 {
@@ -30,4 +30,4 @@ void open_system_restore_wizard();
 
 // Opens the shop's Discord invite in the default browser.
 void open_discord();
-} // namespace solace::backend
+} // namespace szk::backend

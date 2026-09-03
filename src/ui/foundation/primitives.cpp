@@ -9,7 +9,7 @@
 #include <cstring>
 #include <math.h>
 
-namespace solace
+namespace szk
 {
 namespace
 {
@@ -383,4 +383,4 @@ ImU32 color_tween::update(ImU32 target, float dt, float duration)
 
     return ImGui::ColorConvertFloat4ToU32(current);
 }
-} // namespace solace
+} // namespace szk

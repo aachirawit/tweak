@@ -2,7 +2,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-namespace solace::mo
+namespace szk::mo
 {
 
 struct ease
@@ -87,4 +87,4 @@ inline float lerp(float a, float b, float t)
 }
 ImU32 mix(ImU32 a, ImU32 b, float t);
 ImU32 with_alpha(ImU32 col, float alpha);
-} // namespace solace::mo
+} // namespace szk::mo

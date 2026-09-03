@@ -4,7 +4,7 @@
 
 struct ImRect;
 
-namespace solace
+namespace szk
 {
 
 // 40x23 with a 17px thumb: small enough to sit inline at the end of a tweak
@@ -91,4 +91,4 @@ void toasts_draw(const ImRect& area);
 void flush_overlays();
 
 bool overlay_open();
-} // namespace solace
+} // namespace szk

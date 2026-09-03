@@ -19,7 +19,7 @@ $repositoryRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
 $thirdPartyRoot = [IO.Path]::GetFullPath((Join-Path $repositoryRoot "thirdparty"))
 $vendorRoot = [IO.Path]::GetFullPath((Join-Path $thirdPartyRoot "freetype"))
 $localDataRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
-$workRoot = Join-Path $localDataRoot ("Solace\FreeTypeUpdate\" + [guid]::NewGuid().ToString("N"))
+$workRoot = Join-Path $localDataRoot ("SZK\FreeTypeUpdate\" + [guid]::NewGuid().ToString("N"))
 $incomingRoot = $null
 $backupRoot = $null
 
@@ -165,7 +165,7 @@ try {
     else {
         Write-Host "Downloading FreeType $version from the official release mirror..."
         Invoke-WebRequest -Uri $archiveUrl -OutFile $localArchive -UseBasicParsing `
-            -Headers @{ "User-Agent" = "Solace-FreeType-Updater/1.0" }
+            -Headers @{ "User-Agent" = "SZK-FreeType-Updater/1.0" }
     }
 
     $actualArchiveSha256 = (Get-FileHash -LiteralPath $localArchive -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -331,7 +331,7 @@ try {
 - MSVC platform toolset: {7}
 - Windows SDK: {8}
 
-The disabled integrations keep the archive self-contained. Its only MSVC default-library directives are `LIBCMT` and `OLDNAMES`. Local source, build, workspace, user-profile, and temporary paths are rejected before installation. Solace's Debug configuration continues to select `/MTd` at the final link while ignoring the archive's `LIBCMT` directive.
+The disabled integrations keep the archive self-contained. Its only MSVC default-library directives are `LIBCMT` and `OLDNAMES`. Local source, build, workspace, user-profile, and temporary paths are rejected before installation. SZK's Debug configuration continues to select `/MTd` at the final link while ignoring the archive's `LIBCMT` directive.
 
 ## Rebuild or verify
 

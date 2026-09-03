@@ -8,7 +8,7 @@
 
 #include <cmath>
 
-namespace solace
+namespace szk
 {
 
 float text_width(ImFont* f, const char* s);
@@ -82,4 +82,4 @@ struct color_tween
     ImU32 update(ImU32 target, float dt, float duration = 0.2f);
 };
 
-} // namespace solace
+} // namespace szk

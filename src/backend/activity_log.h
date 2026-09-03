@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-namespace solace::backend
+namespace szk::backend
 {
 struct log_entry
 {
@@ -14,4 +14,4 @@ struct log_entry
 
 void log(const std::string& title, const std::string& detail);
 const std::vector<log_entry>& log_entries();
-} // namespace solace::backend
+} // namespace szk::backend

@@ -2,7 +2,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-namespace solace::icons
+namespace szk::icons
 {
 
 enum class id
@@ -66,4 +66,4 @@ void loader(ImDrawList* dl, const ImVec2& center, float box, ImU32 col, float an
 
 void stroke_path(ImDrawList* dl, const char* d, const ImVec2& top_left, float box, ImU32 col,
                  float stroke_width, float fraction = 1.f);
-} // namespace solace::icons
+} // namespace szk::icons

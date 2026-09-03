@@ -1,6 +1,6 @@
 # Third-party notices
 
-Solace uses the following third-party components. Their licenses apply independently of
+SZK uses the following third-party components. Their licenses apply independently of
 the repository's MIT license.
 
 | Component | Use | License and notice |
@@ -17,7 +17,7 @@ The repository carries local changes to Dear ImGui. They are documented in
 ## Project media
 
 Pondot supplied the project media under `assets/` and `docs/media/` and authorized its
-redistribution with Solace. That media is not relicensed by the repository's MIT code
+redistribution with SZK. That media is not relicensed by the repository's MIT code
 license. See `assets/README.md`.
 
 Google, GitHub, and other product names or marks shown in the demo belong to their

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace solace::backend
+namespace szk::backend
 {
 // Every function applies the tweak when enable is true and restores the
 // Windows default when enable is false. All require the process to already
@@ -138,4 +138,4 @@ bool check_advertising_id();
 bool check_tips_and_suggestions();
 bool check_fivem_gpu_high_performance();
 bool check_fivem_disable_fullscreen_optimizations();
-} // namespace solace::backend
+} // namespace szk::backend

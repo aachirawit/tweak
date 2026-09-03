@@ -10,7 +10,7 @@
 #include "ui/screens/shell.h"
 #include "ui/screens/shell_menus.h"
 
-namespace solace
+namespace szk
 {
 
 namespace
@@ -757,4 +757,4 @@ bool menu_screen(float alpha)
     ImGui::End();
     return sign_out;
 }
-} // namespace solace
+} // namespace szk

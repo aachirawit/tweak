@@ -10,7 +10,7 @@
 
 #pragma comment(lib, "powrprof.lib")
 
-namespace solace::backend
+namespace szk::backend
 {
 namespace
 {
@@ -82,4 +82,4 @@ bool power_plan_rename_active(const wchar_t* name, const wchar_t* description)
     log("Power plan", ok ? "Renamed the active power plan" : "powercfg -changename failed");
     return ok;
 }
-} // namespace solace::backend
+} // namespace szk::backend

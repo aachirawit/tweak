@@ -4,7 +4,7 @@
 #include "ui/foundation/icons.h"
 #include "ui/screens/navigation.h"
 
-namespace solace
+namespace szk
 {
 struct search_item
 {
@@ -26,4 +26,4 @@ int morphing_search_overlay(const ImRect& viewport, const search_item* items, in
                             float alpha);
 
 bool morphing_search_open();
-} // namespace solace
+} // namespace szk

@@ -1,7 +1,7 @@
 #include "ui/foundation/motion/motion.h"
 #include <math.h>
 
-namespace solace::mo
+namespace szk::mo
 {
 spring_cfg from_bounce(float duration, float bounce, float mass)
 {
@@ -176,4 +176,4 @@ ImU32 with_alpha(ImU32 col, float alpha)
     c.w *= ImClamp(alpha, 0.f, 1.f);
     return ImGui::ColorConvertFloat4ToU32(c);
 }
-} // namespace solace::mo
+} // namespace szk::mo

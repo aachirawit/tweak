@@ -8,7 +8,7 @@
 
 #include <cmath>
 
-namespace solace
+namespace szk
 {
 bool link_span(const char* id, ImDrawList* dl, ImFont* f, const ImVec2& pos, float width, ImU32 col,
                float alpha)
@@ -750,4 +750,4 @@ bool stateful_button_draw(const char* id, stateful_button_state& st, button_stat
     ImGui::PopID();
     return pressed;
 }
-} // namespace solace
+} // namespace szk

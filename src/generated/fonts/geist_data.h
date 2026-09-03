@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 
-namespace solace
+namespace szk
 {
     extern const std::vector<unsigned char> geist_regular;
     extern const std::vector<unsigned char> geist_medium;

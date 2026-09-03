@@ -19,7 +19,7 @@
 #define STBI_NO_STDIO
 #include "../../thirdparty/stb/stb_image.h"
 
-namespace solace::images
+namespace szk::images
 {
 namespace
 {
@@ -231,4 +231,4 @@ void shutdown()
     l.started = false;
     l.opts = options{};
 }
-} // namespace solace::images
+} // namespace szk::images

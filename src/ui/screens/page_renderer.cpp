@@ -19,7 +19,7 @@
 #include <cstdio>
 #include <cstring>
 
-namespace solace
+namespace szk
 {
 namespace
 {
@@ -3595,4 +3595,4 @@ route draw_page(route destination, const char* title, const char* const* subs, i
     scrollbar(dl, area, measured, scroll, alpha);
     return nav_request;
 }
-} // namespace solace
+} // namespace szk

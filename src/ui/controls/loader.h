@@ -2,7 +2,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-namespace solace
+namespace szk
 {
 
 void metaballs(ImDrawList* dl, const ImVec2& center, float size, float speed, float elapsed,

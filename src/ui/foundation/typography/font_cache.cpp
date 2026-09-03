@@ -62,11 +62,11 @@ float ttf_em_scale(const std::vector<unsigned char>& blob)
 }
 } // namespace
 
-namespace solace
+namespace szk
 {
 void font_cache::update()
 {
-    if (!solace::ui_runtime::fonts_dirty)
+    if (!szk::ui_runtime::fonts_dirty)
         return;
 
     ImGui::GetIO().Fonts->Clear();
@@ -76,7 +76,7 @@ void font_cache::update()
     for (const font_entry& entry : previous)
         add(*entry.source, entry.size);
 
-    solace::ui_runtime::fonts_dirty = false;
+    szk::ui_runtime::fonts_dirty = false;
 }
 
 ImFont* font_cache::get(const std::vector<unsigned char>& family, float size)
@@ -94,8 +94,8 @@ static float kerning_hook(ImFont* f, float size, unsigned int c_prev, unsigned i
     if (src == nullptr)
         return 0.f;
 
-    const solace::kerning::data& kd = solace::kerning::get(*src);
-    const float v = solace::kerning::pair(kd, c_prev, c) * size / solace::kerning::layout_units(kd);
+    const szk::kerning::data& kd = szk::kerning::get(*src);
+    const float v = szk::kerning::pair(kd, c_prev, c) * size / szk::kerning::layout_units(kd);
     return v > 0.f ? floorf(v + 0.5f) : 0.f;
 }
 
@@ -122,11 +122,11 @@ ImFont* font_cache::add(const std::vector<unsigned char>& family, float size)
     cfg.FontLoaderFlags = 0;
 #endif
 
-    const float pixels = floorf(size * ttf_em_scale(family) * solace::ui_runtime::scale + 0.5f);
+    const float pixels = floorf(size * ttf_em_scale(family) * szk::ui_runtime::scale + 0.5f);
     ImFont* result = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(
         const_cast<unsigned char*>(family.data()), (int)family.size(), pixels, &cfg);
 
     data.push_back({&family, size, result});
     return result;
 }
-} // namespace solace
+} // namespace szk

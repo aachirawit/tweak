@@ -16,7 +16,7 @@
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "srclient.lib")
 
-namespace solace::backend
+namespace szk::backend
 {
 namespace
 {
@@ -147,4 +147,4 @@ void open_discord()
     ::ShellExecuteW(nullptr, L"open", L"https://discord.gg/d9store", nullptr, nullptr,
                     SW_SHOWNORMAL);
 }
-} // namespace solace::backend
+} // namespace szk::backend

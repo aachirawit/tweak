@@ -4,6 +4,7 @@
 #include "assets/asset_io.h"
 #include "assets/avatars.h"
 #include "assets/images.h"
+#include "backend/keyauth.h"
 #include "core/diagnostics.h"
 #include "core/environment.h"
 #include "core/product_info.h"
@@ -31,7 +32,7 @@
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND window, UINT message,
                                                              WPARAM w_param, LPARAM l_param);
 
-namespace solace::runtime
+namespace szk::runtime
 {
 namespace
 {
@@ -73,9 +74,8 @@ std::optional<LRESULT> handle_window_message(void*, HWND window, UINT message, W
         break;
 
     case WM_KEYDOWN:
-        if (w_param == VK_ESCAPE && !solace::morphing_search_open() && !solace::overlay_open() &&
-            !solace::target_menu_open() && !solace::profile_menu_open() &&
-            !solace::notifications_open())
+        if (w_param == VK_ESCAPE && !szk::morphing_search_open() && !szk::overlay_open() &&
+            !szk::target_menu_open() && !szk::profile_menu_open() && !szk::notifications_open())
         {
             ::PostMessageW(window, WM_CLOSE, 0, 0);
             return static_cast<LRESULT>(0);
@@ -171,7 +171,7 @@ class ui_services final
 
         const std::string theme = environment::value("THEME");
         if (!theme.empty())
-            solace::set_dark(_stricmp(theme.c_str(), "light") != 0);
+            szk::set_dark(_stricmp(theme.c_str(), "light") != 0);
 
         fonts.install_kerning();
         warm_fonts();
@@ -186,7 +186,7 @@ class ui_services final
         const bool slider_initialized =
             slides::morph_slider_init(renderer.device(), renderer.context());
         const bool panel_initialized =
-            solace::rounded_panel::init(renderer.device(), renderer.context());
+            szk::rounded_panel::init(renderer.device(), renderer.context());
         const bool cursor_initialized = glass::cursor_init(renderer.device(), renderer.context());
 
         avatars::load(asset_io::asset_directory(L"avatars", L"AVATARS"),
@@ -223,9 +223,13 @@ class ui_services final
         if (!active_)
             return;
 
+        // First: a licence check in flight writes into state this function is
+        // about to tear down, so let it finish before anything else goes.
+        backend::auth_shutdown();
+
         images::shutdown();
         glass::cursor_shutdown();
-        solace::rounded_panel::shutdown();
+        szk::rounded_panel::shutdown();
         slides::morph_slider_shutdown();
         avatars::shutdown();
         snapshot::shutdown();
@@ -355,7 +359,7 @@ int run_desktop_app()
         services.begin_frame(renderer);
         imgui.new_frame();
 
-        solace::application::render_frame();
+        szk::application::render_frame();
         ui_runtime::collect_animation_states();
         draw_cursor();
         drag_host_window(window.native_handle());
@@ -379,4 +383,4 @@ int run_desktop_app()
     diagnostics::info("runtime", "SZK stopped.");
     return diagnostics::to_process_exit_code(exit_code);
 }
-} // namespace solace::runtime
+} // namespace szk::runtime

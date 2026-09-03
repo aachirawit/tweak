@@ -1,11 +1,11 @@
 #include <windows.h>
 
-#define IDI_SOLACE 101
+#define IDI_SZK 101
 #define IDR_NVIDIA_PROFILE_INSPECTOR_EXE 201
 #define IDR_NVIDIA_PROFILE_INSPECTOR_XML 202
 #define IDR_NVIDIA_PROFILE_INSPECTOR_NIP 203
 
-IDI_SOLACE ICON "solace.ico"
+IDI_SZK ICON "szk.ico"
 
 // NVIDIA Profile Inspector by Orbmu2k (open source), bundled so the app is
 // a single self-contained exe. Extracted to a temp folder and launched on
@@ -38,7 +38,7 @@ BEGIN
             VALUE "FileVersion", "0.1.0.0\0"
             VALUE "InternalName", "SZK\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 SZK\0"
-            VALUE "OriginalFilename", "Solace.exe\0"
+            VALUE "OriginalFilename", "SZK.exe\0"
             VALUE "ProductName", "SZK\0"
             VALUE "ProductVersion", "0.1.0\0"
         END

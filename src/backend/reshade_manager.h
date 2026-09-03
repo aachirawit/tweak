@@ -1,6 +1,6 @@
 #pragma once
 
-namespace solace::backend
+namespace szk::backend
 {
 struct reshade_status
 {
@@ -38,4 +38,4 @@ bool reshade_uninstall();
 // Opens the installed reshade-shaders folder (or the subprocess folder if
 // ReShade isn't installed yet) so the user can drop in extra shaders.
 void reshade_open_plugins_folder();
-} // namespace solace::backend
+} // namespace szk::backend

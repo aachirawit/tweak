@@ -15,7 +15,7 @@
 #pragma comment(lib, "advapi32.lib")
 #pragma comment(lib, "shlwapi.lib")
 
-namespace solace::backend
+namespace szk::backend
 {
 namespace
 {
@@ -491,4 +491,4 @@ bool check_amd_background_services()
     }
     return true;
 }
-} // namespace solace::backend
+} // namespace szk::backend

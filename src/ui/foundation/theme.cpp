@@ -3,7 +3,7 @@
 #include "generated/fonts/geist_data.h"
 #include "ui/foundation/typography/font_cache.h"
 
-namespace solace
+namespace szk
 {
 ImFont* font_regular(float size)
 {
@@ -99,4 +99,4 @@ void set_dark(bool dark)
     c_emerald_500 = p.emerald_500;
     c_emerald_600 = p.emerald_600;
 }
-} // namespace solace
+} // namespace szk

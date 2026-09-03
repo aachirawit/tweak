@@ -1,6 +1,6 @@
 #pragma once
 
-namespace solace::backend
+namespace szk::backend
 {
 // One-shot cleanup actions. Each deletes files Windows/the app/drivers
 // recreate on demand — nothing here is a setting to revert, so unlike the
@@ -13,4 +13,4 @@ bool clear_windows_update_cache(); // %WINDIR%\SoftwareDistribution\Download
 bool clear_shader_cache();         // %LOCALAPPDATA%\D3DSCache + NVIDIA DXCache/GLCache
 bool clear_thumbnail_cache(); // thumbcache_*.db under %LOCALAPPDATA%\Microsoft\Windows\Explorer
 bool empty_recycle_bin();     // SHEmptyRecycleBinW — permanent, not undoable
-} // namespace solace::backend
+} // namespace szk::backend

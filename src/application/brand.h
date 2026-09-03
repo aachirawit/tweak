@@ -2,7 +2,7 @@
 
 #include "core/product_info.h"
 
-namespace solace::brand
+namespace szk::brand
 {
 struct credit_profile
 {
@@ -23,7 +23,7 @@ constexpr credit_profile szk{
 // Select the visible creator profile.
 constexpr const credit_profile& active = profiles::szk;
 
-constexpr const char* product = solace::product_info::name;
+constexpr const char* product = szk::product_info::name;
 
 constexpr const char* user_name = active.user_name;
 constexpr const char* user_github = active.user_github;
@@ -33,4 +33,4 @@ constexpr const char* author = active.author;
 constexpr const char* repo = active.repo;
 
 constexpr const char* game = "SZK";
-} // namespace solace::brand
+} // namespace szk::brand

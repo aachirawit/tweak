@@ -1,112 +1,67 @@
-# Solace
+# SZK
 
-An offline Windows interface showcase built with C++20, Dear ImGui, and DirectX 11.
-The sign-in screens and provider buttons are local demonstrations; Solace makes no network
-requests and does not collect or submit credentials.
+A Windows tuning tool for FiveM and general system optimisation, built with C++20,
+Dear ImGui and DirectX 11.
 
-[![Windows build](https://github.com/poncippg-spec/Free-Solace-ImGui-Interface/actions/workflows/build.yml/badge.svg)](https://github.com/poncippg-spec/Free-Solace-ImGui-Interface/actions/workflows/build.yml)
-[Download the latest release](https://github.com/poncippg-spec/Free-Solace-ImGui-Interface/releases/latest)
+SZK reads the machine's current registry, power and driver state, scores it against
+the tweaks it can verify, and applies the ones you choose. It takes a System Restore
+point before any bulk change and refuses to proceed if Windows will not give it one.
 
-![Solace interface](docs/img/menu.png)
+## What it does
 
-## Preview
+- **Dashboard** — an optimisation score derived only from settings SZK can read back,
+  live CPU / memory / disk / ping, and a "Needs attention" list that says what leaving
+  each tweak off actually costs you.
+- **Performance, Graphics, Network, Power plan, Cleanup** — the tweak pages, grouped by
+  what they change rather than by where they live in the registry.
+- **Auto ReShade** — installs ReShade and the QuantV preset into FiveM's game folder.
+- **Drivers / This machine** — board lookup and system information.
 
-### YouTube demo
+## Network use
 
-[![Watch the Solace demo on YouTube](https://img.youtube.com/vi/R2SeWPtzg3g/maxresdefault.jpg)](https://www.youtube.com/watch?v=R2SeWPtzg3g)
+SZK is not offline. It makes network requests in two places:
 
-[Watch on YouTube](https://www.youtube.com/watch?v=R2SeWPtzg3g)
+1. **Licence check.** On launch it contacts `keyauth.win` to validate your licence key.
+   The request sends the key and a hardware ID derived from this machine's Windows
+   machine GUID. Responses are verified with HMAC-SHA256 against the application secret.
+2. **Ping.** The dashboard's latency tile sends ICMP echo requests to `1.1.1.1`.
 
-### Sign-up screens
+It does not send telemetry, and it does not transmit any of the settings it reads.
 
-<p align="center">
-  <img src="docs/media/signup-light.png" alt="Solace sign-up screen in light mode" width="49%">
-  <img src="docs/media/signup-dark.png" alt="Solace sign-up screen in dark mode" width="49%">
-</p>
+## Building
 
-The light capture uses the Pondot credit profile; the dark capture demonstrates the
-swappable placeholder profile.
-
-### Interface recording
-
-[![Watch the Solace interface recording](docs/media/video-preview.jpg)](https://github.com/poncippg-spec/Free-Solace-ImGui-Interface/releases/download/v0.1.0/solace-demo.mp4)
-
-[Watch the full 35-second recording](https://github.com/poncippg-spec/Free-Solace-ImGui-Interface/releases/download/v0.1.0/solace-demo.mp4)
-
-## Features
-
-- Frameless Win32 window
-- Sign-up and sign-in screens
-- Animated sidebar and page transitions
-- Reusable inputs, menus, tabs, switches, and sliders
-- Light and dark themes
-- DPI-aware text and layout
-
-## Download
-
-Download `Solace-0.1.0-win64.zip` from the
-[latest release](https://github.com/poncippg-spec/Free-Solace-ImGui-Interface/releases/latest), extract
-the complete archive, and run `Solace.exe`. The release includes the required assets,
-licenses, and a SHA-256 checksum file.
-
-The executable is currently unsigned, so Windows may display an unknown-publisher warning.
-Build from source if you prefer not to run the packaged binary.
-
-## Build
-
-Requirements:
-
-- Windows 10 or 11
-- Visual Studio 2022
-- Desktop development with C++
-
-From PowerShell:
+Requires Visual Studio 2022 (or newer) with **Desktop development with C++**.
 
 ```powershell
-git clone https://github.com/poncippg-spec/Free-Solace-ImGui-Interface.git
-cd Free-Solace-ImGui-Interface
-.\scripts\build.ps1 -Configuration Release
+.\scripts\build.ps1 -Configuration Release -Run
 ```
 
-The executable is written to:
+Before the first build, fill in your KeyAuth application details in
+[`src/backend/keyauth_config.h`](src/backend/keyauth_config.h). Until you do, the login
+screen says so instead of attempting a request.
 
-```text
-Release/Solace.exe
+Note that the application secret is compiled into the client, which is how KeyAuth
+works — it can be recovered from the shipped binary by anyone who looks. Do not commit
+real credentials to a public repository, and do not reuse the secret as a password.
+
+## Requirements at runtime
+
+- Windows 10 or 11, 64-bit
+- Administrator rights (the app manifest requests them; the tweaks write to HKLM,
+  `powercfg`, `netsh` and `bcdedit`)
+- An active SZK licence key
+
+## Layout
+
+```
+src/application    screen flow
+src/auth           licence screen and legal pages
+src/backend        tweaks, system monitor, KeyAuth client
+src/ui             design system, controls, screens
+src/platform       Win32 window and D3D11 renderer
+assets/reshade     the ReShade payload installed into FiveM
 ```
 
-For a debug build:
+## Licence
 
-```powershell
-.\scripts\build.ps1 -Configuration Debug
-```
-
-You can also open `Solace.sln` in Visual Studio.
-
-## Controls
-
-- Drag an empty part of the window to move it.
-- Press `Ctrl+B` to collapse the sidebar.
-- Press `F` to open search.
-- Press `Escape` to close the active panel or exit.
-
-## Notes
-
-Keep the `assets` directory with the executable when packaging the interface. Media
-redistribution and provider-mark terms are documented in `THIRD_PARTY_NOTICES.md`.
-
-## Project layout
-
-```text
-src/          application source
-assets/       runtime images
-scripts/      build and verification tools
-thirdparty/   bundled dependencies
-```
-
-## Credits
-
-Created by [Pondot](https://github.com/poncippg-spec).
-
-Third-party licenses and asset notes are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-MIT License. See [LICENSE](LICENSE).
+See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

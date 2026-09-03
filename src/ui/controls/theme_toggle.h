@@ -2,7 +2,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-namespace solace
+namespace szk
 {
 enum theme_variant
 {
@@ -26,4 +26,4 @@ bool theme_toggle(const char* id, const ImRect& rect, float icon_box, float alph
                   theme_variant variant = theme_rectangle, rect_start start = start_bottom_up);
 
 void theme_reveal_draw(ImDrawList* dl, const ImRect& window_rect);
-} // namespace solace
+} // namespace szk

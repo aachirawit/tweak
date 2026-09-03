@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-namespace solace
+namespace szk
 {
 namespace
 {
@@ -1087,4 +1087,4 @@ void flush_overlays()
 
     queue.clear();
 }
-} // namespace solace
+} // namespace szk

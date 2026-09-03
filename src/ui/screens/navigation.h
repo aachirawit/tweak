@@ -1,6 +1,6 @@
 #pragma once
 
-namespace solace
+namespace szk
 {
 // Storage order, not menu order. page_renderer indexes its blurb, column and
 // scroll tables straight off route_index(), and shell_screen's k_items table
@@ -75,4 +75,4 @@ struct nav_target
     route dest;
     int tab;
 };
-} // namespace solace
+} // namespace szk

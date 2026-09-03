@@ -1,6 +1,6 @@
 #pragma once
 
-namespace solace::backend
+namespace szk::backend
 {
 struct system_snapshot
 {
@@ -40,4 +40,4 @@ struct machine_info
 // calls; cheap enough to call every frame, but static for the process
 // lifetime other than uptime so callers may cache it.
 machine_info system_monitor_machine_info();
-} // namespace solace::backend
+} // namespace szk::backend

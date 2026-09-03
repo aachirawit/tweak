@@ -3,7 +3,7 @@
 #include "ui/foundation/primitives.h"
 #include "ui/foundation/rounded_panel.h"
 
-namespace solace::shell
+namespace szk::shell
 {
 ImVec2 animate_size(const ImVec2& target)
 {
@@ -45,4 +45,4 @@ ImRect plate()
 
     return rect;
 }
-} // namespace solace::shell
+} // namespace szk::shell

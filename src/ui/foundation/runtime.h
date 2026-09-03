@@ -5,7 +5,7 @@
 #include <memory>
 #include <unordered_map>
 
-namespace solace::ui_runtime
+namespace szk::ui_runtime
 {
 inline float scale = 1.f;
 inline bool fonts_dirty = false;
@@ -94,4 +94,4 @@ inline void pop_font()
 }
 
 void apply_style();
-} // namespace solace::ui_runtime
+} // namespace szk::ui_runtime

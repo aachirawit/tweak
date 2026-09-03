@@ -41,9 +41,9 @@ jobs:
         if: matrix.configuration == 'Release'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: Solace-0.1.0-win64
+          name: SZK-0.1.0-win64
           path: |
-            artifacts/releases/Solace-0.1.0-win64.zip
-            artifacts/releases/Solace-0.1.0-win64.zip.sha256
+            artifacts/releases/SZK-0.1.0-win64.zip
+            artifacts/releases/SZK-0.1.0-win64.zip.sha256
           if-no-files-found: error
           retention-days: 14

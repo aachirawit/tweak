@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace solace::kerning
+namespace szk::kerning
 {
 namespace
 {
@@ -470,4 +470,4 @@ float pair(const data& d, unsigned int prev_codepoint, unsigned int codepoint)
 
     return 0.f;
 }
-} // namespace solace::kerning
+} // namespace szk::kerning

@@ -5,7 +5,7 @@
 
 #include <utility>
 
-namespace solace::snapshot
+namespace szk::snapshot
 {
 namespace
 {
@@ -185,4 +185,4 @@ void poll(ID3D11Device* device, ID3D11DeviceContext* context, IDXGISwapChain* sw
     context->CopyResource(g_snapshot.texture.Get(), backbuffer.Get());
     g_ready = true;
 }
-} // namespace solace::snapshot
+} // namespace szk::snapshot

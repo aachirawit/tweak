@@ -7,7 +7,7 @@
 
 #include <cstring>
 
-namespace solace::slides
+namespace szk::slides
 {
 namespace
 {
@@ -347,7 +347,7 @@ const morph_slider_status& morph_slider_state()
 static void morph_slider_progress(ImDrawList* dl, const ImRect& rect, float right_inset, float t,
                                   ImU32 track, ImU32 fill)
 {
-    using namespace solace;
+    using namespace szk;
 
     const float h = px(2.f);
     const float x0 = rect.Min.x;
@@ -372,7 +372,7 @@ void morph_slider_shutdown()
 void morph_slider(ImDrawList* dl, const ImRect& rect, const ImRect& card, float card_rounding,
                   const morph_slider_options& o)
 {
-    using namespace solace;
+    using namespace szk;
 
     const std::vector<images::texture>& slides = images::ready();
     const int count = (int)slides.size();
@@ -649,4 +649,4 @@ void morph_slider(ImDrawList* dl, const ImRect& rect, const ImRect& card, float 
 
     ImGui::PopID();
 }
-} // namespace solace::slides
+} // namespace szk::slides

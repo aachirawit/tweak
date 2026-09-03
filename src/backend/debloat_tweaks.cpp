@@ -8,7 +8,7 @@
 
 #pragma comment(lib, "advapi32.lib")
 
-namespace solace::backend
+namespace szk::backend
 {
 namespace
 {
@@ -506,4 +506,4 @@ bool apply_debloat_services()
     log("Debloat services", std::to_string(total) + " service(s) set to disabled");
     return true;
 }
-} // namespace solace::backend
+} // namespace szk::backend
