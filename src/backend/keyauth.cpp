@@ -1,5 +1,6 @@
 #include "backend/keyauth.h"
 
+#include "backend/ed25519_verify.h"
 #include "backend/keyauth_config.h"
 
 #include <atomic>
@@ -175,16 +176,18 @@ std::string query_header(HINTERNET request, const wchar_t* name)
     return wide_to_utf8(wide);
 }
 
-// What can be checked without an Ed25519 implementation: that the reply was
-// signed at all, and that it was signed just now.
+// Is this reply really from KeyAuth, and is it about now?
 //
-// That closes replay - a "success" captured once cannot be served back
-// tomorrow by a local proxy. It does NOT close forgery: anyone who can get a
-// root certificate trusted on this machine can still mint a fresh reply of
-// their own. Verifying the Ed25519 signature against KeyAuth's public key is
-// what closes that, and it needs an Ed25519 implementation this project does
-// not have yet. See keyauth_config.h.
-bool response_is_fresh(const http_response& response)
+// The timestamp check alone closes replay: a "success" captured once cannot be
+// served back tomorrow. The signature check closes forgery: a proxy with a
+// trusted root certificate cannot mint a reply of its own. The signature is
+// over (timestamp + body), the same construction Discord uses, so the
+// timestamp cannot be swapped for a fresh one without breaking it.
+//
+// When TweetNaCl is not vendored, ed25519_available() is false and only the
+// replay check applies. That is a real gap, so it is named in the failure
+// path rather than passed over.
+bool response_is_trusted(const http_response& response)
 {
     if (response.signature_ed25519.empty() || response.signature_timestamp.empty())
         return false;
@@ -198,7 +201,14 @@ bool response_is_fresh(const http_response& response)
 
     // Wide enough that a clock a few minutes out still works, narrow enough
     // that a saved response is useless by the next session.
-    return drift <= 300;
+    if (drift > 300)
+        return false;
+
+    if (!ed25519_available())
+        return true; // replay-checked only; the build warned about this
+
+    return ed25519_verify(response.signature_ed25519, response.signature_timestamp + response.body,
+                          keyauth_config::signing_public_key);
 }
 
 http_response post_form(const std::string& form)
@@ -389,7 +399,7 @@ void run_check(std::string key)
         return;
     }
 
-    if (keyauth_config::check_response_freshness && !response_is_fresh(init))
+    if (keyauth_config::check_response_freshness && !response_is_trusted(init))
     {
         publish(auth_status::failed,
                 "The licence server's reply was not signed or was out of date. If you are on a "
@@ -429,7 +439,7 @@ void run_check(std::string key)
         return;
     }
 
-    if (keyauth_config::check_response_freshness && !response_is_fresh(check))
+    if (keyauth_config::check_response_freshness && !response_is_trusted(check))
     {
         publish(auth_status::failed,
                 "The licence server's reply was not signed or was out of date. Nothing was "

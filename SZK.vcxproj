@@ -29,6 +29,7 @@
     <ClCompile Include="src\backend\debloat_tweaks.cpp" />
     <ClCompile Include="src\backend\gpu_tweaks.cpp" />
     <ClCompile Include="src\backend\hardware_info.cpp" />
+    <ClCompile Include="src\backend\ed25519_verify.cpp" />
     <ClCompile Include="src\backend\keyauth.cpp" />
     <ClCompile Include="src\backend\os_tweaks.cpp" />
     <ClCompile Include="src\backend\power_plan.cpp" />
@@ -110,6 +111,7 @@
     <ClInclude Include="src\backend\debloat_tweaks.h" />
     <ClInclude Include="src\backend\gpu_tweaks.h" />
     <ClInclude Include="src\backend\hardware_info.h" />
+    <ClInclude Include="src\backend\ed25519_verify.h" />
     <ClInclude Include="src\backend\keyauth.h" />
     <ClInclude Include="src\backend\keyauth_config.h" />
     <ClInclude Include="src\backend\os_tweaks.h" />
@@ -194,7 +196,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)thirdparty\imgui;$(ProjectDir)thirdparty\imgui\backends;$(ProjectDir)thirdparty\imgui\misc\freetype;$(ProjectDir)thirdparty\freetype\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)thirdparty\imgui;$(ProjectDir)thirdparty\imgui\backends;$(ProjectDir)thirdparty\imgui\misc\freetype;$(ProjectDir)thirdparty\freetype\include;$(ProjectDir)thirdparty\tweetnacl;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE_FREETYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -228,7 +230,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <ControlFlowGuard>Guard</ControlFlowGuard>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)thirdparty\imgui;$(ProjectDir)thirdparty\imgui\backends;$(ProjectDir)thirdparty\imgui\misc\freetype;$(ProjectDir)thirdparty\freetype\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)thirdparty\imgui;$(ProjectDir)thirdparty\imgui\backends;$(ProjectDir)thirdparty\imgui\misc\freetype;$(ProjectDir)thirdparty\freetype\include;$(ProjectDir)thirdparty\tweetnacl;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE_FREETYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/utf-8 /experimental:deterministic &quot;/pathmap:$(ProjectDir)=SZK/&quot; %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>

@@ -40,17 +40,30 @@ inline constexpr char version[] = SZK_KEYAUTH_VERSION;
 // scheme Discord uses for interactions. The signing key is KeyAuth's own
 // published public key - the application secret is not involved.
 //
-// This client currently checks that a signature is present and that its
-// timestamp is within five minutes. That stops a captured "success" from
-// being replayed later. It does not stop someone who can get a root
-// certificate trusted on the machine from minting a fresh reply, which is the
-// usual way these checks get bypassed; closing that means verifying the
-// Ed25519 signature itself, which needs an Ed25519 implementation this
-// project does not vendor yet.
+// Two checks run on every reply:
 //
-// Leave this on. Turning it off removes the replay protection too and gains
-// nothing.
+//   1. The timestamp is present and within five minutes. Stops a captured
+//      "success" from being replayed later.
+//   2. The Ed25519 signature verifies over (timestamp + body). Stops a forged
+//      reply from a proxy with a trusted root certificate, which is the usual
+//      way a licence check gets bypassed.
+//
+// The second one only runs when TweetNaCl is vendored - see
+// thirdparty/tweetnacl/README.md. Without it the build prints a warning and
+// only check 1 applies.
+//
+// Leave this on. Turning it off gives up the replay protection too.
 inline constexpr bool check_response_freshness = true;
+
+// KeyAuth's Ed25519 public key, published in their own client examples. It is
+// KeyAuth's key, not yours, and it is the same for every application.
+//
+// NOT YET CONFIRMED against a live response on this machine. The first sign-in
+// after TweetNaCl is vendored is the test: if a key that should work is
+// rejected as unverifiable, this constant is wrong. Fix it from KeyAuth's
+// current example rather than turning the check off.
+inline constexpr char signing_public_key[] =
+    "5586b4bc69c7a4b487e4563a4cd96afd39140f919bd31cea7d1c6a1e8439422b";
 
 // Endpoint. Only change this if KeyAuth publishes a new API version.
 inline constexpr wchar_t api_host[] = L"keyauth.win";

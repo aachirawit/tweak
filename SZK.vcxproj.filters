@@ -146,6 +146,9 @@
     <ClCompile Include="src\backend\keyauth.cpp">
       <Filter>Backend</Filter>
     </ClCompile>
+    <ClCompile Include="src\backend\ed25519_verify.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
     <ClCompile Include="src\backend\debloat_tweaks.cpp">
       <Filter>Backend</Filter>
     </ClCompile>
@@ -295,6 +298,9 @@
     <ClInclude Include="src\backend\keyauth_config.h">
       <Filter>Backend</Filter>
     </ClInclude>
+    <ClInclude Include="src\backend\ed25519_verify.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
     <ClInclude Include="src\auth\auth.h">
       <Filter>Auth</Filter>
     </ClInclude>
@@ -314,12 +320,6 @@
       <Filter>Backend</Filter>
     </ClInclude>
     <ClInclude Include="src\backend\hardware_info.h">
-      <Filter>Backend</Filter>
-    </ClInclude>
-    <ClInclude Include="src\backend\keyauth.h">
-      <Filter>Backend</Filter>
-    </ClInclude>
-    <ClInclude Include="src\backend\keyauth_config.h">
       <Filter>Backend</Filter>
     </ClInclude>
     <ClInclude Include="src\backend\debloat_tweaks.h">
