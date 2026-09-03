@@ -58,10 +58,9 @@ inline constexpr bool check_response_freshness = true;
 // KeyAuth's Ed25519 public key, published in their own client examples. It is
 // KeyAuth's key, not yours, and it is the same for every application.
 //
-// NOT YET CONFIRMED against a live response on this machine. The first sign-in
-// after TweetNaCl is vendored is the test: if a key that should work is
-// rejected as unverifiable, this constant is wrong. Fix it from KeyAuth's
-// current example rather than turning the check off.
+// Confirmed against the live service: with verification enabled, a valid key
+// signs in. Since verification fails closed, a wrong constant here would have
+// rejected that sign-in, so a successful login is the proof.
 inline constexpr char signing_public_key[] =
     "5586b4bc69c7a4b487e4563a4cd96afd39140f919bd31cea7d1c6a1e8439422b";
 

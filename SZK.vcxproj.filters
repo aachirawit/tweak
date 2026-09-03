@@ -251,6 +251,9 @@
     <ClCompile Include="thirdparty\imgui\misc\freetype\imgui_freetype.cpp">
       <Filter>Vendor\ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="thirdparty\tweetnacl\tweetnacl.c">
+      <Filter>Vendor</Filter>
+    </ClCompile>
     <ClCompile Include="thirdparty\imgui\backends\imgui_impl_dx11.cpp">
       <Filter>Vendor\Backends</Filter>
     </ClCompile>

@@ -34,12 +34,13 @@ not our code to keep warning-clean:
 `ed25519_verify.cpp` finds the header through `__has_include`, so nothing else
 needs changing. Rebuild, and the build warning goes away.
 
-## Verifying it works
+## Status
 
-The KeyAuth public key in `keyauth_config.h` has not been confirmed against a
-live response yet. After adding TweetNaCl, sign in once:
+Vendored and working. The build no longer prints the warning, and a valid
+licence key signs in with verification active — which is also what confirms
+the public key in `keyauth_config.h`, since verification fails closed.
 
-- **Login succeeds** — the key is right and verification is live.
-- **"could not be verified" on a key that should work** — the public key is
-  wrong. Do not disable the check; find the correct key from KeyAuth's own
-  current C++ example and fix the constant.
+If a key that should work is ever rejected with "could not be verified", the
+public key constant is wrong (KeyAuth rotated it, or the API version changed).
+Fix the constant from KeyAuth's own current C++ example. Do not turn the check
+off — that gives up the replay protection as well.

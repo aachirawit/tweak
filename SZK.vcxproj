@@ -99,6 +99,16 @@
       <WarningLevel>Level3</WarningLevel>
       <TreatWarningAsError>false</TreatWarningAsError>
     </ClCompile>
+    <ClCompile Include="thirdparty\tweetnacl\tweetnacl.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <!-- C4146 is deliberate here: TweetNaCl negates unsigned values as part
+           of its constant-time arithmetic. It is reference crypto code that
+           should be compiled exactly as published, not edited to quiet a
+           warning. -->
+      <DisableSpecificWarnings>4146;4244;4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\application\app.h" />

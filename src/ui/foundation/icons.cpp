@@ -316,6 +316,14 @@ void draw(id which, ImDrawList* dl, const ImVec2& tl, float box, ImU32 col)
         path("M13 2L3 14L12 14L11 22L21 10L12 10Z");
         break;
 
+    case id::szk_mark:
+        // The score ring and the wordmark's Z in one glyph: a gauge arc with a
+        // gap at the lower right, and a Z cutting through it. Stroked rather
+        // than filled so it stays legible at the 16px the sidebar uses.
+        path("M19.6 16.5A9 9 0 1 0 16.5 19.6");
+        path("M8.5 8.5h7l-7 7h7");
+        break;
+
     case id::trash:
         path("M3 6h18");
         path("M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2");

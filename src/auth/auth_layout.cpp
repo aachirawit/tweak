@@ -230,7 +230,7 @@ void auth_stage(ImDrawList* dl, const ImRect& stage, const ImRect& card, float r
                           ImVec2(stage.Min.x + pad + w, stage.Min.y + pad + px(38.f)));
 
         panel_chip(dl, chip, 1.f);
-        icons::draw(icons::id::command, dl,
+        icons::draw(icons::id::szk_mark, dl,
                     ImVec2(chip.Min.x + px(14.f), chip.GetCenter().y - px(10.f)), px(20.f),
                     IM_COL32(0xFF, 0xFF, 0xFF, 0xFF));
         draw_text(dl, f, ImVec2(chip.Min.x + px(42.f), chip.GetCenter().y - f->LegacySize * 0.5f),

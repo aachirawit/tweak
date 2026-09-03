@@ -425,7 +425,7 @@ bool menu_screen(float alpha)
             {
                 dl->AddRectFilled(tile, ImVec2(tile.x + tile_size, tile.y + tile_size),
                                   mo::with_alpha(c_foreground, alpha), px(8.f));
-                icons::draw(icons::id::command, dl, ImVec2(tile.x + px(6.f), tile.y + px(6.f)),
+                icons::draw(icons::id::szk_mark, dl, ImVec2(tile.x + px(6.f), tile.y + px(6.f)),
                             px(k_icon), mo::with_alpha(c_background, alpha));
             }
 
