@@ -34,8 +34,8 @@ struct target_entry
 
 const target_entry k_targets[] = {
     {brand::game, "1.4.2"},
-    {"Solace Beta", "0.9.7"},
-    {"Solace Gamma", "2.1.0"},
+    {"SZK Beta", "0.9.7"},
+    {"SZK Gamma", "2.1.0"},
 };
 
 struct action
@@ -76,7 +76,7 @@ const notice k_notices[] = {
     {"Photo mode passed review", "No regressions on a clean build", "2h ago", icons::id::check,
      true},
     {"Weekly digest is ready", "Monday 09:00, local time", "Yesterday", icons::id::workflow, false},
-    {"Solace Lab joined the playtest", "Invited by you", "Monday", icons::id::circle_user_round,
+    {"SZK Lab joined the playtest", "Invited by you", "Monday", icons::id::circle_user_round,
      false},
 };
 

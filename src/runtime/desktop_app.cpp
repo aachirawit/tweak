@@ -318,7 +318,7 @@ int run_desktop_app()
 
     ui_services services;
     services.initialize(renderer);
-    diagnostics::info("runtime", "Solace started.");
+    diagnostics::info("runtime", "SZK started.");
 
     diagnostics::exit_code exit_code = diagnostics::exit_code::success;
     while (window.pump_messages())
@@ -376,7 +376,7 @@ int run_desktop_app()
         }
     }
 
-    diagnostics::info("runtime", "Solace stopped.");
+    diagnostics::info("runtime", "SZK stopped.");
     return diagnostics::to_process_exit_code(exit_code);
 }
 } // namespace solace::runtime

@@ -1,0 +1,458 @@
+#define CSHADE_DATAMOSH
+
+/*
+    This shader implements a datamoshing effect, inspired by Keijiro Takahashi's work, to simulate video compression artifacts. It distorts and glithes the image by manipulating motion vectors and introducing calculated noise. The shader uses optical flow (Lucas-Kanade) to track movement and then applies controlled displacement, random pixel diffusion, and noise patterns resembling DCT bases. Users can adjust parameters such as block size, entropy (randomness), noise contrast, motion vector scale, and diffusion strength to customize the glitch aesthetic.
+*/
+
+/*
+    This is free and unencumbered software released into the public domain.
+
+    Anyone is free to copy, modify, publish, use, compile, sell, or
+    distribute this software, either in source code form or as a compiled
+    binary, for any purpose, commercial or non-commercial, and by any
+    means.
+
+    In jurisdictions that recognize copyright laws, the author or authors
+    of this software dedicate any and all copyright interest in the
+    software to the public domain. We make this dedication for the benefit
+    of the public at large and to the detriment of our heirs and
+    successors. We intend this dedication to be an overt act of
+    relinquishment in perpetuity of all present and future rights to this
+    software under copyright law.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+    OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+    ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+    OTHER DEALINGS IN THE SOFTWARE.
+
+    For more information, please refer to <http://unlicense.org/>
+*/
+
+#include "shared/cColor.fxh"
+#include "shared/cBlur.fxh"
+#include "shared/cMotionEstimation.fxh"
+
+/* Shader Options */
+
+#ifndef SHADER_DISPLACEMENT_SAMPLING
+    #define SHADER_DISPLACEMENT_SAMPLING POINT
+#endif
+
+#ifndef SHADER_WARP_SAMPLING
+    #define SHADER_WARP_SAMPLING POINT
+#endif
+
+uniform float _Time < source = "timer"; ui_tooltip = "The shader's internal timer, used for time-based effects."; > ;
+
+uniform float _MipBias <
+    ui_category = "Optical Flow";
+    ui_label = "Mipmap Level for Optical Flow";
+    ui_max = 7.0;
+    ui_min = 0.0;
+    ui_type = "slider";
+    ui_tooltip = "Adjusts the mipmap level used for texture sampling in optical flow calculations, affecting the level of detail.";
+> = 0.0;
+
+uniform float _BlendFactor <
+    ui_category = "Optical Flow";
+    ui_label = "Temporal Smoothing Factor";
+    ui_max = 0.9;
+    ui_min = 0.0;
+    ui_type = "slider";
+    ui_tooltip = "Controls the amount of temporal smoothing applied to the motion vectors, reducing flickering in the optical flow.";
+> = 0.25;
+
+uniform int _BlockSize <
+    ui_category = "Datamosh";
+    ui_label = "Datamosh Block Size";
+    ui_max = 32;
+    ui_min = 0;
+    ui_type = "slider";
+    ui_tooltip = "Defines the size of the pixel blocks used for the datamoshing effect.";
+> = 4;
+
+uniform float _Entropy <
+    ui_category = "Datamosh";
+    ui_label = "Datamosh Randomness";
+    ui_max = 1.0;
+    ui_min = 0.0;
+    ui_type = "slider";
+    ui_tooltip = "Controls the level of randomness or corruption applied to the datamosh effect.";
+> = 0.1;
+
+uniform float _Contrast <
+    ui_category = "Datamosh";
+    ui_label = "Datamosh Noise Contrast";
+    ui_max = 4.0;
+    ui_min = 0.0;
+    ui_type = "slider";
+    ui_tooltip = "Adjusts the contrast of the noise patterns generated for the datamosh effect.";
+> = 0.1;
+
+uniform float _Scale <
+    ui_category = "Datamosh";
+    ui_label = "Motion Vector Scale";
+    ui_max = 2.0;
+    ui_min = 0.0;
+    ui_type = "slider";
+    ui_tooltip = "Controls the scaling factor applied to motion vectors, influencing the intensity of displacement.";
+> = 1.0;
+
+uniform float _Diffusion <
+    ui_category = "Datamosh";
+    ui_label = "Random Pixel Displacement";
+    ui_max = 4.0;
+    ui_min = 0.0;
+    ui_type = "slider";
+    ui_tooltip = "Controls the amount of random displacement applied to pixels, contributing to the glitch effect.";
+> = 2.0;
+
+#define CSHADE_APPLY_AUTO_EXPOSURE 0
+#define CSHADE_APPLY_ABBERATION 0
+#include "shared/cShade.fxh"
+
+CSHADE_UI_PREPROCESSOR_GUIDE(
+    "\nSHADER_DISPLACEMENT_SAMPLING - How the shader samples and processes displacement accumulation.\n\n\tOptions: LINEAR, POINT\n\nSHADER_WARP_SAMPLING - How the shader samples textures using in datamoshing's displacement pass.\n\n\tOptions: LINEAR, POINT\n\n"
+)
+
+/*
+    [Textures and samplers]
+*/
+
+CSHADE_CREATE_SRGB_SAMPLER(SampleSourceTex, CShade_ColorTex, SHADER_WARP_SAMPLING, SHADER_WARP_SAMPLING, LINEAR, MIRROR, MIRROR, MIRROR)
+
+CSHADE_CREATE_TEXTURE_POOLED(SharedTex1_RGB10A2, CSHADE_BUFFER_SIZE_1, RGB10A2, 8)
+CSHADE_CREATE_TEXTURE_POOLED(SharedTex2_RG16F, CSHADE_BUFFER_SIZE_3, RG16F, 8)
+CSHADE_CREATE_TEXTURE_POOLED(SharedTex3_RG16F, CSHADE_BUFFER_SIZE_4, RG16F, 1)
+CSHADE_CREATE_TEXTURE_POOLED(SharedTex4_RG16F, CSHADE_BUFFER_SIZE_5, RG16F, 1)
+CSHADE_CREATE_TEXTURE_POOLED(SharedTex5_RG16F, CSHADE_BUFFER_SIZE_6, RG16F, 1)
+
+CSHADE_CREATE_SAMPLER(SampleSharedTex1, SharedTex1_RGB10A2, LINEAR, LINEAR, LINEAR, CLAMP, CLAMP, CLAMP)
+CSHADE_CREATE_SAMPLER(SampleSharedTex3, SharedTex3_RG16F, LINEAR, LINEAR, LINEAR, CLAMP, CLAMP, CLAMP)
+CSHADE_CREATE_SAMPLER(SampleSharedTex4, SharedTex4_RG16F, LINEAR, LINEAR, LINEAR, CLAMP, CLAMP, CLAMP)
+CSHADE_CREATE_SAMPLER(SampleSharedTex5, SharedTex5_RG16F, LINEAR, LINEAR, LINEAR, CLAMP, CLAMP, CLAMP)
+
+CSHADE_CREATE_TEXTURE(PreviousFrameTex_Datamosh, CSHADE_BUFFER_SIZE_1, RGB10A2, 8)
+CSHADE_CREATE_SAMPLER(SamplePreviousFrameTex, PreviousFrameTex_Datamosh, LINEAR, LINEAR, LINEAR, CLAMP, CLAMP, CLAMP)
+CSHADE_CREATE_SAMPLER(SampleCurrentFrameTex, SharedTex1_RGB10A2, LINEAR, LINEAR, LINEAR, CLAMP, CLAMP, CLAMP)
+
+CSHADE_CREATE_TEXTURE(MotionVectorTex_Datamosh, CSHADE_BUFFER_SIZE_3, RG16F, 8)
+CSHADE_CREATE_SAMPLER(SampleMotionVectorTex1, MotionVectorTex_Datamosh, LINEAR, LINEAR, LINEAR, CLAMP, CLAMP, CLAMP)
+CSHADE_CREATE_SAMPLER(SampleMotionVectorTex2, SharedTex2_RG16F, SHADER_DISPLACEMENT_SAMPLING, SHADER_DISPLACEMENT_SAMPLING, LINEAR, CLAMP, CLAMP, CLAMP)
+
+CSHADE_CREATE_TEXTURE(AccumulationTex_Datamosh, CSHADE_BUFFER_SIZE_0, R16F, 1)
+CSHADE_CREATE_TEXTURE(FeedbackTex_Datamosh, CSHADE_BUFFER_SIZE_0, RGBA8, 1)
+CSHADE_CREATE_SAMPLER(SampleAccumulationTex, AccumulationTex_Datamosh, SHADER_DISPLACEMENT_SAMPLING, SHADER_DISPLACEMENT_SAMPLING, LINEAR, CLAMP, CLAMP, CLAMP)
+CSHADE_CREATE_SRGB_SAMPLER(SampleFeedbackTex, FeedbackTex_Datamosh, SHADER_WARP_SAMPLING, SHADER_WARP_SAMPLING, LINEAR, MIRROR, MIRROR, MIRROR)
+
+/* Pixel Shaders */
+
+void PS_Pyramid(CShade_VS2PS_Quad Input, out float4 Output : SV_TARGET0)
+{
+    float4 Color = tex2D(CShade_SampleColorTex, Input.Tex0);
+    Output.rgb = sqrt(Color.rgb);
+    Output.a = 1.0;
+}
+
+// Run Lucas-Kanade
+
+void PS_LucasKanade4(CShade_VS2PS_Quad Input, out float2 Output : SV_TARGET0)
+{
+    float2 Vectors = 0.0;
+    float2 PixelSize = fwidth(Input.Tex0.xy);
+    Output = CMotionEstimation_GetLucasKanade(true, Input.Tex0, PixelSize, Vectors, SamplePreviousFrameTex, SampleCurrentFrameTex);
+}
+
+void PS_LucasKanade3(CShade_VS2PS_Quad Input, out float2 Output : SV_TARGET0)
+{
+    float2 PixelSize = fwidth(Input.Tex0.xy);
+    float2 Vectors = CMotionEstimation_GetSparsePyramidUpsample(Input.HPos.xy, Input.Tex0, PixelSize, SampleSharedTex5);
+    Output = CMotionEstimation_GetLucasKanade(false, Input.Tex0, PixelSize, Vectors, SamplePreviousFrameTex, SampleCurrentFrameTex);
+}
+
+void PS_LucasKanade2(CShade_VS2PS_Quad Input, out float2 Output : SV_TARGET0)
+{
+    float2 PixelSize = fwidth(Input.Tex0.xy);
+    float2 Vectors = CMotionEstimation_GetSparsePyramidUpsample(Input.HPos.xy, Input.Tex0, PixelSize, SampleSharedTex4);
+    Output = CMotionEstimation_GetLucasKanade(false, Input.Tex0, PixelSize, Vectors, SamplePreviousFrameTex, SampleCurrentFrameTex);
+}
+
+void PS_LucasKanade1(CShade_VS2PS_Quad Input, out float4 Output : SV_TARGET0)
+{
+    float2 PixelSize = fwidth(Input.Tex0.xy);
+    float2 Vectors = CMotionEstimation_GetSparsePyramidUpsample(Input.HPos.xy, Input.Tex0, PixelSize, SampleSharedTex3);
+    float2 Flow = CMotionEstimation_GetLucasKanade(false, Input.Tex0, PixelSize, Vectors, SamplePreviousFrameTex, SampleCurrentFrameTex);
+    Output = float4(Flow, 0.0, _BlendFactor);
+}
+
+/*
+    Post-process filtering
+*/
+
+void PS_Copy(CShade_VS2PS_Quad Input, out float4 Output : SV_TARGET0)
+{
+    Output = tex2D(SampleSharedTex1, Input.Tex0.xy);
+}
+
+void PS_Upsample0(CShade_VS2PS_Quad Input, out float2 Output : SV_TARGET0)
+{
+    Output = CBlur_GetSideWindowBox_FLT2(SampleMotionVectorTex1, Input.Tex0);
+}
+
+void PS_Upsample1(CShade_VS2PS_Quad Input, out float2 Output : SV_TARGET0)
+{
+    Output = CBlur_GetSideWindowBilateralUpsample_FLT2(SampleSharedTex5, SampleMotionVectorTex1, Input.Tex0);
+}
+
+void PS_Upsample2(CShade_VS2PS_Quad Input, out float2 Output : SV_TARGET0)
+{
+    Output = CBlur_GetSideWindowBilateralUpsample_FLT2(SampleSharedTex4, SampleMotionVectorTex1, Input.Tex0);
+}
+
+void PS_Upsample3(CShade_VS2PS_Quad Input, out float2 Output : SV_TARGET0)
+{
+    Output = CBlur_GetSideWindowBilateralUpsample_FLT2(SampleSharedTex3, SampleMotionVectorTex1, Input.Tex0);
+}
+
+// Datamosh
+
+// [-1.0, 1.0] -> [Width, Height]
+float2 UnnormalizeMV(float2 Vectors, float2 ImageSize)
+{
+    return Vectors / abs(ImageSize);
+}
+
+// [Width, Height] -> [-1.0, 1.0]
+float2 NormalizeUV(float2 Vectors, float2 ImageSize)
+{
+    return clamp(Vectors * abs(ImageSize), -1.0, 1.0);
+}
+
+float RandUV(float2 Tex)
+{
+    float f = dot(float2(12.9898, 78.233), Tex);
+    return frac(43758.5453 * sin(f));
+}
+
+float2 GetMVBlocks(float2 MV, float2 Tex, out float3 Random)
+{
+    float2 TexSize = fwidth(Tex);
+    float2 Time = float2(_Time, 0.0);
+
+    // Random numbers
+    Random.x = RandUV(Tex.xy + Time.xy);
+    Random.y = RandUV(Tex.xy + Time.yx);
+    Random.z = RandUV(Tex.yx - Time.xx);
+
+    // Normalized screen space -> Pixel coordinates
+    MV = UnnormalizeMV(MV * _Scale, TexSize);
+
+    // Small random displacement (diffusion)
+    MV += (Random.xy - 0.5)  * _Diffusion;
+
+    // Pixel perfect snapping
+    return round(MV);
+}
+
+void PS_Accumulate(CShade_VS2PS_Quad Input, out float4 Accumulation : SV_TARGET0)
+{
+    float Quality = 1.0 - _Entropy;
+    float3 Random = 0.0;
+
+    // Motion vectors
+    float2 MV = CMath_FP16toSNORM_FLT2(tex2Dlod(SampleMotionVectorTex2, float4(Input.Tex0, 0.0, _MipBias)).xy);
+
+    // Get motion blocks
+    MV = GetMVBlocks(MV, Input.Tex0, Random);
+
+    // Accumulates the amount of motion.
+    float MVLength = length(MV);
+
+    // Simple update
+    float UpdateAcc = min(MVLength, _BlockSize) * 0.005;
+    UpdateAcc += lerp(-Random.z, Random.z, Quality * 0.02);
+
+    // Reset to random level
+    float ResetAcc = (Random.z * 0.5) + Quality;
+
+    // Reset if the amount of motion is larger than the block size.
+    [branch]
+    if (MVLength > _BlockSize)
+    {
+        Accumulation.rgb = ResetAcc;
+        Accumulation.a = 0.0;
+    }
+    else
+    {
+        Accumulation.rgb = UpdateAcc;
+        Accumulation.a = 1.0;
+    }
+}
+
+float4 GetDataMosh(float4 Base, float2 MV, float2 Pos, float2 Tex, float2 Delta)
+{
+    const float Quality = 1.0 - _Entropy;
+
+    // Initialize data
+    float3 Random = 0.0;
+
+    // Get motion blocks
+    MV = GetMVBlocks(MV, Tex, Random);
+
+    // Get random motion
+    float RandomMotion = RandUV(Tex + length(MV));
+
+    // Pixel coordinates -> Normalized screen space
+    MV = NormalizeUV(MV, Delta);
+
+    // Displacement vector
+    float Disp = tex2D(SampleAccumulationTex, Tex).r;
+
+    // Color from the original image
+    float4 Work = tex2D(SampleFeedbackTex, Tex + MV);
+
+    // Generate some pseudo random numbers.
+    float4 Rand = frac(float4(1.0, 17.37135, 841.4272, 3305.121) * RandomMotion);
+
+    // Generate noise patterns that look like DCT bases.
+    float2 Frequency = Pos.xy * (Rand.x * 80.0 / _Contrast);
+
+    // Basis wave (vertical or horizontal)
+    float DCT = cos(lerp(Frequency.x, Frequency.y, 0.5 < Rand.y));
+
+    // Random amplitude (the high freq, the less amp)
+    DCT *= Rand.z * (1.0 - Rand.x) * _Contrast;
+
+    // Conditional weighting
+    // DCT-ish noise: acc > 0.5
+    float CW = (Disp > 0.5) * DCT;
+    // Original image: rand < (Q * 0.8 + 0.2) && acc == 1.0
+    CW = lerp(CW, 1.0, Rand.w < lerp(0.2, 1.0, Quality) * (Disp > (1.0 - 1e-3)));
+
+    return lerp(Work, Base, CW);
+}
+
+void PS_Main(CShade_VS2PS_Quad Input, out float4 Output : SV_TARGET0)
+{
+    float2 TexSize = fwidth(Input.Tex0);
+    float4 Base = tex2D(SampleSourceTex, Input.Tex0);
+    float2 MV = CMath_FP16toSNORM_FLT2(tex2Dlod(SampleMotionVectorTex2, float4(Input.Tex0, 0.0, _MipBias)).xy);
+    float4 Datamosh = GetDataMosh(Base, MV, Input.HPos.xy, Input.Tex0, TexSize);
+
+    // RENDER
+    #if defined(CSHADE_BLENDING)
+        Output = float4(Datamosh.rgb, _CShade_AlphaFactor);
+    #else
+        Output = float4(Datamosh.rgb, 1.0);
+    #endif
+    CShade_Render(Output, Input.HPos.xy, Input.Tex0);
+}
+
+void PS_CopyBackBuffer(CShade_VS2PS_Quad Input, out float4 Output : SV_TARGET0)
+{
+    Output = tex2D(CShade_SampleColorTex, Input.Tex0);
+}
+
+#define TEMPLATE_PASS(NAME, VERTEX_SHADER, PIXEL_SHADER, RENDER_TARGET) \
+    pass NAME \
+    { \
+        VertexShader = VERTEX_SHADER; \
+        PixelShader = PIXEL_SHADER; \
+        RenderTarget0 = RENDER_TARGET; \
+    }
+
+technique CShade_KinoDatamosh
+<
+    ui_label = "CShade | KinoDatamosh";
+    ui_tooltip = "Keijiro Takahashi's image effect that simulates video compression artifacts.";
+>
+{
+    TEMPLATE_PASS(Pyramid, CShade_VS_Quad, PS_Pyramid, SharedTex1_RGB10A2)
+
+    TEMPLATE_PASS(LucasKanade4, CShade_VS_Quad, PS_LucasKanade4, SharedTex5_RG16F)
+    TEMPLATE_PASS(LucasKanade3, CShade_VS_Quad, PS_LucasKanade3, SharedTex4_RG16F)
+    TEMPLATE_PASS(LucasKanade2, CShade_VS_Quad, PS_LucasKanade2, SharedTex3_RG16F)
+    pass GetFineOpticalFlow
+    {
+        ClearRenderTargets = FALSE;
+        BlendEnable = TRUE;
+        BlendOp = ADD;
+        SrcBlend = INVSRCALPHA;
+        DestBlend = SRCALPHA;
+
+        VertexShader = CShade_VS_Quad;
+        PixelShader = PS_LucasKanade1;
+        RenderTarget0 = MotionVectorTex_Datamosh;
+    }
+
+    pass CopyFrame
+    {
+        VertexShader = CShade_VS_Quad;
+        PixelShader = PS_Copy;
+        RenderTarget0 = PreviousFrameTex_Datamosh;
+    }
+
+    pass BilateralUpsample0
+    {
+        VertexShader = CShade_VS_Quad;
+        PixelShader = PS_Upsample0;
+        RenderTarget0 = SharedTex5_RG16F;
+    }
+
+    pass BilateralUpsample1
+    {
+        VertexShader = CShade_VS_Quad;
+        PixelShader = PS_Upsample1;
+        RenderTarget0 = SharedTex4_RG16F;
+    }
+
+    pass BilateralUpsample2
+    {
+        VertexShader = CShade_VS_Quad;
+        PixelShader = PS_Upsample2;
+        RenderTarget0 = SharedTex3_RG16F;
+    }
+
+    pass BilateralUpsample3
+    {
+        VertexShader = CShade_VS_Quad;
+        PixelShader = PS_Upsample3;
+        RenderTarget0 = SharedTex2_RG16F;
+    }
+
+    // Datamoshing
+    pass Accumulate
+    {
+        ClearRenderTargets = FALSE;
+        BlendEnable = TRUE;
+        BlendOp = ADD;
+        SrcBlend = ONE;
+        DestBlend = SRCALPHA; // The result about to accumulate
+
+        VertexShader = CShade_VS_Quad;
+        PixelShader = PS_Accumulate;
+        RenderTarget0 = AccumulationTex_Datamosh;
+    }
+
+    pass Datamosh
+    {
+        SRGBWriteEnable = CSHADE_WRITE_SRGB;
+        CBLEND_CREATE_STATES()
+
+        VertexShader = CShade_VS_Quad;
+        PixelShader = PS_Main;
+    }
+
+    // Copy frame for feedback
+    pass CopyBackbuffer
+    {
+        SRGBWriteEnable = CSHADE_WRITE_SRGB;
+
+        VertexShader = CShade_VS_Quad;
+        PixelShader = PS_CopyBackBuffer;
+        RenderTarget0 = FeedbackTex_Datamosh;
+    }
+}

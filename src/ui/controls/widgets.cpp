@@ -20,8 +20,9 @@ namespace
 {
 
 constexpr mo::spring_cfg k_thumb{800.f, 80.f, 4.f};
-constexpr float k_switch_pad = 4.f;
-constexpr float k_thumb_size = 20.f;
+constexpr float k_switch_pad = 3.f;
+constexpr float k_thumb_size = 17.f;
+static_assert(k_switch_pad * 2.f + k_thumb_size == switch_h); // thumb sits centred, not clipped
 
 constexpr mo::spring_cfg k_indicator{170.f, 24.f, 1.2f};
 
@@ -548,8 +549,16 @@ bool switch_toggle(const char* id, const ImVec2& pos, bool* checked, const char*
     const float t = st->travel.to(*checked ? 1.f : 0.f, k_thumb, dt);
     const float squish = st->squish.to((held && !disabled) ? 0.9f : 1.f, k_thumb, dt);
 
+    // On is emerald, not the monochrome primary: a tweak being active is
+    // system state, and it leaves the white primary to mean "the one button
+    // on this screen". The thumb stays the ground colour in both states, so it
+    // reads as one object sliding rather than two different chips.
+    //
+    // On never means good here - plenty of tweaks are switched on to turn
+    // something off - so severity stays on the row's stripe and badge, and the
+    // switch only ever answers "is this applied".
     const ImU32 track =
-        st->track.update(*checked ? c_primary : mo::with_alpha(c_muted_foreground, 0.6f), dt, 0.2f);
+        st->track.update(*checked ? c_accent : mo::with_alpha(c_muted_foreground, 0.6f), dt, 0.2f);
 
     const ImRect rail(pos, ImVec2(pos.x + px(switch_w), pos.y + px(switch_h)));
     dl->AddRectFilled(rail.Min, rail.Max, mo::with_alpha(track, alpha), rail.GetHeight() * 0.5f);

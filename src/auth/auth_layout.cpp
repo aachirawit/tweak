@@ -32,7 +32,7 @@ const testimonial k_testimonials[] = {
 
     {"The settings handoff finally feels predictable. The team can see what "
      "changed without digging through a separate report.",
-     "Mira Chen", "Release, Solace Lab", 2},
+     "Mira Chen", "Release, SZK Lab", 2},
 
     {"I handed it to the beta testers on a Friday without training anyone. "
      "There were no questions on Monday.",

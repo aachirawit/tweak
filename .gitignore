@@ -15,3 +15,7 @@
 
 # Optional generated reports
 /artifacts/
+
+# Embedded build resources, not build output: Solace.rc compiles this into
+# the exe, so a clone without it does not build.
+!/src/resources/embedded/nvidiaProfileInspector.exe

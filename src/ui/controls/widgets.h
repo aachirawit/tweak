@@ -7,8 +7,10 @@ struct ImRect;
 namespace solace
 {
 
-inline constexpr float switch_w = 48.f;
-inline constexpr float switch_h = 28.f;
+// 40x23 with a 17px thumb: small enough to sit inline at the end of a tweak
+// row without dominating it, still a comfortable pointer target.
+inline constexpr float switch_w = 40.f;
+inline constexpr float switch_h = 23.f;
 
 bool switch_toggle(const char* id, const ImVec2& pos, bool* checked, const char* label = nullptr,
                    bool disabled = false);

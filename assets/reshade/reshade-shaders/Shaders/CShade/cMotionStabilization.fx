@@ -1,0 +1,375 @@
+#define CSHADE_MOTIONSTABILIZATION
+
+/*
+    This shader implements a motion stabilization effect, using optical flow to counter camera shake or unwanted movement in the image. It calculates motion vectors via the Lucas-Kanade method and applies a reverse warp to stabilize the scene. Users can invert stabilization along X or Y axes, choose global or local stabilization, adjust warp strength, and apply temporal smoothing. The shader also includes cosmetic geometric transformations like scaling, rotation, and translation, along with image-based scaling options and debug views for motion vectors.
+*/
+
+#include "shared/cColor.fxh"
+#include "shared/cBlur.fxh"
+#include "shared/cMotionEstimation.fxh"
+
+/* Shader Options */
+
+#ifndef SHADER_BACKBUFFER_ADDRESS
+    #define SHADER_BACKBUFFER_ADDRESS BORDER
+#endif
+
+#ifndef SHADER_DISPLACEMENT_SAMPLING
+    #define SHADER_DISPLACEMENT_SAMPLING POINT
+#endif
+
+#ifndef SHADER_MOTION_VECTORS_SAMPLING
+    #define SHADER_MOTION_VECTORS_SAMPLING LINEAR
+#endif
+
+#ifndef SHADER_COSMETIC_SAMPLING
+    #define SHADER_COSMETIC_SAMPLING LINEAR
+#endif
+
+uniform float _FrameTime <
+    source = "frametime";
+    ui_tooltip = "The time elapsed since the last frame, used for time-based effects.";
+>;
+
+uniform int _DisplayMode <
+    ui_items = "Output\0Debug · Quadrant\0Debug · Motion Vector Direction\0Debug · Motion Vector Magnitude\0";
+    ui_label = "Display Mode";
+    ui_type = "combo";
+    ui_tooltip = "Controls how the optical flow information is displayed, including different debug views.";
+> = 0;
+
+uniform bool _InvertWarpX <
+    ui_label = "Invert Horizontal Stabilization";
+    ui_text = "MOTION STABILIZATION";
+    ui_type = "radio";
+    ui_tooltip = "Inverts the motion stabilization effect along the horizontal (X) axis.";
+> = false;
+
+uniform bool _InvertWarpY <
+    ui_label = "Invert Vertical Stabilization";
+    ui_type = "radio";
+    ui_tooltip = "Inverts the motion stabilization effect along the vertical (Y) axis.";
+> = false;
+
+uniform bool _GlobalStabilization <
+    ui_label = "Use Global Stabilization";
+    ui_type = "radio";
+    ui_tooltip = "When enabled, the entire frame is stabilized based on overall motion, rather than local movements.";
+> = false;
+
+uniform float _LocalStabilizationMipBias <
+    ui_label = "Local Stabilization Mipmap Level";
+    ui_max = 7.0;
+    ui_min = 0.0;
+    ui_type = "slider";
+    ui_tooltip = "Adjusts the mipmap level used for local stabilization, which affects the level of detail considered for motion.";
+> = 3.5;
+
+uniform float2 _WarpStrength <
+    ui_label = "Stabilization Warp Strength";
+    ui_max = 8.0;
+    ui_min = -8.0;
+    ui_type = "slider";
+    ui_tooltip = "Controls the intensity of the image warping applied for motion stabilization.";
+> = 1.0;
+
+uniform float _BlendFactor <
+    ui_label = "Stabilization Temporal Smoothing";
+    ui_max = 8.0;
+    ui_min = 0.0;
+    ui_type = "slider";
+    ui_tooltip = "Controls the amount of temporal smoothing applied to the motion vectors, reducing flickering.";
+> = 1.0;
+
+uniform int _GeometricTransformOrder <
+    ui_items = "Scale > Rotate > Translate\0Scale > Translate > Rotate\0Rotate > Scale > Translate\0Rotate > Translate > Scale\0Translate > Scale > Rotate\0Translate > Rotate > Scale\0";
+    ui_label = "Geometric Transform Order";
+    ui_text = "GEOMETRIC TRANSFORMATION";
+    ui_type = "combo";
+    ui_tooltip = "Defines the order in which scaling, rotation, and translation operations are applied to the image.";
+> = 0;
+
+uniform float _Angle <
+    ui_label = "Geometric Rotation";
+    ui_type = "drag";
+    ui_tooltip = "Controls the rotation of the image around its center.";
+> = 0.0;
+
+uniform float2 _Translate <
+    ui_label = "Geometric Translation";
+    ui_type = "drag";
+    ui_tooltip = "Controls the horizontal and vertical translation (position) of the image.";
+> = 0.0;
+
+uniform float2 _Scale <
+    ui_label = "Geometric Scale";
+    ui_type = "drag";
+    ui_tooltip = "Controls the horizontal and vertical scaling of the image.";
+> = 1.0;
+
+uniform int _ScaleByImage <
+    ui_items = "Luminance\0Chromaticity\0Disabled\0";
+    ui_label = "Cosmetic Scaling Method";
+    ui_text = "COSMETIC - SCALE BY COLOR";
+    ui_type = "combo";
+    ui_tooltip = "Selects a color channel from the image to use as a scalar for cosmetic scaling effects.";
+> = 0;
+
+uniform float _ScaleByImageLOD <
+    ui_label = "Cosmetic Scaling Mipmap Level";
+    ui_type = "drag";
+    ui_tooltip = "Adjusts the mipmap level used for the image that influences cosmetic scaling.";
+> = 0.5;
+
+uniform float _ScaleByImageIntensity <
+    ui_label = "Cosmetic Scaling Intensity";
+    ui_max = 8.0;
+    ui_min = -8.0;
+    ui_type = "drag";
+    ui_tooltip = "Controls the intensity of the cosmetic scaling effect driven by image content.";
+> = 1.0;
+
+#define CSHADE_APPLY_AUTO_EXPOSURE 0
+#define CSHADE_APPLY_ABBERATION 0
+#include "shared/cShade.fxh"
+
+CSHADE_UI_PREPROCESSOR_GUIDE(
+    "\nSHADER_BACKBUFFER_ADDRESS - How the shader renders pixels outside the texture's boundaries.\n\n\tOptions: CLAMP, MIRROR, WRAP/REPEAT, BORDER\n\nSHADER_MOTION_VECTORS_SAMPLING - How the shader filters the motion vectors used for stabilization.\n\n\tOptions: LINEAR, POINT\n\nSHADER_DISPLACEMENT_SAMPLING - How the shader filters warped pixels.\n\n\tOptions: LINEAR, POINT\n\nSHADER_COSMETIC_SAMPLING - How the shader filters the image content texture used for color-based displacement.\n\n\tOptions: LINEAR, POINT\n\n"
+)
+
+/* Textures & Samplers */
+
+CSHADE_CREATE_TEXTURE_POOLED(SharedTex1_RGB10A2, CSHADE_BUFFER_SIZE_1, RGB10A2, 8)
+CSHADE_CREATE_TEXTURE_POOLED(SharedTex2_RG16F, CSHADE_BUFFER_SIZE_3, RG16F, 8)
+CSHADE_CREATE_TEXTURE_POOLED(SharedTex3_RG16F, CSHADE_BUFFER_SIZE_4, RG16F, 1)
+CSHADE_CREATE_TEXTURE_POOLED(SharedTex4_RG16F, CSHADE_BUFFER_SIZE_5, RG16F, 1)
+CSHADE_CREATE_TEXTURE_POOLED(SharedTex5_RG16F, CSHADE_BUFFER_SIZE_6, RG16F, 1)
+
+CSHADE_CREATE_SAMPLER(SampleSharedTex1, SharedTex1_RGB10A2, LINEAR, LINEAR, LINEAR, CLAMP, CLAMP, CLAMP)
+CSHADE_CREATE_SAMPLER(SampleSharedTex2, SharedTex2_RG16F, LINEAR, LINEAR, LINEAR, CLAMP, CLAMP, CLAMP)
+CSHADE_CREATE_SAMPLER(SampleSharedTex3, SharedTex3_RG16F, LINEAR, LINEAR, LINEAR, CLAMP, CLAMP, CLAMP)
+CSHADE_CREATE_SAMPLER(SampleSharedTex4, SharedTex4_RG16F, LINEAR, LINEAR, LINEAR, CLAMP, CLAMP, CLAMP)
+CSHADE_CREATE_SAMPLER(SampleSharedTex5, SharedTex5_RG16F, LINEAR, LINEAR, LINEAR, CLAMP, CLAMP, CLAMP)
+
+CSHADE_CREATE_TEXTURE(PreviousFrameTex_Stabilization, CSHADE_BUFFER_SIZE_1, RGB10A2, 8)
+CSHADE_CREATE_SAMPLER(SamplePreviousFrameTex, PreviousFrameTex_Stabilization, LINEAR, LINEAR, LINEAR, CLAMP, CLAMP, CLAMP)
+CSHADE_CREATE_SAMPLER(SampleCurrentFrameTex, SharedTex1_RGB10A2, LINEAR, LINEAR, LINEAR, CLAMP, CLAMP, CLAMP)
+
+CSHADE_CREATE_TEXTURE(MotionVectorTex_Stabilization, CSHADE_BUFFER_SIZE_3, RG16F, 8)
+CSHADE_CREATE_SAMPLER(SampleGuide, MotionVectorTex_Stabilization, LINEAR, LINEAR, LINEAR, CLAMP, CLAMP, CLAMP)
+
+CSHADE_CREATE_SAMPLER(SampleMotionVectorTex, SharedTex2_RG16F, SHADER_MOTION_VECTORS_SAMPLING, SHADER_MOTION_VECTORS_SAMPLING, SHADER_MOTION_VECTORS_SAMPLING, CLAMP, CLAMP, CLAMP)
+CSHADE_CREATE_SRGB_SAMPLER(SampleStableTex, CShade_ColorTex, SHADER_DISPLACEMENT_SAMPLING, SHADER_DISPLACEMENT_SAMPLING, SHADER_DISPLACEMENT_SAMPLING, SHADER_BACKBUFFER_ADDRESS, SHADER_BACKBUFFER_ADDRESS, SHADER_BACKBUFFER_ADDRESS)
+CSHADE_CREATE_SAMPLER(SampleCosmeticTex, SharedTex1_RGB10A2, SHADER_COSMETIC_SAMPLING, SHADER_COSMETIC_SAMPLING, SHADER_COSMETIC_SAMPLING, SHADER_BACKBUFFER_ADDRESS, SHADER_BACKBUFFER_ADDRESS, SHADER_BACKBUFFER_ADDRESS)
+
+/* Pixel Shaders */
+
+void PS_Pyramid(CShade_VS2PS_Quad Input, out float4 Output : SV_TARGET0)
+{
+    float4 Color = tex2D(CShade_SampleColorTex, Input.Tex0);
+    Output.rgb = sqrt(Color.rgb);
+    Output.a = 1.0;
+}
+
+// Run Lucas-Kanade
+
+void PS_LucasKanade4(CShade_VS2PS_Quad Input, out float2 Output : SV_TARGET0)
+{
+    float2 Vectors = 0.0;
+    float2 PixelSize = fwidth(Input.Tex0.xy);
+    Output = CMotionEstimation_GetLucasKanade(true, Input.Tex0, PixelSize, Vectors, SamplePreviousFrameTex, SampleCurrentFrameTex);
+}
+
+void PS_LucasKanade3(CShade_VS2PS_Quad Input, out float2 Output : SV_TARGET0)
+{
+    float2 PixelSize = fwidth(Input.Tex0.xy);
+    float2 Vectors = CMotionEstimation_GetSparsePyramidUpsample(Input.HPos.xy, Input.Tex0, PixelSize, SampleSharedTex5);
+    Output = CMotionEstimation_GetLucasKanade(false, Input.Tex0, PixelSize, Vectors, SamplePreviousFrameTex, SampleCurrentFrameTex);
+}
+
+void PS_LucasKanade2(CShade_VS2PS_Quad Input, out float2 Output : SV_TARGET0)
+{
+    float2 PixelSize = fwidth(Input.Tex0.xy);
+    float2 Vectors = CMotionEstimation_GetSparsePyramidUpsample(Input.HPos.xy, Input.Tex0, PixelSize, SampleSharedTex4);
+    Output = CMotionEstimation_GetLucasKanade(false, Input.Tex0, PixelSize, Vectors, SamplePreviousFrameTex, SampleCurrentFrameTex);
+}
+
+void PS_LucasKanade1(CShade_VS2PS_Quad Input, out float4 Output : SV_TARGET0)
+{
+    float2 PixelSize = fwidth(Input.Tex0.xy);
+    float2 Vectors = CMotionEstimation_GetSparsePyramidUpsample(Input.HPos.xy, Input.Tex0, PixelSize, SampleSharedTex3);
+    float2 Flow = CMotionEstimation_GetLucasKanade(false, Input.Tex0, PixelSize, Vectors, SamplePreviousFrameTex, SampleCurrentFrameTex);
+    Output = float4(Flow, 0.0, _BlendFactor);
+}
+
+/*
+    Post-process filtering
+*/
+
+void PS_Copy(CShade_VS2PS_Quad Input, out float4 Output : SV_TARGET0)
+{
+    Output = tex2D(SampleSharedTex1, Input.Tex0.xy);
+}
+
+void PS_Upsample0(CShade_VS2PS_Quad Input, out float2 Output : SV_TARGET0)
+{
+    Output = CBlur_GetSideWindowBilateralUpsample_FLT2(SampleGuide, SampleGuide, Input.Tex0);
+}
+
+void PS_Upsample1(CShade_VS2PS_Quad Input, out float2 Output : SV_TARGET0)
+{
+    Output = CBlur_GetSideWindowBilateralUpsample_FLT2(SampleSharedTex5, SampleGuide, Input.Tex0);
+}
+
+void PS_Upsample2(CShade_VS2PS_Quad Input, out float2 Output : SV_TARGET0)
+{
+    Output = CBlur_GetSideWindowBilateralUpsample_FLT2(SampleSharedTex4, SampleGuide, Input.Tex0);
+}
+
+void PS_Upsample3(CShade_VS2PS_Quad Input, out float2 Output : SV_TARGET0)
+{
+    Output = CBlur_GetSideWindowBilateralUpsample_FLT2(SampleSharedTex3, SampleGuide, Input.Tex0);
+}
+
+float4 GetMotionStabilization(CShade_VS2PS_Quad Input, float2 MotionVectors)
+{
+    MotionVectors.x = _InvertWarpX ? -MotionVectors.x : MotionVectors.x;
+    MotionVectors.y = _InvertWarpY ? -MotionVectors.y : MotionVectors.y;
+
+    float2 StableTex = Input.Tex0.xy - 0.5;
+    StableTex -= (MotionVectors * _WarpStrength);
+    StableTex += 0.5;
+
+    // Apply Geometric Transform
+    const float Pi2 = CMath_GetPi() * 2.0;
+    CMath_ApplyGeometricTransform(StableTex, _GeometricTransformOrder, _Angle * Pi2, _Translate, _Scale, true);
+
+    return tex2D(SampleStableTex, StableTex);
+}
+
+void PS_Main(CShade_VS2PS_Quad Input, out float4 Output : SV_TARGET0)
+{
+    CMath_TexGrid Grid = CMath_GetTexGrid(Input.Tex0, 2);
+
+    if (_DisplayMode == 1)
+    {
+        Input.Tex0 = Grid.Frac;
+    }
+
+    // Get needed LOD for shader
+    float2 StabilizationTex = _GlobalStabilization ? 0.5 : Input.Tex0;
+    float StabilizationLOD = _GlobalStabilization ? 99.0 : _LocalStabilizationMipBias;
+
+    // Gather textures
+    float4 Base = tex2D(CShade_SampleColorTex, Input.Tex0);
+    float4 Image = tex2Dlod(SampleCosmeticTex, float4(Input.Tex0, 0.0, _ScaleByImageLOD));
+    float2 MotionVectors = CMath_FP16toSNORM_FLT2(tex2Dlod(SampleMotionVectorTex, float4(StabilizationTex, 0.0, StabilizationLOD)).xy);
+
+    // Compute motion vector masking
+    float ScaleMask = lerp(Image.a, distance(Image.xyz, float3(1.0, 1.0, 1.0)), _ScaleByImage);
+    float4 ShaderOutput = GetMotionStabilization(Input, MotionVectors * ScaleMask * _ScaleByImageIntensity);
+
+    switch (_DisplayMode)
+    {
+        case 0:
+            Output.rgb = ShaderOutput.rgb;
+            break;
+        case 1:
+            Output.rgb = CMotionEstimation_GetDebugQuadrant(Base.rgb, ShaderOutput.rgb, MotionVectors, Grid.Index);
+            break;
+        case 2:
+            Output.rgb = CMotionEstimation_GetMotionVectorRGB(MotionVectors);
+            break;
+        case 3:
+            Output.rgb = length(MotionVectors);
+            break;
+        default:
+            Output.rgb = Base.rgb;
+            break;
+    }
+
+    // RENDER
+    #if defined(CSHADE_BLENDING)
+        Output = float4(Output.rgb, _CShade_AlphaFactor);
+    #else
+        Output = float4(Output.rgb, 1.0);
+    #endif
+    CShade_Render(Output, Input.HPos.xy, Input.Tex0);
+}
+
+#define TEMPLATE_PASS(NAME, VERTEX_SHADER, PIXEL_SHADER, RENDER_TARGET) \
+    pass NAME \
+    { \
+        VertexShader = VERTEX_SHADER; \
+        PixelShader = PIXEL_SHADER; \
+        RenderTarget0 = RENDER_TARGET; \
+    }
+
+technique CShade_MotionStabilization
+<
+    ui_label = "CShade | Motion Stabilization";
+    ui_tooltip = "Motion stabilization effect.";
+>
+{
+    TEMPLATE_PASS(Pyramid, CShade_VS_Quad, PS_Pyramid, SharedTex1_RGB10A2)
+
+    TEMPLATE_PASS(LucasKanade4, CShade_VS_Quad, PS_LucasKanade4, SharedTex5_RG16F)
+    TEMPLATE_PASS(LucasKanade3, CShade_VS_Quad, PS_LucasKanade3, SharedTex4_RG16F)
+    TEMPLATE_PASS(LucasKanade2, CShade_VS_Quad, PS_LucasKanade2, SharedTex3_RG16F)
+    pass GetFineOpticalFlow
+    {
+        ClearRenderTargets = FALSE;
+        BlendEnable = TRUE;
+        BlendOp = ADD;
+        SrcBlend = ONE;
+        DestBlend = INVSRCALPHA;
+
+        VertexShader = CShade_VS_Quad;
+        PixelShader = PS_LucasKanade1;
+        RenderTarget0 = MotionVectorTex_Stabilization;
+    }
+
+    pass CopyFrame
+    {
+        VertexShader = CShade_VS_Quad;
+        PixelShader = PS_Copy;
+        RenderTarget0 = PreviousFrameTex_Stabilization;
+    }
+
+    pass BilateralUpsample0
+    {
+        VertexShader = CShade_VS_Quad;
+        PixelShader = PS_Upsample0;
+        RenderTarget0 = SharedTex5_RG16F;
+    }
+
+    pass BilateralUpsample1
+    {
+        VertexShader = CShade_VS_Quad;
+        PixelShader = PS_Upsample1;
+        RenderTarget0 = SharedTex4_RG16F;
+    }
+
+    pass BilateralUpsample2
+    {
+        VertexShader = CShade_VS_Quad;
+        PixelShader = PS_Upsample2;
+        RenderTarget0 = SharedTex3_RG16F;
+    }
+
+    pass BilateralUpsample3
+    {
+        VertexShader = CShade_VS_Quad;
+        PixelShader = PS_Upsample3;
+        RenderTarget0 = SharedTex2_RG16F;
+    }
+
+    pass MotionStabilization
+    {
+        SRGBWriteEnable = CSHADE_WRITE_SRGB;
+        CBLEND_CREATE_STATES()
+
+        VertexShader = CShade_VS_Quad;
+        PixelShader = PS_Main;
+    }
+}

@@ -47,6 +47,9 @@ enum class id
     user_plus,
     log_out,
     plus,
+    cpu,
+    zap,
+    trash,
 };
 
 void draw(id which, ImDrawList* dl, const ImVec2& top_left, float box, ImU32 col);

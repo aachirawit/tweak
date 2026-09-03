@@ -39,52 +39,80 @@ constexpr float k_label_mb = 4.f;
 constexpr float k_label_size = 10.f;
 constexpr float k_label_track = 1.4f;
 
-constexpr float k_sub_indent = 20.f;
-constexpr float k_sub_pad_l = 12.f;
-constexpr float k_sub_mt = 4.f;
-constexpr float k_sub_item_h = 32.f;
-constexpr float k_sub_item_gap = 2.f;
-constexpr float k_sub_round = 8.f;
-
 constexpr mo::spring_cfg k_morph{380.f, 35.f, 0.75f};
 
 constexpr float k_label_enter = 0.2f, k_label_enter_delay = 0.08f;
 constexpr float k_label_exit = 0.12f;
-
-constexpr float k_sub_open = 0.2f, k_sub_open_delay = 0.035f, k_sub_open_stagger = 0.045f;
-constexpr float k_sub_close = 0.14f, k_sub_close_stagger = 0.025f;
-constexpr float k_sub_item = 0.18f;
-constexpr float k_sub_blur = 3.f;
 
 struct nav_item
 {
     const char* label;
     icons::id icon;
     const char* badge;
-    const char* sub[3];
+    const char* sub[7];
     int sub_count;
 };
 
-const nav_item k_items[] = {
-    {"Search", icons::id::search, nullptr, {nullptr, nullptr, nullptr}, 0},
-    {"Assistant", icons::id::sparkles, nullptr, {nullptr, nullptr, nullptr}, 0},
-    {"Messages", icons::id::inbox, "4", {nullptr, nullptr, nullptr}, 0},
+// Route-indexed, so this table stays in navigation.h's storage order. It is
+// no longer what the sidebar renders: it supplies each route's page title and
+// its tab strip. See k_rail_rows for the menu the user sees.
+constexpr nav_item k_items[] = {
+    {"Search",
+     icons::id::search,
+     nullptr,
+     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
+     0},
+    {"About",
+     icons::id::info,
+     nullptr,
+     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
+     0},
+    {"Updates",
+     icons::id::inbox,
+     "4",
+     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
+     0},
     {"Settings",
      icons::id::circle_user_round,
      nullptr,
-     {"All settings", "Recent changes", "Categories"},
+     {"All tweaks", "Performance", "Network", "Power plan", "NVIDIA", "AMD", "Cleanup"},
+     7},
+    {"Auto Reshade",
+     icons::id::building_2,
+     nullptr,
+     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
+     0},
+    {"Patches",
+     icons::id::target,
+     nullptr,
+     {"Pipeline", "Projection", "Live", nullptr, nullptr, nullptr, nullptr},
      3},
-    {"Presets", icons::id::building_2, nullptr, {nullptr, nullptr, nullptr}, 0},
-    {"Patches", icons::id::target, nullptr, {"Pipeline", "Projection", "Live"}, 3},
-    {"Tasks", icons::id::list_todo, nullptr, {nullptr, nullptr, nullptr}, 0},
-    {"Notes", icons::id::notebook_tabs, nullptr, {nullptr, nullptr, nullptr}, 0},
-    {"Automation", icons::id::workflow, nullptr, {"Rules", "Runs", "Presets"}, 3},
-    {"Dashboard", icons::id::layout_grid, nullptr, {nullptr, nullptr, nullptr}, 0},
+    {"Tasks",
+     icons::id::list_todo,
+     nullptr,
+     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
+     0},
+    {"Notes",
+     icons::id::notebook_tabs,
+     nullptr,
+     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
+     0},
+    {"Drivers",
+     icons::id::workflow,
+     nullptr,
+     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
+     0},
+    {"Dashboard",
+     icons::id::layout_grid,
+     nullptr,
+     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
+     0},
 };
 
 constexpr int k_item_count = IM_ARRAYSIZE(k_items);
 
 static_assert(k_item_count == route_index(route::profile));
+static_assert(k_items[route_index(route::settings)].sub_count == settings_tab_count);
 
 const char* page_title(route destination, int sub)
 {
@@ -100,52 +128,155 @@ const char* page_title(route destination, int sub)
 }
 
 const search_item k_search[] = {
-    {"Search", "Jump anywhere without leaving the keyboard", "command palette jump",
-     icons::id::search, route::search, 0},
-    {"Assistant", "Read a crash dump, tune your settings", "assistant ask reply",
-     icons::id::sparkles, route::assistant, 0},
-    {"Messages", "Four messages are waiting on you", "messages replies", icons::id::inbox,
-     route::messages, 0},
-    {"All settings", "Everything you can change, and its value", "settings options",
-     icons::id::circle_user_round, route::settings, 0},
-    {"Recent changes", "What changed, and when", "settings history", icons::id::circle_user_round,
-     route::settings, 1},
-    {"Categories", "Graphics, camera, display, audio", "settings groups",
-     icons::id::circle_user_round, route::settings, 2},
-    {"Presets", "Saved presets you can load or share", "presets configs", icons::id::building_2,
-     route::presets, 0},
-    {"Pipeline", "What is in test for the next patch", "patches pipeline", icons::id::target,
-     route::patches, 0},
-    {"Projection", "How stable the next patch looks", "patches forecast", icons::id::target,
-     route::patches, 1},
-    {"Live", "Shipped and pulled, with the reasons", "patches archive", icons::id::target,
-     route::patches, 2},
-    {"Tasks", "The short list, and what needs a nudge", "todo checklist", icons::id::list_todo,
-     route::tasks, 0},
-    {"Notes", "Longer-form thinking", "docs writing", icons::id::notebook_tabs, route::notes, 0},
-    {"Rules", "Rules that run without being asked", "automation rules", icons::id::workflow,
-     route::automation, 0},
-    {"Runs", "Every run, and how it ended", "automation history", icons::id::workflow,
-     route::automation, 1},
-    {"Presets", "Starting points for a new keybind layout", "automation presets",
-     icons::id::workflow, route::automation, 2},
-    {"Dashboard", "Frame time, win rate, and hours played", "metrics reports",
+    {"Dashboard", "CPU, RAM, disk, and ping, live", "metrics reports overview",
      icons::id::layout_grid, route::dashboard, 0},
+    {"All tweaks", "Every tweak on one page, and what it is set to", "settings options everything",
+     icons::id::settings, route::settings, tab_index(settings_tab::all)},
+    {"Performance", "Timer resolution, core parking, and scheduling", "cpu timer fps stutter",
+     icons::id::cpu, route::settings, tab_index(settings_tab::performance)},
+    {"Network", "Latency, Nagle's algorithm, and TCP tuning", "ping lag latency tcp nagle",
+     icons::id::target, route::settings, tab_index(settings_tab::network)},
+    {"Power plan", "The active power plan on this machine", "power plan ultimate balanced",
+     icons::id::zap, route::settings, tab_index(settings_tab::power_plan)},
+    {"NVIDIA", "NVIDIA-specific tweaks for this machine", "graphics gpu nvidia low latency",
+     icons::id::sparkles, route::settings, tab_index(settings_tab::nvidia)},
+    {"AMD", "AMD/Radeon-specific tweaks for this machine", "graphics gpu amd radeon",
+     icons::id::sparkles, route::settings, tab_index(settings_tab::amd)},
+    {"Cleanup", "Temp, prefetch, update cache, shader cache, and more", "cleanup clear cache junk",
+     icons::id::trash, route::settings, tab_index(settings_tab::cleanup)},
+    {"Auto ReShade", "Install ReShade and the 2K Road Mod into FiveM", "reshade quantv road mod",
+     icons::id::building_2, route::presets, 0},
+    {"Drivers", "Look up the installed motherboard online", "drivers lookup board update",
+     icons::id::workflow, route::automation, 0},
+    {"This machine", "Specs, version, and what is installed", "hardware specs machine info",
+     icons::id::inbox, route::messages, 0},
     {"Profile", "Your account and what it may send you", "account me settings",
      icons::id::circle_user_round, route::profile, 0},
+    {"About", "Version, support, and Windows recovery", "about support recovery updates",
+     icons::id::info, route::assistant, 0},
 };
 
-constexpr int k_group1_count = 3;
+// ── The sidebar the user actually sees ──────────────────────────────────────
+//
+// Grouped by what a row changes, not by where it lives in the registry, and
+// deliberately flat: no accordions, so nothing is one click deeper than it
+// looks. Search is not a row - it is Ctrl+K, which already exists.
+//
+// A row is a destination, not a route: several rows land on route::settings
+// with a different tab preselected, so the seven tweak pages get top-level
+// billing while page_renderer keeps its single route-indexed switch. The tab
+// strip on the page stays in sync in both directions - press a rail row and
+// its tab opens, press a tab and the rail follows.
+//
+// Routes with no row (search, patches, tasks, notes) still exist and still
+// render; they are simply unreachable from this menu.
+struct rail_row
+{
+    const char* label;
+    icons::id icon;
+    const char* badge;
+    route dest;
+    int tab;      // keep_tab for routes without a tab strip
+    int tab_span; // tabs this row covers, so Graphics owns NVIDIA and AMD both
+};
+
+struct rail_group
+{
+    const char* label; // nullptr for the ungrouped run at the top
+    int first;
+    int count;
+};
+
+constexpr rail_row k_rail_rows[] = {
+    // OVERVIEW - one row, so it carries no heading of its own
+    {"Dashboard", icons::id::layout_grid, nullptr, route::dashboard, keep_tab, 0},
+
+    // OPTIMIZE - one row per thing the machine can be made to do differently
+    {"Performance", icons::id::cpu, nullptr, route::settings, tab_index(settings_tab::performance),
+     1},
+    // Opens on NVIDIA and stays lit on AMD: the page's own tab strip picks the
+    // vendor, and the rail has no business claiming this machine has only one.
+    {"Graphics", icons::id::sparkles, nullptr, route::settings, tab_index(settings_tab::nvidia), 2},
+    {"Network", icons::id::target, nullptr, route::settings, tab_index(settings_tab::network), 1},
+    {"Power plan", icons::id::zap, nullptr, route::settings, tab_index(settings_tab::power_plan),
+     1},
+    {"Cleanup", icons::id::trash, nullptr, route::settings, tab_index(settings_tab::cleanup), 1},
+    {"Auto ReShade", icons::id::building_2, nullptr, route::presets, keep_tab, 0},
+    {"All tweaks", icons::id::settings, nullptr, route::settings, tab_index(settings_tab::all), 1},
+
+    // SYSTEM - what this machine is, rather than how it is tuned
+    {"This machine", icons::id::inbox, nullptr, route::messages, keep_tab, 0},
+    {"Drivers", icons::id::workflow, nullptr, route::automation, keep_tab, 0},
+    {"About", icons::id::info, "4", route::assistant, keep_tab, 0},
+};
+
+constexpr int k_rail_count = IM_ARRAYSIZE(k_rail_rows);
+
+constexpr rail_group k_rail_groups[] = {
+    {nullptr, 0, 1},
+    {"OPTIMIZE", 1, 7},
+    {"SYSTEM", 8, 3},
+};
+
+constexpr int k_rail_group_count = IM_ARRAYSIZE(k_rail_groups);
+
+// Every row is listed exactly once, in order.
+static_assert(k_rail_groups[k_rail_group_count - 1].first +
+                  k_rail_groups[k_rail_group_count - 1].count ==
+              k_rail_count);
+
+// True when this row is the one the shell is currently showing. A row with a
+// tab only lights up for the tabs it owns, so the six settings rows never
+// light up together - and between them they own all seven tabs, so no tab
+// leaves the rail with nothing highlighted.
+[[nodiscard]] bool rail_row_active(const rail_row& row, route active, const int* sub_index)
+{
+    if (row.dest != active)
+        return false;
+    if (row.tab == keep_tab)
+        return true;
+
+    const int open = sub_index[route_index(row.dest)];
+    return open >= row.tab && open < row.tab + row.tab_span;
+}
+
+// Holds the rail and the Settings tab strip to the same story: every tab is
+// owned by exactly one row. Adding a tab without giving it a row, or handing
+// one tab to two rows, fails the build rather than the highlight.
+[[nodiscard]] constexpr bool rail_covers_settings_tabs()
+{
+    int owners[settings_tab_count] = {};
+
+    for (const rail_row& row : k_rail_rows)
+    {
+        if (row.dest != route::settings || row.tab == keep_tab)
+            continue;
+
+        for (int tab = row.tab; tab < row.tab + row.tab_span; tab++)
+        {
+            if (tab < 0 || tab >= settings_tab_count)
+                return false;
+            owners[tab]++;
+        }
+    }
+
+    for (const int count : owners)
+        if (count != 1)
+            return false;
+
+    return true;
+}
+
+static_assert(rail_covers_settings_tabs());
 
 constexpr ImU32 c_avatar = IM_COL32(0xD5, 0xFF, 0x66, 0xFF);
 
+// One per rail row, not per route: five rows share route::settings and each
+// still hovers and presses on its own.
 struct item_anim
 {
     color_tween text;
     mo::spring press;
-    mo::spring chevron;
-    mo::presence sub;
-    float sub_t = 0.f;
 };
 
 struct sidebar_state
@@ -155,9 +286,8 @@ struct sidebar_state
     float label_t = 1e6f;
     bool labels_shown = true;
 
-    route active = route::settings;
+    route active = route::dashboard;
     int sub_index[route_count] = {};
-    int force_open = -1;
 
     mo::spring profile_chevron;
 
@@ -167,7 +297,7 @@ struct sidebar_state
     mo::spring pill_x, pill_y, pill_w, pill_h;
     bool pill_seeded = false;
 
-    item_anim items[k_item_count];
+    item_anim rows[k_rail_count];
     color_tween trigger_col;
 };
 
@@ -175,23 +305,6 @@ sidebar_state& state()
 {
     static sidebar_state s;
     return s;
-}
-
-float submenu_height(const nav_item& item)
-{
-    if (item.sub_count <= 0)
-        return 0.f;
-    return k_sub_mt + (float)item.sub_count * k_sub_item_h +
-           (float)(item.sub_count - 1) * k_sub_item_gap;
-}
-
-float submenu_reveal(const item_anim& a)
-{
-    if (!a.sub.mounted)
-        return 0.f;
-    if (a.sub.exiting)
-        return 1.f - mo::EASE_OUT(ImClamp(a.sub.out / k_sub_close, 0.f, 1.f));
-    return mo::EASE_OUT(ImClamp(a.sub.in / k_sub_open, 0.f, 1.f));
 }
 
 void draw_bell(ImDrawList* dl, const ImRect& rect, float alpha)
@@ -341,25 +454,33 @@ bool menu_screen(float alpha)
 
         dl->PushClipRect(nav_box.Min, nav_box.Max, true);
 
-        for (int i = 0; i < k_item_count; i++)
+        for (int i = 0; i < k_rail_count; i++)
         {
-            const nav_item& item = k_items[i];
-            item_anim& anim = s.items[i];
-
-            if (i == k_group1_count)
+            // The row that opens a group draws that group's heading; the gap
+            // above it is what separates one group from the last.
+            const char* group_label = nullptr;
+            for (int g = 0; g < k_rail_group_count; g++)
             {
-                y += px(6.f + k_group_gap + 4.f);
-
-                if (label_a > 0.004f)
-                {
-
-                    ImFont* f = font_medium(k_label_size);
-                    draw_text_tracked(
-                        dl, f, ImVec2(menu_x + px(8.f + label_dx), y + line_top(f, px(16.f))),
-                        mo::with_alpha(c_muted_foreground, label_a), "GAME", px(k_label_track));
-                }
-                y += px(k_label_h + k_label_mb);
+                if (k_rail_groups[g].first != i)
+                    continue;
+                group_label = k_rail_groups[g].label;
+                if (g > 0)
+                    y += px(6.f + k_group_gap + 4.f);
+                break;
             }
+
+            const rail_row& item = k_rail_rows[i];
+            item_anim& anim = s.rows[i];
+
+            if (group_label && label_a > 0.004f)
+            {
+                ImFont* f = font_medium(k_label_size);
+                draw_text_tracked(
+                    dl, f, ImVec2(menu_x + px(8.f + label_dx), y + line_top(f, px(16.f))),
+                    mo::with_alpha(c_muted_foreground, label_a), group_label, px(k_label_track));
+            }
+            if (group_label)
+                y += px(k_label_h + k_label_mb);
 
             const ImRect bb(ImVec2(menu_x, y), ImVec2(menu_x + menu_w, y + px(k_item_h)));
 
@@ -379,25 +500,12 @@ bool menu_screen(float alpha)
 
             if (pressed)
             {
-                s.active = route_from_index(i);
-                if (item.sub_count > 0)
-                {
-                    const bool open = anim.sub.mounted && !anim.sub.exiting;
-                    if (!open && collapsed)
-                        s.collapsed = false;
-                    anim.sub_t = 0.f;
-                }
+                s.active = item.dest;
+                if (item.tab != keep_tab)
+                    s.sub_index[route_index(item.dest)] = item.tab;
             }
 
-            const bool want_sub = item.sub_count > 0 && !collapsed &&
-                                  (s.force_open == i ? true
-                                   : pressed         ? !(anim.sub.mounted && !anim.sub.exiting)
-                                                     : (anim.sub.mounted && !anim.sub.exiting));
-            anim.sub.update(want_sub, dt,
-                            k_sub_close + (float)item.sub_count * k_sub_close_stagger);
-            anim.sub_t += dt;
-
-            const bool is_active = (route_index(s.active) == i);
+            const bool is_active = rail_row_active(item, s.active, s.sub_index);
             const float scale = anim.press.to(held ? 0.98f : 1.f, mo::SPRING_PRESS, dt);
 
             if (is_active)
@@ -439,102 +547,7 @@ bool menu_screen(float alpha)
                 }
             }
 
-            if (item.sub_count > 0)
-            {
-
-                const bool open = anim.sub.mounted && !anim.sub.exiting;
-                const float rot =
-                    anim.chevron.to(open ? 1.f : 0.f, mo::SPRING_LAYOUT, dt) * IM_PI * 0.5f;
-                const float box = px(14.f);
-                const ImVec2 c(row.Max.x - px(k_item_pad_x) - box * 0.5f + px(label_dx * -1.f),
-                               centre.y);
-
-                if (label_a > 0.004f)
-                {
-                    const int rotation_start = draw_utils::rotation_start(dl);
-                    icons::draw(icons::id::chevron_right, dl,
-                                ImVec2(c.x - box * 0.5f, c.y - box * 0.5f), box,
-                                mo::with_alpha(c_muted_foreground, label_a));
-                    draw_utils::rotate_vertices(dl, rotation_start, rot, c);
-                }
-            }
-
             y += px(k_item_h + k_item_gap);
-
-            if (anim.sub.mounted && item.sub_count > 0)
-            {
-                const float reveal = submenu_reveal(anim);
-                const float block_h = px(submenu_height(item));
-                const float top = y - px(k_item_gap) + px(k_sub_mt);
-
-                const float rail_x = menu_x + px(k_sub_indent);
-                const ImRect clip(ImVec2(menu_x, top),
-                                  ImVec2(menu_x + menu_w, top + (block_h - px(k_sub_mt)) * reveal));
-
-                dl->PushClipRect(clip.Min, clip.Max, true);
-
-                dl->AddRectFilled(ImVec2(rail_x, top),
-                                  ImVec2(rail_x + px(1.f), top + block_h - px(k_sub_mt)),
-                                  mo::with_alpha(c_border, alpha));
-
-                for (int k = 0; k < item.sub_count; k++)
-                {
-                    const bool exiting = anim.sub.exiting;
-                    const float delay = exiting
-                                            ? (float)(item.sub_count - 1 - k) * k_sub_close_stagger
-                                            : k_sub_open_delay + (float)k * k_sub_open_stagger;
-                    const float t = exiting ? anim.sub.out : anim.sub.in;
-                    const float p = mo::EASE_OUT(ImClamp((t - delay) / k_sub_item, 0.f, 1.f));
-
-                    const float op = exiting ? 1.f - p : p;
-                    const float dy = exiting ? -6.f * p : -6.f * (1.f - p);
-                    const float blur = exiting ? k_sub_blur * p : k_sub_blur * (1.f - p);
-
-                    const float sy = top + (float)k * px(k_sub_item_h + k_sub_item_gap) + px(dy);
-                    const ImRect sb(ImVec2(rail_x + px(1.f + k_sub_pad_l), sy),
-                                    ImVec2(menu_x + menu_w, sy + px(k_sub_item_h)));
-
-                    ImGui::PushID(i * 16 + k + 1000);
-                    const ImGuiID sid = window->GetID("sub");
-                    ImGui::SetCursorScreenPos(sb.Min);
-                    ImGui::ItemSize(ImVec2(0, 0));
-                    ImGui::ItemAdd(sb, sid);
-                    bool sh = false, shd = false;
-                    if (!pointer_claimed())
-                        ImGui::ButtonBehavior(sb, sid, &sh, &shd);
-                    ImGui::PopID();
-
-                    const bool sub_active = (route_index(s.active) == i && s.sub_index[i] == k);
-                    if (shd && op > 0.5f)
-                        s.sub_index[i] = k;
-
-                    if ((sh || sub_active) && op > 0.5f)
-                        dl->AddRectFilled(
-                            sb.Min, sb.Max,
-                            mo::with_alpha(c_card, (sub_active ? 0.7f : 0.6f) * op * alpha),
-                            px(k_sub_round));
-
-                    const ImU32 sub_col = mo::with_alpha(
-                        (sh || sub_active) ? c_foreground : c_muted_foreground, op * alpha);
-                    dl->AddCircleFilled(ImVec2(sb.Min.x + px(8.f + 2.f), sb.GetCenter().y), px(2.f),
-                                        sub_col, 12);
-
-                    ImFont* f = font_regular(text_xs);
-                    if (blur > 0.25f)
-                        draw_text_blur(dl, f,
-                                       ImVec2(sb.Min.x + px(8.f + 16.f + 8.f),
-                                              sb.GetCenter().y - f->LegacySize * 0.5f),
-                                       sub_col, item.sub[k], px(blur));
-                    else
-                        draw_text(dl, f,
-                                  ImVec2(sb.Min.x + px(8.f + 16.f + 8.f),
-                                         sb.GetCenter().y - f->LegacySize * 0.5f),
-                                  sub_col, item.sub[k]);
-                }
-
-                dl->PopClipRect();
-                y += block_h;
-            }
         }
 
         s.rail_content = (y - nav_top_y) + px(k_group_pad_y);
@@ -679,9 +692,12 @@ bool menu_screen(float alpha)
             const ImRect body(ImVec2(bx, origin.y + px(88.f)),
                               ImVec2(plate.Max.x - px(29.f), origin.y + px(628.f)));
 
-            draw_page(s.active, page_title(s.active, s.sub_index[active_index]),
-                      on_profile ? nullptr : current.sub, on_profile ? 0 : current.sub_count,
-                      &s.sub_index[active_index], body, alpha);
+            const route requested =
+                draw_page(s.active, page_title(s.active, s.sub_index[active_index]),
+                          on_profile ? nullptr : current.sub, on_profile ? 0 : current.sub_count,
+                          &s.sub_index[active_index], body, alpha);
+            if (requested != route::count)
+                s.active = requested;
 
             ImFont* f12 = font_medium(text_xs);
             const float rule_y = plate.Max.y - px(1.f + k_footer_h);
@@ -707,17 +723,10 @@ bool menu_screen(float alpha)
             const int hit = morphing_search_overlay(plate, k_search, IM_ARRAYSIZE(k_search), alpha);
             if (hit >= 0)
             {
+                // A hit names a tab as well as a route, so landing from search
+                // lights up the same rail row a click would have.
                 s.active = k_search[hit].destination;
-                const int destination_index = route_index(s.active);
-                s.sub_index[destination_index] = k_search[hit].sub;
-                s.force_open =
-                    destination_index < k_item_count && k_items[destination_index].sub_count > 0
-                        ? destination_index
-                        : -1;
-            }
-            else
-            {
-                s.force_open = -1;
+                s.sub_index[route_index(s.active)] = k_search[hit].sub;
             }
         }
 

@@ -37,14 +37,14 @@ std::filesystem::path log_path()
 {
     static const std::filesystem::path path = []
     {
-        std::filesystem::path directory = local_app_data() / L"Solace" / L"logs";
+        std::filesystem::path directory = local_app_data() / L"SZK" / L"logs";
         std::error_code error;
         std::filesystem::create_directories(directory, error);
 
-        std::filesystem::path current = directory / L"solace.log";
+        std::filesystem::path current = directory / L"szk.log";
         if (std::filesystem::file_size(current, error) > maximum_log_size && !error)
         {
-            const std::filesystem::path previous = directory / L"solace.log.1";
+            const std::filesystem::path previous = directory / L"szk.log.1";
             std::filesystem::remove(previous, error);
             error.clear();
             std::filesystem::rename(current, previous, error);
@@ -82,7 +82,7 @@ void write(const char* level, std::string_view subsystem, std::string_view messa
     }
     catch (...)
     {
-        ::OutputDebugStringA("[Solace] diagnostics write failed.\n");
+        ::OutputDebugStringA("[SZK] diagnostics write failed.\n");
     }
 }
 } // namespace

@@ -23,7 +23,7 @@ struct section
 
 const section k_terms[] = {
     {"Demo status",
-     "Solace is an offline interface demonstration. It does not create accounts, connect to an "
+     "SZK is an offline interface demonstration. It does not create accounts, connect to an "
      "online service, or grant access to a product."},
     {"Local input",
      "Text entered in the demonstration remains in the running process for the current session. "
@@ -35,7 +35,7 @@ const section k_terms[] = {
      "The source code is available under the repository's MIT license. Bundled media and provider "
      "marks remain subject to the notices shipped with the project."},
     {"No billing",
-     "Solace has no plans, subscriptions, purchases, or payment processing. Any product or account "
+     "SZK has no plans, subscriptions, purchases, or payment processing. Any product or account "
      "language shown elsewhere is sample interface content."},
     {"Availability",
      "The project is provided as a demonstration without a hosted service or availability "
@@ -47,7 +47,7 @@ const section k_terms[] = {
 
 const section k_privacy[] = {
     {"No collection",
-     "Solace does not contact a server, create an account, use analytics, or transmit the contents "
+     "SZK does not contact a server, create an account, use analytics, or transmit the contents "
      "of its demonstration fields."},
     {"Input fields",
      "Email and password values exist only in the application's memory while it is running. They "
@@ -56,7 +56,7 @@ const section k_privacy[] = {
      "Local diagnostic logs record startup, shutdown, and rendering failures. They do not record "
      "the contents of email, password, or other form fields."},
     {"Local assets",
-     "Images and interface data are loaded from the packaged assets directory. Solace does not "
+     "Images and interface data are loaded from the packaged assets directory. SZK does not "
      "upload those files or inspect unrelated files on the computer."},
     {"No cookies",
      "This native Windows demonstration does not use browser cookies, advertising identifiers, or "

@@ -299,6 +299,31 @@ void draw(id which, ImDrawList* dl, const ImVec2& tl, float box, ImU32 col)
         path("M12 5v14");
         break;
 
+    case id::cpu:
+        rect(4, 4, 16, 16, 2);
+        rect(9, 9, 6, 6, 1);
+        path("M9 1v3");
+        path("M15 1v3");
+        path("M9 20v3");
+        path("M15 20v3");
+        path("M1 9h3");
+        path("M20 9h3");
+        path("M1 15h3");
+        path("M20 15h3");
+        break;
+
+    case id::zap:
+        path("M13 2L3 14L12 14L11 22L21 10L12 10Z");
+        break;
+
+    case id::trash:
+        path("M3 6h18");
+        path("M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2");
+        path("M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6");
+        path("M10 11v6");
+        path("M14 11v6");
+        break;
+
     case id::command:
         path("M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3");
         break;

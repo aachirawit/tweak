@@ -15,25 +15,13 @@ struct credit_profile
 
 namespace profiles
 {
-constexpr credit_profile pondot{
-    "Pondot",
-    "github.com/poncippg-spec",
-    "P",
-    "Pondot",
-    "github.com/poncippg-spec/Free-Solace-ImGui-Interface",
-};
-
-constexpr credit_profile placeholder{
-    "Nova Dev",
-    "github.com/dev-placeholder",
-    "ND",
-    "Nova Dev",
-    "github.com/dev-placeholder/Free-Solace-ImGui-Interface",
+constexpr credit_profile szk{
+    "SZK", "SZK", "S", "SZK", "SZK",
 };
 } // namespace profiles
 
 // Select the visible creator profile.
-constexpr const credit_profile& active = profiles::pondot;
+constexpr const credit_profile& active = profiles::szk;
 
 constexpr const char* product = solace::product_info::name;
 
@@ -44,5 +32,5 @@ constexpr const char* user_initials = active.user_initials;
 constexpr const char* author = active.author;
 constexpr const char* repo = active.repo;
 
-constexpr const char* game = "Solace Alpha";
+constexpr const char* game = "SZK";
 } // namespace solace::brand

@@ -51,7 +51,7 @@ namespace
 {
 void log_compile_error(const char* debug_name, ID3DBlob* errors)
 {
-    std::string message = "[Solace] ";
+    std::string message = "[SZK] ";
     message += debug_name ? debug_name : "pixel shader";
     message += " failed to compile:\n";
     ::OutputDebugStringA(message.c_str());

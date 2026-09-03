@@ -16,6 +16,9 @@
     <Filter Include="Auth">
       <UniqueIdentifier>{1097BB8E-99B6-43F0-B40F-C8EE2B40456B}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Backend">
+      <UniqueIdentifier>{6C2E8E36-6C0B-4C41-9A0B-2E7B0F6A9C11}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Assets">
       <UniqueIdentifier>{D95EBCFC-E0BA-4372-951B-418313DCAD40}</UniqueIdentifier>
     </Filter>
@@ -72,6 +75,15 @@
     <Image Include="src\resources\solace.ico">
       <Filter>Resources</Filter>
     </Image>
+    <None Include="src\resources\embedded\nvidiaProfileInspector.exe">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="src\resources\embedded\Reference.xml">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="src\resources\embedded\Settings.nip">
+      <Filter>Resources</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -121,6 +133,33 @@
     </ClCompile>
     <ClCompile Include="src\assets\asset_io.cpp">
       <Filter>Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\system_monitor.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\activity_log.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\cleanup_tweaks.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\os_tweaks.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\hardware_info.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\debloat_tweaks.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\gpu_tweaks.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\power_plan.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\reshade_manager.cpp">
+      <Filter>Backend</Filter>
     </ClCompile>
     <ClCompile Include="src\assets\images.cpp">
       <Filter>Assets</Filter>
@@ -261,6 +300,33 @@
     </ClInclude>
     <ClInclude Include="src\assets\asset_io.h">
       <Filter>Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\backend\system_monitor.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\backend\activity_log.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\backend\cleanup_tweaks.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\backend\os_tweaks.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\backend\hardware_info.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\backend\debloat_tweaks.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\backend\gpu_tweaks.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\backend\power_plan.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\backend\reshade_manager.h">
+      <Filter>Backend</Filter>
     </ClInclude>
     <ClInclude Include="src\assets\images.h">
       <Filter>Assets</Filter>

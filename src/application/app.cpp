@@ -22,7 +22,7 @@ enum class screen_id
 
 struct app_state
 {
-    screen_id screen = screen_id::signup;
+    screen_id screen = screen_id::menu; // TEMP: skip auth for UI preview
     float elapsed = 0.f;
 
     legal_document document = legal_document::terms;

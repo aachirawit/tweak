@@ -1,8 +1,20 @@
 #include <windows.h>
 
 #define IDI_SOLACE 101
+#define IDR_NVIDIA_PROFILE_INSPECTOR_EXE 201
+#define IDR_NVIDIA_PROFILE_INSPECTOR_XML 202
+#define IDR_NVIDIA_PROFILE_INSPECTOR_NIP 203
 
 IDI_SOLACE ICON "solace.ico"
+
+// NVIDIA Profile Inspector by Orbmu2k (open source), bundled so the app is
+// a single self-contained exe. Extracted to a temp folder and launched on
+// demand — see backend::launch_nvidia_profile_inspector().
+IDR_NVIDIA_PROFILE_INSPECTOR_EXE RCDATA "embedded/nvidiaProfileInspector.exe"
+IDR_NVIDIA_PROFILE_INSPECTOR_XML RCDATA "embedded/Reference.xml"
+// SapphireOS's own curated driver-setting profile — extracted alongside
+// the tool so the user can import it (File > Import) if they want it.
+IDR_NVIDIA_PROFILE_INSPECTOR_NIP RCDATA "embedded/Settings.nip"
 
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION 0,1,0,0
@@ -21,13 +33,13 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "CompanyName", "Pondot\0"
-            VALUE "FileDescription", "Solace ImGui Interface\0"
+            VALUE "CompanyName", "SZK\0"
+            VALUE "FileDescription", "SZK Interface\0"
             VALUE "FileVersion", "0.1.0.0\0"
-            VALUE "InternalName", "Solace\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 Pondot\0"
+            VALUE "InternalName", "SZK\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 SZK\0"
             VALUE "OriginalFilename", "Solace.exe\0"
-            VALUE "ProductName", "Solace\0"
+            VALUE "ProductName", "SZK\0"
             VALUE "ProductVersion", "0.1.0\0"
         END
     END
