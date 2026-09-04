@@ -157,17 +157,18 @@ void account_block(ImDrawList* dl, const ImRect& panel, float y, const row_anim&
     const float avatar = px(32.f);
     const ImVec2 at(panel.Min.x + px(12.f), y + a.dy + (px(k_account_h) - avatar) * 0.5f);
 
-    if (!avatars::draw(dl, avatars::me(), at, avatar, a.opacity))
-    {
-        dl->AddRectFilled(at, ImVec2(at.x + avatar, at.y + avatar),
-                          mo::with_alpha(c_avatar, a.opacity), avatar * 0.5f);
-
-        ImFont* af = font_semibold(text_xs);
-        draw_text(dl, af,
-                  ImVec2(at.x + avatar * 0.5f - text_width(af, brand::user_initials) * 0.5f,
-                         at.y + avatar * 0.5f - af->LegacySize * 0.5f),
-                  mo::with_alpha(c_background, a.opacity), brand::user_initials);
-    }
+    // SZK mark tile, matching the sidebar footer avatar - the account is the
+    // licence, so the brand stands in for a profile photo.
+    const float radius = avatar * 0.28f;
+    dl->AddRectFilled(at, ImVec2(at.x + avatar, at.y + avatar),
+                      mo::with_alpha(c_card_raised, a.opacity), radius);
+    dl->AddRect(ImVec2(at.x + px(0.5f), at.y + px(0.5f)),
+                ImVec2(at.x + avatar - px(0.5f), at.y + avatar - px(0.5f)),
+                mo::with_alpha(c_border_strong, a.opacity), radius, px(1.f), ImDrawFlags_None);
+    const float glyph = avatar * 0.62f;
+    const float inset = (avatar - glyph) * 0.5f;
+    icons::draw(icons::id::szk_mark, dl, ImVec2(at.x + inset, at.y + inset), glyph,
+                mo::with_alpha(c_accent, a.opacity));
 
     ImFont* nf = font_medium(text_sm);
     row_text(dl, nf,

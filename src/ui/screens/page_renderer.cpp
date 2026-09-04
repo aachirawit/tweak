@@ -3175,12 +3175,21 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         const ImRect card(ImVec2(x, y), ImVec2(x + col, y + px(96.f)));
         panel(dl, card, alpha);
 
+        // SZK mark tile, matching the sidebar footer and profile-menu avatars.
         const float avatar = px(56.f);
         const ImVec2 at(card.Min.x + px(sp_5), card.GetCenter().y - avatar * 0.5f);
-        if (!avatars::draw(dl, avatars::me(), at, avatar, alpha))
-            chip(dl, at, avatar, avatar * 0.5f, brand::user_initials,
-                 mo::with_alpha(c_foreground, 0.06f * alpha),
-                 mo::with_alpha(c_muted_foreground, alpha));
+        {
+            const float radius = avatar * 0.28f;
+            dl->AddRectFilled(at, ImVec2(at.x + avatar, at.y + avatar),
+                              mo::with_alpha(c_card_raised, alpha), radius);
+            dl->AddRect(ImVec2(at.x + px(0.5f), at.y + px(0.5f)),
+                        ImVec2(at.x + avatar - px(0.5f), at.y + avatar - px(0.5f)),
+                        mo::with_alpha(c_border_strong, alpha), radius, px(1.f), ImDrawFlags_None);
+            const float glyph = avatar * 0.6f;
+            const float inset = (avatar - glyph) * 0.5f;
+            icons::draw(icons::id::szk_mark, dl, ImVec2(at.x + inset, at.y + inset), glyph,
+                        mo::with_alpha(c_accent, alpha));
+        }
 
         ImFont* nf = font_semibold(text_base);
         draw_text(dl, nf, ImVec2(at.x + avatar + px(sp_4), card.GetCenter().y - px(19.f)),

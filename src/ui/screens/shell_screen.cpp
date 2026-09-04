@@ -329,18 +329,24 @@ void draw_bell(ImDrawList* dl, const ImRect& rect, float alpha)
     dl->AddCircleFilled(at, px(2.5f), mo::with_alpha(c_primary, alpha));
 }
 
-void draw_avatar(ImDrawList* dl, const ImVec2& tl, float size, float alpha)
+// The account avatar is the SZK mark on a dark rounded tile, not a person's
+// photo - the licence is the account, so the brand is the right identity here.
+// Shared by the sidebar footer and the profile dropdown so both match. Square
+// with a soft radius rather than a circle, to read as an app tile beside the
+// round brand tile at the top.
+void draw_brand_avatar(ImDrawList* dl, const ImVec2& tl, float size, float alpha)
 {
-    if (avatars::draw(dl, avatars::me(), tl, size, alpha))
-        return;
-
     const ImVec2 br(tl.x + size, tl.y + size);
-    dl->AddRectFilled(tl, br, mo::with_alpha(c_avatar, alpha), size * 0.5f);
+    const float radius = size * 0.28f;
 
-    ImFont* f = font_semibold(12.f);
-    const float w = text_width(f, brand::user_initials);
-    draw_text(dl, f, ImVec2(tl.x + (size - w) * 0.5f, tl.y + (size - f->LegacySize) * 0.5f),
-              mo::with_alpha(c_background, alpha), brand::user_initials);
+    dl->AddRectFilled(tl, br, mo::with_alpha(c_card_raised, alpha), radius);
+    dl->AddRect(ImVec2(tl.x + px(0.5f), tl.y + px(0.5f)), ImVec2(br.x - px(0.5f), br.y - px(0.5f)),
+                mo::with_alpha(c_border_strong, alpha), radius, px(1.f), ImDrawFlags_None);
+
+    const float glyph = size * 0.62f;
+    const float inset = (size - glyph) * 0.5f;
+    icons::draw(icons::id::szk_mark, dl, ImVec2(tl.x + inset, tl.y + inset), glyph,
+                mo::with_alpha(c_accent, alpha));
 }
 } // namespace
 
@@ -597,7 +603,7 @@ bool menu_screen(float alpha)
                                   px(k_item_round));
 
             const ImVec2 av(origin.x + px(17.f), top + px(16.f));
-            draw_avatar(dl, av, px(36.f), alpha);
+            draw_brand_avatar(dl, av, px(36.f), alpha);
 
             if (label_a > 0.004f)
             {
