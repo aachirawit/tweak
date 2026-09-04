@@ -239,7 +239,7 @@ std::string query_header(HINTERNET request, const wchar_t* name)
 // When TweetNaCl is not vendored, ed25519_available() is false and only the
 // replay check applies. That is a real gap, so it is named in the failure
 // path rather than passed over.
-bool response_is_trusted(const http_response& response)
+bool response_is_trusted(const http_response& response, const std::string& public_key_hex)
 {
     if (response.signature_ed25519.empty() || response.signature_timestamp.empty())
         return false;
@@ -260,7 +260,7 @@ bool response_is_trusted(const http_response& response)
         return true; // replay-checked only; the build warned about this
 
     return ed25519_verify(response.signature_ed25519, response.signature_timestamp + response.body,
-                          keyauth_config::signing_public_key);
+                          public_key_hex);
 }
 
 // One HTTPS POST. Shared by both backends: KeyAuth sends form-urlencoded to
@@ -551,7 +551,8 @@ void run_check(std::string key)
         return;
     }
 
-    if (keyauth_config::check_response_freshness && !response_is_trusted(init))
+    if (keyauth_config::check_response_freshness &&
+        !response_is_trusted(init, keyauth_config::signing_public_key))
     {
         publish(auth_status::failed,
                 "The licence server's reply was not signed or was out of date. If you are on a "
@@ -598,7 +599,8 @@ void run_check(std::string key)
         return;
     }
 
-    if (keyauth_config::check_response_freshness && !response_is_trusted(check))
+    if (keyauth_config::check_response_freshness &&
+        !response_is_trusted(check, keyauth_config::signing_public_key))
     {
         publish(auth_status::failed,
                 "The licence server's reply was not signed or was out of date. Nothing was "
@@ -637,11 +639,10 @@ void run_check(std::string key)
 
 // License Platform check: a single POST /api/activate with a JSON body. The
 // server owns every decision (validity, expiry, HWID binding) and answers with
-// the shared envelope { success, code, data }. Unlike the KeyAuth path there is
-// no per-response signature - the platform is our own first-party server and
-// the reply is trusted over TLS. (If parity with KeyAuth's Ed25519 anti-MITM
-// guarantee is ever needed, sign the activate response server-side and verify
-// it here; the transport and threading below would not change.)
+// the shared envelope { success, code, data }. When the deployment is configured
+// with a signing key, the reply is Ed25519-signed over (timestamp + body) and
+// verified below - the same anti-MITM guarantee as the KeyAuth path. With no
+// signing key set, the reply is trusted over TLS only.
 void run_check_platform(std::string key)
 {
     const std::string hwid = hwid_for_request();
@@ -663,6 +664,21 @@ void run_check_platform(std::string key)
         publish(auth_status::failed,
                 "Could not reach the licence server. Check your internet connection, then try "
                 "again.");
+        g_running.store(false);
+        return;
+    }
+
+    // When the deployment signs its replies, verify the Ed25519 signature over
+    // (timestamp + body) before trusting anything in the response - the same
+    // check the KeyAuth path runs. This is what stops a trusted-root proxy from
+    // forging a "valid" reply. When signing is not configured, the reply is
+    // trusted over TLS only.
+    if (platform_config::signing_enabled() &&
+        !response_is_trusted(res, platform_config::signing_public_key))
+    {
+        publish(auth_status::failed,
+                "The licence server's reply was not signed or was out of date. Nothing was "
+                "unlocked.");
         g_running.store(false);
         return;
     }

@@ -26,3 +26,7 @@
 //   app id  App.appId from the dashboard (Apps -> your app), e.g. "SZK"
 #define SZK_PLATFORM_HOST "your-domain.example"
 #define SZK_PLATFORM_APP_ID "YOUR_APP_ID"
+// Ed25519 public key (64 hex) that verifies signed activation responses. Leave
+// empty to trust replies over TLS only. See ACTIVATION_SIGNING_PRIVATE_KEY in
+// the platform's .env.example for how to generate the keypair.
+#define SZK_PLATFORM_SIGNING_KEY ""

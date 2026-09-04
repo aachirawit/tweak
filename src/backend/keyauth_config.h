@@ -38,6 +38,13 @@
 #ifndef SZK_PLATFORM_APP_ID
 #define SZK_PLATFORM_APP_ID "YOUR_APP_ID" // App.appId from the dashboard, e.g. "SZK"
 #endif
+// Ed25519 PUBLIC key (64 hex chars) that verifies signed activation responses.
+// Empty = the server sends unsigned replies and the client trusts them over TLS
+// only. Set this (and ACTIVATION_SIGNING_PRIVATE_KEY on the server) to close the
+// MITM gap. Public key - safe to compile in.
+#ifndef SZK_PLATFORM_SIGNING_KEY
+#define SZK_PLATFORM_SIGNING_KEY ""
+#endif
 
 namespace szk::keyauth_config
 {
@@ -120,10 +127,21 @@ inline constexpr char api_path[] = "/api/activate";
 // not a secret. The server maps it to the internal app and scopes the key.
 inline constexpr char app_id[] = SZK_PLATFORM_APP_ID;
 
+// Ed25519 public key (hex) for verifying signed activation responses. Empty
+// when the deployment does not sign (TLS-only trust).
+inline constexpr char signing_public_key[] = SZK_PLATFORM_SIGNING_KEY;
+
 [[nodiscard]] constexpr bool is_configured()
 {
     // Both placeholders must be replaced. Checking the first character catches a
     // missing or unfilled keyauth_secrets.h.
     return api_host[0] != 'y' && app_id[0] != 'Y';
+}
+
+// True when the server signs its replies and the client must verify them. When
+// false the reply is trusted over TLS only.
+[[nodiscard]] constexpr bool signing_enabled()
+{
+    return signing_public_key[0] != '\0';
 }
 } // namespace szk::platform_config
