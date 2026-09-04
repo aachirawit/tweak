@@ -318,47 +318,6 @@ float aside_stats(ImDrawList* dl, const ImVec2& pos, float width, float alpha, c
     return (card.Max.y - pos.y);
 }
 
-struct badge_line
-{
-    const char* label;
-    const char* value;
-    badge_status tone;
-};
-
-float aside_badges(ImDrawList* dl, const ImVec2& pos, float width, float alpha, const char* title,
-                   const badge_line* rows, int count, float card_gap = 0.f)
-{
-    float y = pos.y + aside_head(dl, pos, c_muted_foreground, alpha, title) + card_gap;
-
-    const float row_h = px(38.f);
-    const ImRect card(ImVec2(pos.x, y),
-                      ImVec2(pos.x + width, y + px(sp_3) * 2.f + row_h * (float)count));
-    panel(dl, card, alpha);
-
-    ImFont* lf = font_regular(text_sm);
-
-    for (int i = 0; i < count; i++)
-    {
-        const float ry = card.Min.y + px(sp_3) + row_h * (float)i;
-        const float mid = ry + row_h * 0.5f;
-
-        if (i > 0)
-            hairline(dl, card, ry, alpha * 0.9f);
-
-        const float bw = badge_width(rows[i].value);
-        draw_text_ellipsis(dl, lf, ImVec2(card.Min.x + px(sp_4), mid - lf->LegacySize * 0.5f),
-                           mo::with_alpha(c_muted_foreground, alpha), rows[i].label,
-                           width - px(sp_4) * 2.f - bw - px(12.f));
-
-        char bid[24];
-        ImFormatString(bid, IM_ARRAYSIZE(bid), "%s%d", title, i);
-        badge(bid, dl, ImVec2(card.Max.x - px(sp_4) - bw, mid - px(12.f)), rows[i].value,
-              rows[i].tone, false, alpha);
-    }
-
-    return (card.Max.y - pos.y);
-}
-
 float aside_lines(ImDrawList* dl, const ImVec2& pos, float width, float alpha, const char* title,
                   const char* const* lines, int count, float card_gap = 0.f)
 {
@@ -453,15 +412,6 @@ struct page_state
     int pref_digest_day = 0;
     float pref_quiet = 0.34f;
     float reset_cascade = 1e6f;
-
-    int notif_tab = 0;
-    bool notif_read[7] = {false, false, true, false, true, true, true};
-    bool notif_gone[7] = {};
-    mo::spring notif_height[7];
-    float notif_slide[7] = {};
-    float mark_cascade = 1e6f;
-    int notif_undo = -1;
-    float undo_timer = 0.f;
 
     bool sys_mon_inited = false;
     float sys_poll_t = 1e6f;
@@ -1142,37 +1092,6 @@ const pref_group k_pref_groups[] = {
 const char* const k_theme_names[] = {"Light", "Dark", "System"};
 const char* const k_digest_days[] = {"Monday", "Wednesday", "Friday", "Sunday"};
 
-struct notification
-{
-    const char* who;
-    const char* did;
-    const char* about;
-    const char* when;
-    int day;
-    int person;
-    bool mention;
-};
-
-const notification k_notifications[] = {
-    {"Corvid", "moved", "1.4.2 Hotfix to Candidate", "09:41", 0, 0, false},
-    {"Kestrel", "mentioned you in", "Re: controller deadzone", "08:12", 0, 1, true},
-    {"Halcyon", "closed", "Playtest notes", "Yesterday", 1, 2, false},
-    {"Vermillion", "assigned you", "Draft the keybind layout", "Yesterday", 1, 3, true},
-    {"SZK Lab", "shipped", "Photo mode 2.1", "Yesterday", 1, 4, false},
-    {brand::user_name, "shared", "Keybinds, next patch", "Monday", 2, 5, false},
-    {"Orrin", "commented on", "Ray tracing", "Monday", 2, 6, false},
-};
-
-const char* const k_notif_days[] = {"Today", "Yesterday", "Earlier"};
-const char* const k_notif_tabs[] = {"All", "Unread", "Mentions"};
-
-const badge_line k_aside_reports[] = {
-    {"Unread", "2", badge_info},
-    {"Mentions", "2", badge_warn},
-    {"On my presets", "3", badge_good},
-    {"Archived", "41", badge_neutral},
-};
-
 const stat_line k_aside_runs[] = {
     {"Apply on launch", "4m ago"},
     {"Panic key", "1h ago"},
@@ -1184,12 +1103,6 @@ const stat_line k_aside_sessions[] = {
     {"This machine", "Now"},
     {"iPhone", "2h ago"},
     {"Studio iMac", "Yesterday"},
-};
-
-const badge_line k_aside_notif[] = {
-    {"All", "7", badge_neutral},
-    {"Unread", "2", badge_info},
-    {"Mentions", "2", badge_warn},
 };
 
 const stat_line k_aside_about[] = {
@@ -1223,9 +1136,6 @@ float page_aside(ImDrawList* dl, int nav, const ImVec2& pos, float width, float 
     case 10:
         return aside_stats(dl, pos, width, alpha, "SIGNED IN ON", k_aside_sessions,
                            IM_ARRAYSIZE(k_aside_sessions), card_gap);
-    case 11:
-        return aside_badges(dl, pos, width, alpha, "FILTERS", k_aside_notif,
-                            IM_ARRAYSIZE(k_aside_notif), card_gap);
     case 12:
         return aside_stats(dl, pos, width, alpha, "ABOUT", k_aside_about,
                            IM_ARRAYSIZE(k_aside_about), card_gap);
@@ -1340,10 +1250,6 @@ route draw_page(route destination, const char* title, const char* const* subs, i
     float aside_offset = 0.f;
     switch (nav)
     {
-    case 11:
-        aside_offset = tabs_height(tabs_pill) + px(sp_4) + px(28.f);
-        break;
-
     case 12:
         aside_offset = px(26.f);
         break;
@@ -2744,196 +2650,6 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 cy += crow;
             }
             y = box.Max.y + px(sp_5);
-        }
-        break;
-    }
-
-    case 11:
-    {
-        tabs("notif-tabs", ImVec2(x, y), k_notif_tabs, IM_ARRAYSIZE(k_notif_tabs), &s.notif_tab,
-             tabs_pill);
-
-        {
-            const float bw = px(150.f);
-            const float tabs_w = tabs_width(k_notif_tabs, IM_ARRAYSIZE(k_notif_tabs), tabs_pill);
-            const float bx = ImMax(x + tabs_w + px(sp_3), x + col - bw);
-            if (action("mark-notifs", ImVec2(bx, y - px(3.f)), 150.f, btn_idle, "Mark all read"))
-                s.mark_cascade = 0.f;
-        }
-        if (s.mark_cascade < 1e5f)
-        {
-            s.mark_cascade += dt;
-            for (int i = 0; i < IM_ARRAYSIZE(k_notifications); i++)
-                if (s.mark_cascade > (float)i * 0.055f)
-                    s.notif_read[i] = true;
-            if (s.mark_cascade > 1.4f)
-                s.mark_cascade = 1e6f;
-        }
-
-        y += tabs_height(tabs_pill) + px(sp_4);
-
-        const float row_h = px(64.f);
-        int visible[IM_ARRAYSIZE(k_notifications)];
-        int count = 0;
-        for (int i = 0; i < IM_ARRAYSIZE(k_notifications); i++)
-        {
-            if (s.notif_gone[i])
-                continue;
-            if (s.notif_tab == 1 && s.notif_read[i])
-                continue;
-            if (s.notif_tab == 2 && !k_notifications[i].mention)
-                continue;
-            visible[count++] = i;
-        }
-
-        int drawn = 0;
-        int last_day = -1;
-        float total = 0.f;
-        const float start_y = y;
-
-        for (int k = 0; k < count; k++)
-        {
-            const int i = visible[k];
-            const notification& n = k_notifications[i];
-
-            const float open = s.notif_height[i].to(row_h, mo::SPRING_LAYOUT, dt);
-            if (open < 1.f)
-                continue;
-
-            if (n.day != last_day)
-            {
-                last_day = n.day;
-                ImFont* df = font_medium(text_xs);
-                const float t = stagger(drawn);
-                draw_text(dl, df, ImVec2(x + px(2.f), y + px(6.f) + px(8.f) * (1.f - t)),
-                          mo::with_alpha(c_muted_foreground, 0.9f * t * alpha),
-                          k_notif_days[ImClamp(n.day, 0, 2)]);
-                y += px(28.f);
-                total += px(28.f);
-            }
-
-            const float t = stagger(drawn++);
-            const float slide = s.notif_slide[i];
-            const float rx = x + px(16.f) * (1.f - t) + slide;
-            const float row_a = alpha * t * (1.f - ImClamp(slide / px(120.f), 0.f, 1.f));
-
-            const ImRect card(ImVec2(rx, y), ImVec2(rx + col, y + open - px(6.f)));
-
-            dl->PushClipRect(ImVec2(x, y), ImVec2(x + col, y + open), true);
-            panel(dl, card, row_a);
-
-            const bool unread = !s.notif_read[i];
-
-            {
-                ImGui::PushID(1000 + i);
-                mo::spring* bar = ui_runtime::animation_state<mo::spring>(
-                    ImGui::GetCurrentWindow()->GetID("bar"));
-                ImGui::PopID();
-                const float h = bar->to(unread ? px(20.f) : 0.f, mo::SPRING_LAYOUT, dt);
-                if (h > 0.5f)
-                    dl->AddRectFilled(ImVec2(card.Min.x + px(1.f), card.GetCenter().y - h * 0.5f),
-                                      ImVec2(card.Min.x + px(4.f), card.GetCenter().y + h * 0.5f),
-                                      mo::with_alpha(c_primary, row_a), px(2.f));
-            }
-
-            char row_id[24];
-            ImFormatString(row_id, IM_ARRAYSIZE(row_id), "notif%d", i);
-            const ImRect hit(ImVec2(card.Min.x + px(4.f), card.Min.y + px(2.f)),
-                             ImVec2(card.Max.x - px(40.f), card.Max.y - px(2.f)));
-            if (row_hit(dl, row_id, hit, row_a, false) && unread)
-                s.notif_read[i] = true;
-
-            const float av = px(30.f);
-            char ini[3];
-            initials_of(n.who, ini);
-            chip(dl, ImVec2(card.Min.x + px(14.f), card.GetCenter().y - av * 0.5f), av, av * 0.5f,
-                 ini, mo::with_alpha(c_foreground, 0.06f * row_a),
-                 mo::with_alpha(c_muted_foreground, row_a), n.person);
-
-            const float tx = card.Min.x + px(14.f) + av + px(12.f);
-
-            ImFont* wf = unread ? font_semibold(text_sm) : font_medium(text_sm);
-            ImFont* af = font_regular(text_sm);
-            ImFont* tf = font_regular(text_xs);
-
-            const float when_w = text_width(tf, n.when);
-            const float when_r = card.Max.x - px(44.f);
-            const float line_w = (when_r - px(10.f) - when_w) - tx;
-
-            float cx = tx;
-            cx += draw_text_ellipsis(dl, wf, ImVec2(cx, card.GetCenter().y - px(15.f)),
-                                     mo::with_alpha(c_foreground, row_a), n.who, line_w);
-            cx += px(4.f);
-            draw_text_ellipsis(dl, af, ImVec2(cx, card.GetCenter().y - px(15.f)),
-                               mo::with_alpha(c_muted_foreground, row_a), n.did,
-                               line_w - (cx - tx));
-
-            draw_text_ellipsis(dl, af, ImVec2(tx, card.GetCenter().y + px(3.f)),
-                               mo::with_alpha(c_foreground, 0.88f * row_a), n.about, line_w);
-
-            draw_text(dl, tf, ImVec2(when_r - when_w, card.GetCenter().y - tf->LegacySize * 0.5f),
-                      mo::with_alpha(c_muted_foreground, row_a), n.when);
-
-            {
-                char cid[24];
-                ImFormatString(cid, IM_ARRAYSIZE(cid), "x%d", i);
-                const ImRect xb(ImVec2(card.Max.x - px(36.f), card.GetCenter().y - px(13.f)),
-                                ImVec2(card.Max.x - px(10.f), card.GetCenter().y + px(13.f)));
-
-                ImGui::PushID(cid);
-                const ImGuiID xid = ImGui::GetCurrentWindow()->GetID("x");
-                ImGui::PopID();
-                ImGui::SetCursorScreenPos(xb.Min);
-                ImGui::ItemSize(ImVec2(0, 0));
-                ImGui::ItemAdd(xb, xid);
-
-                bool xh = false, xheld = false;
-                if (ImGui::ButtonBehavior(xb, xid, &xh, &xheld))
-                {
-                    s.notif_undo = i;
-                    s.undo_timer = 0.f;
-                }
-                if (xh)
-                    dl->AddCircleFilled(xb.GetCenter(), px(13.f),
-                                        mo::with_alpha(c_foreground, 0.07f * row_a));
-                icons::draw(icons::id::cross, dl,
-                            ImVec2(xb.GetCenter().x - px(7.f), xb.GetCenter().y - px(7.f)),
-                            px(14.f),
-                            mo::with_alpha(c_muted_foreground, (xh ? 1.f : 0.7f) * row_a));
-            }
-
-            dl->PopClipRect();
-
-            y += open;
-            total += open;
-        }
-
-        if (s.notif_undo >= 0)
-        {
-            const int i = s.notif_undo;
-            s.undo_timer += dt;
-            s.notif_slide[i] = ImMin(px(140.f), s.notif_slide[i] + dt * px(900.f));
-            if (s.notif_slide[i] >= px(120.f))
-                s.notif_height[i].to(0.f, mo::SPRING_LAYOUT, dt);
-
-            if (s.undo_timer > 0.32f)
-            {
-                s.notif_gone[i] = true;
-                s.notif_height[i] = mo::spring();
-                s.notif_slide[i] = 0.f;
-                s.notif_undo = -1;
-                toast("Dismissed", k_notifications[i].about, toast_neutral);
-            }
-        }
-
-        if (drawn == 0)
-        {
-            const ImRect card(ImVec2(x, start_y), ImVec2(x + col, start_y + px(120.f)));
-            const float t = mo::EASE_OUT(ImClamp(s.entered / 0.4f, 0.f, 1.f));
-            panel(dl, card, alpha * t);
-            empty_state(dl, card, s.notif_tab == 2 ? "Nobody has said your name." : "Nothing new.",
-                        alpha * t);
-            y = card.Max.y;
         }
         break;
     }

@@ -308,28 +308,6 @@ sidebar_state& state()
     return s;
 }
 
-void draw_bell(ImDrawList* dl, const ImRect& rect, float alpha)
-{
-    const bool hot = notifications_trigger(rect);
-
-    if (hot || notifications_open())
-        dl->AddRectFilled(rect.Min, rect.Max, mo::with_alpha(c_card, alpha), px(10.f));
-
-    const float box = px(16.f);
-    icons::draw(
-        icons::id::bell, dl,
-        ImVec2(rect.GetCenter().x - box * 0.5f, rect.GetCenter().y - box * 0.5f), box,
-        mo::with_alpha(hot || notifications_open() ? c_foreground : c_muted_foreground, alpha));
-
-    const int unread = notifications_unread();
-    if (unread <= 0)
-        return;
-
-    const ImVec2 at(rect.GetCenter().x + px(5.f), rect.GetCenter().y - px(5.f));
-    dl->AddCircleFilled(at, px(4.f), mo::with_alpha(c_background, alpha));
-    dl->AddCircleFilled(at, px(2.5f), mo::with_alpha(c_primary, alpha));
-}
-
 // The account avatar is the SZK mark on a dark rounded tile, not a person's
 // photo - the licence is the account, so the brand is the right identity here.
 // Shared by the sidebar footer and the profile dropdown so both match. Square
@@ -675,12 +653,10 @@ bool menu_screen(float alpha)
                                      ImVec2(bar_right, origin.y + px(52.f)));
             theme_toggle("theme", toggle_rect, 16.f, alpha);
 
-            const ImRect bell_rect(ImVec2(toggle_rect.Min.x - gap - button, origin.y + px(12.f)),
-                                   ImVec2(toggle_rect.Min.x - gap, origin.y + px(52.f)));
-            draw_bell(dl, bell_rect, alpha);
-
+            // The notification bell used to sit between search and the theme
+            // toggle; with notifications gone, search extends to the toggle.
             const float crumb_end = ix + px(81.f) + text_width(f14, crumb_text) + px(24.f);
-            const float search_right = bell_rect.Min.x - gap;
+            const float search_right = toggle_rect.Min.x - gap;
             const float search_left = ImMax(crumb_end, search_right - px(search_trigger_w));
 
             if (search_right - search_left >= px(160.f))
@@ -747,16 +723,12 @@ bool menu_screen(float alpha)
         case profile_open_page:
             s.active = route::profile;
             break;
-        case profile_open_notifications:
-            s.active = route::notifications;
-            break;
         case profile_open_preferences:
             s.active = route::preferences;
             break;
         default:
             break;
         }
-        notifications_panel(plate, alpha);
 
         flush_overlays();
         toasts_draw(plate);

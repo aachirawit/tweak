@@ -5,17 +5,10 @@
 namespace szk
 {
 
-bool notifications_trigger(const ImRect& rect);
-bool notifications_open();
-int notifications_unread();
-
-void notifications_panel(const ImRect& viewport, float alpha);
-
 enum profile_choice
 {
     profile_none = 0,
     profile_open_page,
-    profile_open_notifications,
     profile_open_preferences,
     profile_sign_out,
 };

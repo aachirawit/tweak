@@ -35,33 +35,9 @@ struct action
 
 const action k_profile_actions[] = {
     {"Profile", icons::id::user, nullptr, false},
-    {"Notifications", icons::id::bell, "4", false},
     {"Preferences", icons::id::settings, nullptr, false},
     {"Sign out", icons::id::log_out, nullptr, true},
 };
-
-struct notice
-{
-    const char* title;
-    const char* detail;
-    const char* when;
-    icons::id icon;
-    bool unread;
-};
-
-const notice k_notices[] = {
-    {"1.5 Seasons moved to Playtest", "Corvid cut the build", "12m ago", icons::id::target, true},
-    {"Three tasks were assigned", "Kestrel, from the playtest", "1h ago", icons::id::list_todo,
-     true},
-    {"Photo mode passed review", "No regressions on a clean build", "2h ago", icons::id::check,
-     true},
-    {"Weekly digest is ready", "Monday 09:00, local time", "Yesterday", icons::id::workflow, false},
-    {"SZK Lab joined the playtest", "Invited by you", "Monday", icons::id::circle_user_round,
-     false},
-};
-
-constexpr int k_notice_count = IM_ARRAYSIZE(k_notices);
-constexpr float k_notice_row = 56.f;
 
 constexpr int k_profile_action_count = IM_ARRAYSIZE(k_profile_actions);
 
@@ -76,8 +52,6 @@ struct panel_state
 struct menu_state
 {
     panel_state profile;
-    panel_state notifications;
-    bool notice_read[k_notice_count] = {};
 };
 
 menu_state& state()
@@ -189,7 +163,9 @@ bool action_row(ImDrawList* dl, const ImRect& panel, float y, const row_anim& a,
     return hot && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
 }
 
-bool trigger(panel_state& self, panel_state& other, const char* id, const ImRect& rect)
+// The profile menu is the only dropdown left, so a trigger just toggles it -
+// there is no sibling panel to close any more.
+bool trigger(panel_state& self, const char* id, const ImRect& rect)
 {
     ImGuiWindow* window = ImGui::GetCurrentWindow();
 
@@ -207,11 +183,7 @@ bool trigger(panel_state& self, panel_state& other, const char* id, const ImRect
     ImGui::PopID();
 
     if (pressed)
-    {
         self.open = !self.open;
-        if (self.open)
-            other.open = false;
-    }
 
     return hovered;
 }
@@ -244,144 +216,6 @@ bool begin_panel(panel_state& s, const ImRect& panel, int row_count, bool* out_e
 }
 } // namespace
 
-bool notifications_open()
-{
-    return state().notifications.open;
-}
-
-int notifications_unread()
-{
-    const menu_state& m = state();
-    int n = 0;
-    for (int i = 0; i < k_notice_count; i++)
-        if (k_notices[i].unread && !m.notice_read[i])
-            n++;
-    return n;
-}
-
-bool notifications_trigger(const ImRect& rect)
-{
-    menu_state& m = state();
-    return trigger(m.notifications, m.profile, "notifications", rect);
-}
-
-void notifications_panel(const ImRect& viewport, float alpha)
-{
-    menu_state& m = state();
-    panel_state& s = m.notifications;
-    if (!s.have_trigger)
-        return;
-
-    ImDrawList* dl = ImGui::GetCurrentWindow()->DrawList;
-
-    const float w = px(320.f);
-    const float h = px(k_pad) * 2.f + px(k_label_h) + px(k_notice_row) * (float)k_notice_count +
-                    px(k_rule) + px(k_row);
-
-    const float left =
-        ImClamp(s.trigger.Max.x - w, viewport.Min.x + px(16.f), viewport.Max.x - px(16.f) - w);
-    const float top = ImMin(s.trigger.Max.y + px(6.f), viewport.Max.y - px(16.f) - h);
-    const ImRect panel(ImVec2(left, top), ImVec2(left + w, top + h));
-
-    bool exiting = false;
-    float open = 0.f;
-    if (!begin_panel(s, panel, k_notice_count + 1, &exiting, &open))
-        return;
-    open *= alpha;
-
-    panel_surface(dl, panel, open);
-
-    const ImVec2 mouse = ImGui::GetIO().MousePos;
-    int index = 0;
-    float y = panel.Min.y + px(k_pad);
-
-    {
-        ImFont* lf = font_regular(10.f);
-        draw_text_tracked(dl, lf, ImVec2(panel.Min.x + px(16.f), y + line_top(lf, px(k_label_h))),
-                          mo::with_alpha(c_muted_foreground, open), "NOTIFICATIONS", px(1.6f));
-
-        const int unread = notifications_unread();
-        if (unread > 0)
-        {
-            char count[16];
-            ImFormatString(count, IM_ARRAYSIZE(count), "%d new", unread);
-            ImFont* cf = font_medium(text_xs);
-            draw_text(dl, cf,
-                      ImVec2(panel.Max.x - px(16.f) - text_width(cf, count),
-                             y + line_top(cf, px(k_label_h))),
-                      mo::with_alpha(c_primary, open), count);
-        }
-        y += px(k_label_h);
-    }
-
-    for (int i = 0; i < k_notice_count; i++)
-    {
-        const row_anim a = row_at(s, index++, exiting, open);
-        const ImRect r(ImVec2(panel.Min.x + px(k_pad), y + a.dy),
-                       ImVec2(panel.Max.x - px(k_pad), y + a.dy + px(k_notice_row)));
-
-        const bool hot = !exiting && r.Contains(mouse);
-        if (hot)
-        {
-            dl->AddRectFilled(r.Min, r.Max, mo::with_alpha(c_foreground, 0.06f * a.opacity),
-                              px(8.f));
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-                m.notice_read[i] = true;
-        }
-
-        const bool unread = k_notices[i].unread && !m.notice_read[i];
-
-        const float chip = px(28.f);
-        const ImVec2 at(r.Min.x + px(10.f), r.GetCenter().y - chip * 0.5f);
-        dl->AddRectFilled(at, ImVec2(at.x + chip, at.y + chip),
-                          mo::with_alpha(c_primary, (unread ? 0.10f : 0.05f) * a.opacity),
-                          chip * 0.5f);
-        icons::draw(k_notices[i].icon, dl, ImVec2(at.x + px(6.f), at.y + px(6.f)), px(16.f),
-                    mo::with_alpha(unread ? c_primary : c_muted_foreground, a.opacity));
-
-        const float tx = at.x + chip + px(10.f);
-        const float text_w = r.Max.x - px(12.f) - px(52.f) - tx;
-
-        dl->PushClipRect(ImVec2(tx, r.Min.y), ImVec2(ImMax(tx, tx + text_w), r.Max.y), true);
-
-        ImFont* tf = unread ? font_medium(text_sm) : font_regular(text_sm);
-        row_text(dl, tf, ImVec2(tx, r.Min.y + px(10.f) + line_top(tf, px(leading_sm))),
-                 mo::with_alpha(c_foreground, a.opacity), k_notices[i].title, a.blur);
-
-        ImFont* df = font_regular(text_xs);
-        row_text(dl, df, ImVec2(tx, r.Min.y + px(30.f) + line_top(df, px(leading_xs))),
-                 mo::with_alpha(c_muted_foreground, a.opacity), k_notices[i].detail, a.blur);
-        dl->PopClipRect();
-
-        ImFont* wf = font_regular(text_xs);
-        draw_text(
-            dl, wf,
-            ImVec2(r.Max.x - px(12.f) - text_width(wf, k_notices[i].when), r.Min.y + px(12.f)),
-            mo::with_alpha(c_muted_foreground, a.opacity), k_notices[i].when);
-
-        if (unread)
-            dl->AddCircleFilled(ImVec2(r.Max.x - px(16.f), r.Min.y + px(36.f)), px(3.f),
-                                mo::with_alpha(c_primary, a.opacity));
-
-        y += px(k_notice_row);
-    }
-
-    rule_at(dl, panel, y, open);
-    y += px(k_rule);
-
-    {
-        const row_anim a = row_at(s, index++, exiting, open);
-        const action mark{"Mark all as read", icons::id::check, nullptr, false};
-        if (action_row(dl, panel, y, a, mark, exiting, mouse))
-        {
-            for (int i = 0; i < k_notice_count; i++)
-                m.notice_read[i] = true;
-            s.open = false;
-            toast("Notifications cleared", "Nothing left to catch up on", toast_success);
-        }
-    }
-}
-
 bool profile_menu_open()
 {
     return state().profile.open;
@@ -390,7 +224,7 @@ bool profile_menu_open()
 bool profile_trigger(const ImRect& rect)
 {
     menu_state& m = state();
-    return trigger(m.profile, m.notifications, "profile", rect);
+    return trigger(m.profile, "profile", rect);
 }
 
 profile_choice profile_menu(const ImRect& viewport, float alpha)
@@ -443,8 +277,6 @@ profile_choice profile_menu(const ImRect& viewport, float alpha)
                 chosen = profile_sign_out;
             else if (i == 0)
                 chosen = profile_open_page;
-            else if (i == 1)
-                chosen = profile_open_notifications;
             else
                 chosen = profile_open_preferences;
         }

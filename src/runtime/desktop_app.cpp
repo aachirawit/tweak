@@ -76,7 +76,7 @@ std::optional<LRESULT> handle_window_message(void*, HWND window, UINT message, W
 
     case WM_KEYDOWN:
         if (w_param == VK_ESCAPE && !szk::morphing_search_open() && !szk::overlay_open() &&
-            !szk::profile_menu_open() && !szk::notifications_open())
+            !szk::profile_menu_open())
         {
             ::PostMessageW(window, WM_CLOSE, 0, 0);
             return static_cast<LRESULT>(0);
