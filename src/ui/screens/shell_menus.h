@@ -5,13 +5,6 @@
 namespace szk
 {
 
-bool target_trigger(const ImRect& rect);
-bool target_menu_open();
-const char* target_name();
-int target_index();
-
-bool target_menu(const ImRect& viewport, float alpha);
-
 bool notifications_trigger(const ImRect& rect);
 bool notifications_open();
 int notifications_unread();

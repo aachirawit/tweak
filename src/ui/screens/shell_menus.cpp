@@ -19,24 +19,11 @@ constexpr float k_item_blur = 3.f;
 constexpr float k_panel_w = 232.f;
 constexpr float k_pad = 4.f;
 constexpr float k_row = 34.f;
-constexpr float k_target_row = 40.f;
 constexpr float k_account_h = 56.f;
 constexpr float k_rule = 9.f;
 constexpr float k_label_h = 24.f;
 
 constexpr ImU32 c_avatar = IM_COL32(0xD5, 0xFF, 0x66, 0xFF);
-
-struct target_entry
-{
-    const char* name;
-    const char* version;
-};
-
-const target_entry k_targets[] = {
-    {brand::game, "1.4.2"},
-    {"SZK Beta", "0.9.7"},
-    {"SZK Gamma", "2.1.0"},
-};
 
 struct action
 {
@@ -44,13 +31,6 @@ struct action
     icons::id icon;
     const char* badge;
     bool destructive;
-};
-
-const action k_target_actions[] = {
-    {"Add a game", icons::id::plus, nullptr, false},
-    {"Game settings", icons::id::settings, nullptr, false},
-    {"Invite a friend", icons::id::user_plus, nullptr, false},
-    {"Sign out", icons::id::log_out, nullptr, true},
 };
 
 const action k_profile_actions[] = {
@@ -83,8 +63,6 @@ const notice k_notices[] = {
 constexpr int k_notice_count = IM_ARRAYSIZE(k_notices);
 constexpr float k_notice_row = 56.f;
 
-constexpr int k_target_count = IM_ARRAYSIZE(k_targets);
-constexpr int k_target_action_count = IM_ARRAYSIZE(k_target_actions);
 constexpr int k_profile_action_count = IM_ARRAYSIZE(k_profile_actions);
 
 struct panel_state
@@ -97,10 +75,8 @@ struct panel_state
 
 struct menu_state
 {
-    panel_state target;
     panel_state profile;
     panel_state notifications;
-    int current_target = 0;
     bool notice_read[k_notice_count] = {};
 };
 
@@ -213,8 +189,7 @@ bool action_row(ImDrawList* dl, const ImRect& panel, float y, const row_anim& a,
     return hot && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
 }
 
-bool trigger(panel_state& self, panel_state& other_a, panel_state& other_b, const char* id,
-             const ImRect& rect)
+bool trigger(panel_state& self, panel_state& other, const char* id, const ImRect& rect)
 {
     ImGuiWindow* window = ImGui::GetCurrentWindow();
 
@@ -235,10 +210,7 @@ bool trigger(panel_state& self, panel_state& other_a, panel_state& other_b, cons
     {
         self.open = !self.open;
         if (self.open)
-        {
-            other_a.open = false;
-            other_b.open = false;
-        }
+            other.open = false;
     }
 
     return hovered;
@@ -272,148 +244,6 @@ bool begin_panel(panel_state& s, const ImRect& panel, int row_count, bool* out_e
 }
 } // namespace
 
-bool target_menu_open()
-{
-    return state().target.open;
-}
-const char* target_name()
-{
-    return k_targets[state().current_target].name;
-}
-int target_index()
-{
-    return state().current_target;
-}
-
-bool target_trigger(const ImRect& rect)
-{
-    menu_state& m = state();
-    return trigger(m.target, m.profile, m.notifications, "target", rect);
-}
-
-bool target_menu(const ImRect& viewport, float alpha)
-{
-    menu_state& m = state();
-    panel_state& s = m.target;
-    if (!s.have_trigger)
-        return false;
-
-    ImDrawList* dl = ImGui::GetCurrentWindow()->DrawList;
-
-    const float w = px(k_panel_w);
-    const float h = px(k_pad) * 2.f + px(k_account_h) + px(k_rule) + px(k_label_h) +
-                    px(k_target_row) * (float)k_target_count + px(k_rule) +
-                    px(k_row) * (float)(k_target_action_count - 1) + px(k_rule) + px(k_row);
-
-    const float left = ImMin(s.trigger.Min.x, viewport.Max.x - px(16.f) - w);
-    const float top = ImMin(s.trigger.Max.y + px(6.f), viewport.Max.y - px(16.f) - h);
-    const ImRect panel(ImVec2(left, top), ImVec2(left + w, top + h));
-
-    bool exiting = false;
-    float open = 0.f;
-    if (!begin_panel(s, panel, k_target_count + k_target_action_count, &exiting, &open))
-        return false;
-    open *= alpha;
-
-    panel_surface(dl, panel, open);
-
-    const ImVec2 mouse = ImGui::GetIO().MousePos;
-    bool sign_out = false;
-    int index = 0;
-    float y = panel.Min.y + px(k_pad);
-
-    account_block(dl, panel, y, row_at(s, index++, exiting, open));
-    y += px(k_account_h);
-    rule_at(dl, panel, y, open);
-    y += px(k_rule);
-
-    {
-        ImFont* lf = font_regular(10.f);
-        draw_text_tracked(dl, lf, ImVec2(panel.Min.x + px(16.f), y + line_top(lf, px(k_label_h))),
-                          mo::with_alpha(c_muted_foreground, open), "GAMES", px(1.6f));
-        y += px(k_label_h);
-    }
-
-    for (int i = 0; i < k_target_count; i++)
-    {
-        const row_anim a = row_at(s, index++, exiting, open);
-        const ImRect r(ImVec2(panel.Min.x + px(k_pad), y + a.dy),
-                       ImVec2(panel.Max.x - px(k_pad), y + a.dy + px(k_target_row)));
-
-        const bool hot = !exiting && r.Contains(mouse);
-        if (hot)
-        {
-            dl->AddRectFilled(r.Min, r.Max, mo::with_alpha(c_foreground, 0.06f * a.opacity),
-                              px(8.f));
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-            {
-                m.current_target = i;
-                s.open = false;
-                toast("Game switched", k_targets[i].name, toast_info);
-            }
-        }
-
-        const float chip = px(24.f);
-        const ImVec2 at(r.Min.x + px(8.f), r.GetCenter().y - chip * 0.5f);
-
-        // SZK mark on a dark chip, matching the sidebar brand tile and the
-        // taskbar icon rather than the placeholder logo PNGs this list used to
-        // pull per target.
-        dl->AddRectFilled(at, ImVec2(at.x + chip, at.y + chip),
-                          mo::with_alpha(c_card_raised, a.opacity), px(7.f));
-        icons::draw(icons::id::szk_mark, dl, ImVec2(at.x + px(5.f), at.y + px(5.f)), px(14.f),
-                    mo::with_alpha(c_accent, a.opacity));
-
-        ImFont* nf = font_medium(text_sm);
-        row_text(dl, nf,
-                 ImVec2(at.x + chip + px(10.f), r.Min.y + px(6.f) + line_top(nf, px(leading_sm))),
-                 mo::with_alpha(i == m.current_target || hot ? c_foreground : c_muted_foreground,
-                                a.opacity),
-                 k_targets[i].name, a.blur);
-
-        ImFont* mf = font_regular(text_xs);
-        row_text(dl, mf,
-                 ImVec2(at.x + chip + px(10.f), r.Min.y + px(22.f) + line_top(mf, px(leading_xs))),
-                 mo::with_alpha(c_muted_foreground, 0.8f * a.opacity), k_targets[i].version,
-                 a.blur);
-
-        if (i == m.current_target)
-            icons::draw(icons::id::check, dl,
-                        ImVec2(r.Max.x - px(10.f) - px(14.f), r.GetCenter().y - px(7.f)), px(14.f),
-                        mo::with_alpha(c_foreground, a.opacity));
-
-        y += px(k_target_row);
-    }
-
-    rule_at(dl, panel, y, open);
-    y += px(k_rule);
-
-    for (int i = 0; i < k_target_action_count; i++)
-    {
-
-        if (k_target_actions[i].destructive)
-        {
-            rule_at(dl, panel, y, open);
-            y += px(k_rule);
-        }
-
-        const row_anim a = row_at(s, index++, exiting, open);
-        if (action_row(dl, panel, y, a, k_target_actions[i], exiting, mouse))
-        {
-            s.open = false;
-            if (k_target_actions[i].destructive)
-                sign_out = true;
-            else if (i == 0)
-                toast("Nothing to name yet", "Adding a game is stubbed in the demo");
-            else
-                toast(k_target_actions[i].label, k_targets[m.current_target].name, toast_info);
-        }
-        y += px(k_row);
-    }
-
-    return sign_out;
-}
-
 bool notifications_open()
 {
     return state().notifications.open;
@@ -432,7 +262,7 @@ int notifications_unread()
 bool notifications_trigger(const ImRect& rect)
 {
     menu_state& m = state();
-    return trigger(m.notifications, m.target, m.profile, "notifications", rect);
+    return trigger(m.notifications, m.profile, "notifications", rect);
 }
 
 void notifications_panel(const ImRect& viewport, float alpha)
@@ -560,7 +390,7 @@ bool profile_menu_open()
 bool profile_trigger(const ImRect& rect)
 {
     menu_state& m = state();
-    return trigger(m.profile, m.target, m.notifications, "profile", rect);
+    return trigger(m.profile, m.notifications, "profile", rect);
 }
 
 profile_choice profile_menu(const ImRect& viewport, float alpha)

@@ -272,43 +272,6 @@ void initials_of(const char* name, char out[3])
     out[2] = 0;
 }
 
-enum act_kind
-{
-    act_stage = 0,
-    act_note,
-    act_shipped,
-    act_task,
-    act_authors,
-    act_quiet
-};
-
-const ImU32 k_act_tone[] = {
-    IM_COL32(0x4C, 0x8D, 0xF6, 0xFF),
-    IM_COL32(0x9A, 0x7C, 0xF7, 0xFF),
-    c_success,
-    c_amber_400,
-    IM_COL32(0x36, 0xB8, 0xC0, 0xFF),
-    c_muted_foreground,
-};
-
-struct activity_row
-{
-    const char* who;
-    const char* what;
-    const char* when;
-    act_kind kind;
-};
-
-const activity_row k_activity[] = {
-    {"Graphics", "set Shadows to High", "12m ago", act_stage},
-    {"Camera", "turned Depth of field on", "48m ago", act_note},
-    {"Display", "set Film grain to 25%", "2h ago", act_shipped},
-    {"Audio", "muted the menu music", "5h ago", act_task},
-    {"Profile", "saved the Competitive preset", "Yesterday", act_stage},
-    {"Engine", "loaded SZK 1.4.2", "Yesterday", act_authors},
-    {"Cache", "cleared 14 stale shaders", "Monday", act_quiet},
-};
-
 float aside_head(ImDrawList* dl, const ImVec2& pos, ImU32 col, float alpha, const char* label)
 {
     ImFont* lf = font_regular(10.f);
@@ -425,57 +388,7 @@ float aside_lines(ImDrawList* dl, const ImVec2& pos, float width, float alpha, c
     return (card.Max.y - pos.y);
 }
 
-float activity(ImDrawList* dl, const ImVec2& pos, float width, float alpha)
-{
-    ImFont* lf = font_regular(10.f);
-    draw_text_tracked(dl, lf, ImVec2(pos.x, pos.y + line_top(lf, px(15.f))),
-                      mo::with_alpha(c_muted_foreground, alpha), "RECENT ACTIVITY", px(1.6f));
-
-    const float top = pos.y + px(24.f);
-    const int rows = IM_ARRAYSIZE(k_activity);
-    const ImRect card(ImVec2(pos.x, top),
-                      ImVec2(pos.x + width, top + px(sp_4) * 2.f + px(52.f) * (float)rows));
-    panel(dl, card, alpha);
-
-    float ry = card.Min.y + px(sp_4);
-    for (int i = 0; i < rows; i++)
-    {
-
-        const ImVec2 av(card.Min.x + px(sp_4), ry + px(10.f));
-        char initial[3];
-        initials_of(k_activity[i].who, initial);
-        chip(dl, av, px(28.f), px(14.f), initial, mo::with_alpha(c_foreground, 0.06f * alpha),
-             mo::with_alpha(c_muted_foreground, alpha), i);
-
-        {
-            const ImVec2 at(av.x + px(22.f), av.y + px(22.f));
-            const ImU32 tone =
-                k_act_tone[ImClamp((int)k_activity[i].kind, 0, IM_ARRAYSIZE(k_act_tone) - 1)];
-            dl->AddCircleFilled(at, px(6.f), mo::with_alpha(c_background, alpha));
-            dl->AddCircleFilled(at, px(4.f), mo::with_alpha(tone, alpha));
-        }
-
-        row_label(dl, ImVec2(card.Min.x + px(56.f), ry + px(8.f)), k_activity[i].who,
-                  k_activity[i].what, alpha);
-
-        ImFont* wf = font_regular(text_xs);
-        draw_text(dl, wf,
-                  ImVec2(card.Max.x - px(sp_4) - text_width(wf, k_activity[i].when), ry + px(10.f)),
-                  mo::with_alpha(c_muted_foreground, alpha), k_activity[i].when);
-
-        if (i + 1 < rows)
-            dl->AddRectFilled(ImVec2(card.Min.x + px(sp_4), ry + px(52.f) - px(0.5f)),
-                              ImVec2(card.Max.x - px(sp_4), ry + px(52.f) + px(0.5f)),
-                              mo::with_alpha(c_border, alpha));
-
-        ry += px(52.f);
-    }
-    return card.Max.y - pos.y;
-}
-
 constexpr int k_module_count = 55;
-constexpr int k_task_count = 8;
-constexpr int k_message_count = 8;
 constexpr int k_range_sample_count = 13;
 constexpr int k_sys_history = 60; // rolling live-sample window for the Dashboard
 
@@ -550,20 +463,6 @@ struct page_state
     int notif_undo = -1;
     float undo_timer = 0.f;
 
-    int stage = 1;
-    int author = 0;
-    float projected_installs = 48000.f;
-    button_state save = btn_idle;
-    float save_timer = 0.f;
-
-    bool automations[4] = {true, true, false, true};
-
-    bool tasks[k_task_count] = {true, false, false, true, false, false, true, false};
-    button_state sweep = btn_idle;
-    float sweep_timer = 0.f;
-
-    int range = 1;
-
     bool sys_mon_inited = false;
     float sys_poll_t = 1e6f;
     backend::system_snapshot sys_snap;
@@ -580,24 +479,6 @@ struct page_state
 
     button_state check_updates_btn = btn_idle;
     float check_updates_timer = 0.f;
-
-    int search_tab = 0;
-    bool search_bodies = true;
-    button_state clear_history = btn_idle;
-    float clear_timer = 0.f;
-    bool history_cleared = false;
-
-    int answer_style = 0;
-    float creativity = 0.4f;
-    button_state ask = btn_idle;
-    float ask_timer = 0.f;
-
-    int message_tab = 0;
-    bool message_read[k_message_count] = {false, true, false, true, true, true, false, true};
-    button_state mark_all = btn_idle;
-    float mark_timer = 0.f;
-
-    int notes_tab = 0;
 };
 
 page_state& state()
@@ -1014,90 +895,6 @@ const automation k_automations[] = {
     {"Weekly digest", "Send Monday 09:00 in local time"},
 };
 
-struct search_hit
-{
-    const char* query;
-    const char* count;
-};
-const search_hit k_recent[] = {
-    {"frame pacing", "18 results"},  {"key:insert overlay", "7 results"},
-    {"input latency", "24 results"}, {"stutter", "3 results"},
-    {"shader cache", "11 results"},
-};
-const search_hit k_saved[] = {
-    {"Everything I tune", "Updated 2h ago"},
-    {"Unstable presets", "Updated Monday"},
-    {"Rendering, all", "Updated last week"},
-};
-
-struct chat_turn
-{
-    bool from_user;
-    const char* text;
-};
-const chat_turn k_thread[] = {
-    {true, "Why does frame time spike above 16 ms?"},
-    {false, "Two reasons. Shadow distance updates every frame instead of every third, and "
-            "motion blur is still active underneath it. Cache the value and update on change."},
-    {true, "Write me the change check."},
-};
-const char* const k_answer_styles[] = {"Fast", "Balanced", "Thorough"};
-
-struct message
-{
-    const char* who;
-    const char* subject;
-    const char* when;
-    bool mention;
-};
-const message k_messages[] = {
-    {"Corvid", "Shadows flicker over water", "09:41", true},
-    {"Kestrel", "Re: controller deadzone", "08:12", false},
-    {"SZK Lab", "Photo mode 2.1 is ready", "Yesterday", false},
-    {"Halcyon", "Notes from the playtest", "Yesterday", true},
-    {"Orrin", "Signed off - clean build inside", "Monday", false},
-    {"Pell", "Projection is ready for review", "Monday", false},
-    {"Vermillion", "Two players joined the playtest", "Friday", true},
-    {"Cinder", "Archived 14 old presets", "Friday", false},
-};
-static_assert(IM_ARRAYSIZE(k_messages) == k_message_count, "message_read is per message");
-
-struct note
-{
-    const char* title;
-    const char* body;
-    const char* meta;
-    int bucket;
-};
-
-const note k_notes[] = {
-    {"Shadows - what actually flickers",
-     "It is not the shadow system. Two reports pin it to a texture stream that only "
-     "fires on ultra, and both had render scale above 100%.",
-     "You - 12m ago", 1},
-    {"Playtest notes",
-     "The build went out fine. What hurt was the week after: nobody owned the report list, "
-     "so three of the six sat untouched.",
-     "Kestrel - Yesterday", 1},
-    {"Keybinds, next patch",
-     "Grouping by category rather than by hand. Rough shape only so far - the modifier "
-     "assumption is the part I am least sure about.",
-     "You - Monday", 2},
-    {"Settings guide rewrite",
-     "Five steps down to three. The middle one was doing nothing that the first did not "
-     "already say.",
-     "Halcyon - Last week", 0},
-    {"What SZK Lab actually asked for",
-     "Not a rewrite. They want the preset export to carry the build number, which we "
-     "already store and simply do not print.",
-     "Corvid - Last week", 1},
-    {"Versioning, thinking aloud",
-     "Per-preset versions stop making sense the moment a patch ships a migrator. Nobody "
-     "has asked yet, but Vermillion will.",
-     "You - Last week", 2},
-};
-const char* const k_note_tabs[] = {"All", "Shared", "Drafts"};
-
 struct field
 {
     const char* label;
@@ -1376,27 +1173,6 @@ const badge_line k_aside_reports[] = {
     {"Archived", "41", badge_neutral},
 };
 
-const stat_line k_aside_pipeline[] = {
-    {"Committed", "418k"},
-    {"Best case", "742k"},
-    {"In test", "1.42M"},
-    {"Live", "286k"},
-};
-
-const stat_line k_aside_tasks[] = {
-    {"Due today", "2"},
-    {"Due this week", "3"},
-    {"Overdue", "1"},
-    {"Done this week", "7"},
-};
-
-const stat_line k_aside_notes[] = {
-    {"Bugs", "6"},
-    {"Keybinds", "4"},
-    {"Playtests", "3"},
-    {"Guides", "2"},
-};
-
 const stat_line k_aside_runs[] = {
     {"Apply on launch", "4m ago"},
     {"Panic key", "1h ago"},
@@ -1422,19 +1198,6 @@ const stat_line k_aside_about[] = {
     {"Region", "eu-west"},
 };
 
-const stat_line k_aside_stagemix[] = {
-    {"Draft", "38"},
-    {"Internal", "24"},
-    {"Playtest", "16"},
-    {"Candidate", "9"},
-};
-
-const stat_line k_aside_assigned[] = {
-    {brand::user_name, "4"},
-    {"Corvid", "2"},
-    {"Kestrel", "2"},
-};
-
 const stat_line k_aside_security[] = {
     {"Two-factor", "On"},
     {"Password", "41d ago"},
@@ -1447,31 +1210,6 @@ const stat_line k_aside_storage[] = {
     {"Shaders", "1.4 GB"},
 };
 
-const stat_line k_aside_threads[] = {
-    {"Shadow flicker", "12m"},
-    {"Controller drift", "2h"},
-    {"Keybinds", "Mon"},
-};
-
-const char* const k_aside_search[] = {
-    "F opens the palette from anywhere, and Escape closes it.",
-    "Ctrl+B folds the rail away when you want the room.",
-    "Results are ranked by what you opened last, not alphabetically.",
-};
-
-const char* const k_aside_assistant[] = {
-    "Summarise the shadow reports since Tuesday.",
-    "Read this crash dump and tell me which system owns it.",
-    "What changed in the camera this week?",
-};
-
-const char* const k_tasks[] = {
-    "Draft the keybind layout",           "Review the shadow flicker reports",
-    "Refresh the settings guide",         "Close out the playtest notes",
-    "Rebuild the shader cache",           "Send SZK Lab the signed build number",
-    "Split the graphics presets by tier", "Chase the controller deadzone fix",
-};
-static_assert(IM_ARRAYSIZE(k_tasks) == k_task_count, "tasks is per task");
 } // namespace
 
 namespace
@@ -1482,18 +1220,6 @@ float page_aside(ImDrawList* dl, int nav, const ImVec2& pos, float width, float 
 {
     switch (nav)
     {
-    case 0:
-        return aside_lines(dl, pos, width, alpha, "SHORTCUTS", k_aside_search,
-                           IM_ARRAYSIZE(k_aside_search), card_gap);
-    case 5:
-        return aside_stats(dl, pos, width, alpha, "THIS DROP", k_aside_pipeline,
-                           IM_ARRAYSIZE(k_aside_pipeline), card_gap);
-    case 6:
-        return aside_stats(dl, pos, width, alpha, "DUE", k_aside_tasks, IM_ARRAYSIZE(k_aside_tasks),
-                           card_gap);
-    case 7:
-        return aside_stats(dl, pos, width, alpha, "TAGS", k_aside_notes,
-                           IM_ARRAYSIZE(k_aside_notes), card_gap);
     case 10:
         return aside_stats(dl, pos, width, alpha, "SIGNED IN ON", k_aside_sessions,
                            IM_ARRAYSIZE(k_aside_sessions), card_gap);
@@ -1512,12 +1238,6 @@ float page_aside_more(ImDrawList* dl, int nav, const ImVec2& pos, float width, f
 {
     switch (nav)
     {
-    case 5:
-        return aside_stats(dl, pos, width, alpha, "STAGE MIX", k_aside_stagemix,
-                           IM_ARRAYSIZE(k_aside_stagemix));
-    case 6:
-        return aside_stats(dl, pos, width, alpha, "ASSIGNED BY", k_aside_assigned,
-                           IM_ARRAYSIZE(k_aside_assigned));
     case 10:
         return aside_stats(dl, pos, width, alpha, "SECURITY", k_aside_security,
                            IM_ARRAYSIZE(k_aside_security));
@@ -1620,13 +1340,6 @@ route draw_page(route destination, const char* title, const char* const* subs, i
     float aside_offset = 0.f;
     switch (nav)
     {
-    case 0:
-        aside_offset = tabs_height(tabs_pill) + px(sp_4);
-        break;
-    case 7:
-        aside_offset = tabs_height(tabs_segment) + px(sp_4);
-        break;
-
     case 11:
         aside_offset = tabs_height(tabs_pill) + px(sp_4) + px(28.f);
         break;
@@ -1700,15 +1413,12 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 const int i = shown[k];
                 const module_row& m = k_modules[i];
 
-                const ImVec2 av(card.Min.x + px(sp_4), ry + px(2.f));
-                char initials[3];
-                initials_of(m.name, initials);
-                chip(dl, av, px(24.f), px(12.f), initials, mo::with_alpha(c_card, alpha),
-                     mo::with_alpha(c_muted_foreground, alpha), i);
-
+                // No leading avatar. This row used to pass the module index as a
+                // person id, which drew a placeholder person photo next to every
+                // tweak - the name left-aligns instead.
                 ImFont* nf = font_medium(text_sm);
                 draw_text(dl, nf,
-                          ImVec2(card.Min.x + px(46.f), ry - nf->LegacySize * 0.5f + px(12.f)),
+                          ImVec2(card.Min.x + px(sp_4), ry - nf->LegacySize * 0.5f + px(12.f)),
                           mo::with_alpha(c_foreground, alpha), m.name);
 
                 ImFont* rf = font_regular(text_xs);
@@ -1929,105 +1639,6 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         break;
     }
 
-    case 5:
-    {
-        const ImRect card(ImVec2(x, y), ImVec2(x + col, y + px(268.f)));
-        panel(dl, card, alpha);
-
-        float ry = card.Min.y + px(sp_4);
-        row_label(dl, ImVec2(card.Min.x + px(sp_4), ry), "Stage", nullptr, alpha);
-        ry += px(24.f);
-        select("stage", ImVec2(card.Min.x + px(sp_4), ry), col - px(sp_4) * 2.f, k_stage_options,
-               IM_ARRAYSIZE(k_stage_options), &s.stage, "Pick a stage");
-        ry += px(select_h) + px(sp_4);
-
-        row_label(dl, ImVec2(card.Min.x + px(sp_4), ry), "Author", nullptr, alpha);
-        ry += px(24.f);
-        select("author", ImVec2(card.Min.x + px(sp_4), ry), col - px(sp_4) * 2.f, k_author_options,
-               IM_ARRAYSIZE(k_author_options), &s.author, "Unassigned");
-        ry += px(select_h) + px(sp_4);
-
-        char amount[64];
-        ImFormatString(amount, IM_ARRAYSIZE(amount), "Projected installs   %.0fk",
-                       s.projected_installs / 1000.f);
-        row_label(dl, ImVec2(card.Min.x + px(sp_4), ry), amount, nullptr, alpha);
-        ry += px(24.f);
-        range_slider("projected-installs", ImVec2(card.Min.x + px(sp_4), ry), col - px(sp_4) * 2.f,
-                     &s.projected_installs, 0.f, 250000.f, 6);
-
-        y = card.Max.y + px(sp_4);
-
-        if (action("save", ImVec2(x, y), 200.f, s.save, "Save patch") && s.save == btn_idle)
-        {
-            s.save = btn_loading;
-            s.save_timer = 0.f;
-        }
-        if (s.save == btn_loading)
-        {
-            s.save_timer += dt;
-            if (s.save_timer > 1.2f)
-            {
-                s.save = btn_success;
-                toast("Patch saved", k_stage_options[s.stage], toast_success);
-            }
-        }
-        y += px(44.f) + px(sp_5);
-
-        {
-            const float head = px(50.f);
-            const float row_h = px(46.f);
-            const int count = IM_ARRAYSIZE(k_builds);
-            const ImRect list(ImVec2(x, y),
-                              ImVec2(x + col, y + head + row_h * (float)count + px(8.f)));
-            panel(dl, list, alpha);
-
-            row_label(dl, ImVec2(list.Min.x + px(sp_4), list.Min.y + px(14.f)),
-                      "Open in this stage", nullptr, alpha);
-
-            ImFont* mf = font_medium(text_xs);
-            float pill_w = 0.f;
-            for (int i = 0; i < count; i++)
-                pill_w = ImMax(pill_w, text_width(mf, k_builds[i].stage) + px(16.f));
-
-            const ImU32 tones[4] = {c_primary, c_amber_400, c_muted_foreground, c_success};
-            const float value_r = list.Max.x - px(sp_4);
-            const float stage_r = value_r - px(76.f);
-
-            for (int i = 0; i < count; i++)
-            {
-                const float ry2 = list.Min.y + head + row_h * (float)i;
-                const float mid = ry2 + row_h * 0.5f;
-
-                if (i > 0)
-                    hairline(dl, list, ry2, alpha * 0.9f);
-
-                const float av = px(22.f);
-                char ini[3];
-                initials_of(k_builds[i].author, ini);
-                chip(dl, ImVec2(list.Min.x + px(sp_4), mid - av * 0.5f), av, av * 0.5f, ini,
-                     mo::with_alpha(c_muted_foreground, 0.16f * alpha),
-                     mo::with_alpha(c_foreground, alpha), k_builds[i].person);
-
-                ImFont* nf = font_medium(text_sm);
-                const float nx = list.Min.x + px(sp_4) + av + px(10.f);
-                draw_text_ellipsis(dl, nf, ImVec2(nx, mid - nf->LegacySize * 0.5f),
-                                   mo::with_alpha(c_foreground, alpha), k_builds[i].mod,
-                                   (stage_r - pill_w - px(12.f)) - nx);
-
-                pill(dl, ImVec2(stage_r - pill_w, mid - px(11.f)), k_builds[i].stage,
-                     tones[ImClamp(k_builds[i].tone, 0, 3)], alpha);
-
-                ImFont* vf = font_semibold(text_sm);
-                const float vw = text_width(vf, k_builds[i].value);
-                draw_text(dl, vf, ImVec2(value_r - vw, mid - vf->LegacySize * 0.5f),
-                          mo::with_alpha(c_foreground, alpha), k_builds[i].value);
-            }
-
-            y = list.Max.y;
-        }
-        break;
-    }
-
     case 8:
     {
         if (!s.mobo_queried)
@@ -2066,51 +1677,6 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         }
 
         y = card.Max.y + px(sp_4);
-        break;
-    }
-
-    case 6:
-    {
-        const ImRect card(ImVec2(x, y),
-                          ImVec2(x + col, y + px(sp_4) * 2.f + px(34.f) * (float)k_task_count));
-        panel(dl, card, alpha);
-
-        float ry = card.Min.y + px(sp_4);
-        for (int i = 0; i < k_task_count; i++)
-        {
-            char id[32];
-            ImFormatString(id, IM_ARRAYSIZE(id), "task%d", i);
-            check(id, ImVec2(card.Min.x + px(sp_4), ry), &s.tasks[i], k_tasks[i]);
-            ry += px(34.f);
-        }
-
-        y = card.Max.y + px(sp_4);
-        if (action("sweep", ImVec2(x, y), 200.f, s.sweep, "Clear completed") && s.sweep == btn_idle)
-        {
-            s.sweep = btn_loading;
-            s.sweep_timer = 0.f;
-        }
-        if (s.sweep == btn_loading)
-        {
-            s.sweep_timer += dt;
-            if (s.sweep_timer > 1.f)
-            {
-                int cleared = 0;
-                for (bool& t : s.tasks)
-                {
-                    if (t)
-                        cleared++;
-                    t = false;
-                }
-                s.sweep = btn_success;
-
-                char msg[64];
-                ImFormatString(msg, IM_ARRAYSIZE(msg), "%d task%s cleared", cleared,
-                               cleared == 1 ? "" : "s");
-                toast("Done", msg, toast_success);
-            }
-        }
-        y += px(44.f);
         break;
     }
 
@@ -2622,81 +2188,6 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         break;
     }
 
-    case 0:
-    {
-        static const char* const scopes[] = {"Recent", "Saved"};
-        tabs("search-tabs", ImVec2(x, y), scopes, IM_ARRAYSIZE(scopes), &s.search_tab, tabs_pill);
-        y += tabs_height(tabs_pill) + px(sp_4);
-
-        const bool recent = (s.search_tab == 0);
-        const int count =
-            recent ? (s.history_cleared ? 0 : IM_ARRAYSIZE(k_recent)) : IM_ARRAYSIZE(k_saved);
-        const float row = px(44.f);
-
-        const ImRect card(ImVec2(x, y),
-                          ImVec2(x + col, y + px(sp_4) * 2.f + row * (float)ImMax(count, 1)));
-        panel(dl, card, alpha);
-
-        if (count == 0)
-        {
-            ImFont* f = font_regular(text_sm);
-            const char* msg = "Nothing here yet.";
-            draw_text(dl, f,
-                      ImVec2(card.GetCenter().x - text_width(f, msg) * 0.5f,
-                             card.GetCenter().y - f->LegacySize * 0.5f),
-                      mo::with_alpha(c_muted_foreground, alpha), msg);
-        }
-
-        float ry = card.Min.y + px(sp_4);
-        for (int i = 0; i < count; i++)
-        {
-            const search_hit& hit = recent ? k_recent[i] : k_saved[i];
-
-            icons::draw(recent ? icons::id::clock : icons::id::star, dl,
-                        ImVec2(card.Min.x + px(sp_4), ry + px(14.f)), px(16.f),
-                        mo::with_alpha(c_muted_foreground, alpha));
-
-            ImFont* qf = font_medium(text_sm);
-            draw_text(dl, qf,
-                      ImVec2(card.Min.x + px(44.f), ry + px(12.f) + line_top(qf, px(leading_sm))),
-                      mo::with_alpha(c_foreground, alpha), hit.query);
-
-            ImFont* cf = font_regular(text_xs);
-            draw_text(dl, cf,
-                      ImVec2(card.Max.x - px(sp_4) - text_width(cf, hit.count), ry + px(14.f)),
-                      mo::with_alpha(c_muted_foreground, alpha), hit.count);
-
-            if (i + 1 < count)
-                hairline(dl, card, ry + row, alpha);
-            ry += row;
-        }
-        y = card.Max.y + px(sp_4);
-
-        check("search-bodies", ImVec2(x, y), &s.search_bodies, "Search inside note bodies");
-        y += px(38.f);
-
-        if (recent &&
-            action("clear-history", ImVec2(x, y), 200.f, s.clear_history, "Clear history") &&
-            s.clear_history == btn_idle)
-        {
-            s.clear_history = btn_loading;
-            s.clear_timer = 0.f;
-        }
-        if (s.clear_history == btn_loading)
-        {
-            s.clear_timer += dt;
-            if (s.clear_timer > 0.9f)
-            {
-                s.clear_history = btn_success;
-                s.history_cleared = true;
-                toast("History cleared", "Five recent searches removed", toast_success);
-            }
-        }
-        if (recent)
-            y += px(44.f);
-        break;
-    }
-
     case 1:
     {
         const ImRect card(ImVec2(x, y), ImVec2(x + col, y + px(94.f)));
@@ -3116,56 +2607,6 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             backend::reshade_open_plugins_folder();
 
         y = button_y + px(sp_12) + px(sp_4);
-        break;
-    }
-
-    case 7:
-    {
-        tabs("notes-tabs", ImVec2(x, y), k_note_tabs, IM_ARRAYSIZE(k_note_tabs), &s.notes_tab,
-             tabs_segment);
-        y += tabs_height(tabs_segment) + px(sp_4);
-
-        for (int i = 0; i < IM_ARRAYSIZE(k_notes); i++)
-        {
-            const note& n = k_notes[i];
-            if (s.notes_tab == 1 && n.bucket != 1)
-                continue;
-            if (s.notes_tab == 2 && n.bucket != 2)
-                continue;
-
-            ImFont* bf = font_regular(text_xs);
-            const float inner = col - px(sp_4) * 2.f;
-            const int lines = ImMin(wrapped_line_count(bf, n.body, inner), 2);
-            const float h = px(sp_4) * 2.f + px(leading_sm) + px(4.f) + px(18.f) * (float)lines +
-                            px(6.f) + px(leading_xs);
-
-            const ImRect card(ImVec2(x, y), ImVec2(x + col, y + h));
-            panel(dl, card, alpha);
-
-            ImFont* tf = font_medium(text_sm);
-            draw_text(
-                dl, tf,
-                ImVec2(card.Min.x + px(sp_4), card.Min.y + px(sp_4) + line_top(tf, px(leading_sm))),
-                mo::with_alpha(c_foreground, alpha), n.title);
-
-            dl->PushClipRect(card.Min,
-                             ImVec2(card.Max.x, card.Min.y + px(sp_4) + px(leading_sm) + px(4.f) +
-                                                    px(18.f) * (float)lines),
-                             true);
-            draw_text_wrapped(
-                dl, bf,
-                ImVec2(card.Min.x + px(sp_4), card.Min.y + px(sp_4) + px(leading_sm) + px(4.f)),
-                mo::with_alpha(c_muted_foreground, alpha), n.body, inner, px(18.f));
-            dl->PopClipRect();
-
-            ImFont* mf = font_regular(text_xs);
-            draw_text(dl, mf,
-                      ImVec2(card.Min.x + px(sp_4),
-                             card.Max.y - px(sp_4) - px(leading_xs) + line_top(mf, px(leading_xs))),
-                      mo::with_alpha(c_muted_foreground, 0.75f * alpha), n.meta);
-
-            y = card.Max.y + px(sp_3);
-        }
         break;
     }
 
@@ -3672,10 +3113,6 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             aside_h += px(sp_5) + more;
 
         y = ImMax(y, aside_y + aside_h) + px(sp_6);
-    }
-    else if (nav != route_index(route::dashboard) && nav != route_index(route::assistant))
-    {
-        y += activity(dl, ImVec2(x, y + px(sp_6)), col, alpha) + px(sp_6);
     }
 
     s.content[slot] = (y + px(sp_6)) - (area.Min.y - scroll);

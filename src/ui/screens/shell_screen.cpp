@@ -1,5 +1,6 @@
 #include "application/brand.h"
 #include "assets/avatars.h"
+#include "core/product_info.h"
 #include "ui/controls/scroll.h"
 #include "ui/controls/theme_toggle.h"
 #include "ui/controls/widgets.h"
@@ -415,15 +416,10 @@ bool menu_screen(float alpha)
                           mo::with_alpha(c_border, alpha));
 
         {
-
-            const ImRect chip(ImVec2(origin.x + px(12.f), origin.y + px(12.f)),
-                              ImVec2(origin.x + bar_w - px(12.f), origin.y + px(56.f)));
-            const bool chip_hot = target_trigger(chip);
-
-            if (chip_hot || target_menu_open())
-                dl->AddRectFilled(chip.Min, chip.Max, mo::with_alpha(c_card, alpha),
-                                  px(k_item_round));
-
+            // Static brand header. This was a "game" switcher from the template
+            // (SZK / Beta / Gamma); a single product has nothing to switch, so
+            // it is now just the mark, the name and the version - no dropdown.
+            //
             // The SZK brand tile: a dark rounded square with the emerald mark,
             // the same pairing as the taskbar icon so the app reads as one
             // identity. Drawn as vector rather than a logo PNG - crisp at 28px
@@ -441,16 +437,19 @@ bool menu_screen(float alpha)
 
             if (label_a > 0.004f)
             {
-                const char* name = target_name();
                 ImFont* f = font_semibold(text_sm);
-                const ImVec2 at(origin.x + px(60.f + label_dx),
-                                origin.y + px(24.f) + line_top(f, px(leading_sm)));
-                draw_text(dl, f, at, mo::with_alpha(c_foreground, label_a), name);
+                draw_text(dl, f,
+                          ImVec2(origin.x + px(60.f + label_dx),
+                                 origin.y + px(16.f) + line_top(f, px(leading_sm))),
+                          mo::with_alpha(c_foreground, label_a), brand::product);
 
-                icons::draw(icons::id::chevrons_up_down, dl,
-                            ImVec2(at.x + text_width(f, name) + px(8.f), origin.y + px(27.f)),
-                            px(14.f),
-                            mo::with_alpha(chip_hot ? c_foreground : c_muted_foreground, label_a));
+                ImFont* vf = font_regular(text_xs);
+                char version[24];
+                ImFormatString(version, IM_ARRAYSIZE(version), "v%s", product_info::version);
+                draw_text(dl, vf,
+                          ImVec2(origin.x + px(60.f + label_dx),
+                                 origin.y + px(34.f) + line_top(vf, px(leading_xs))),
+                          mo::with_alpha(c_muted_foreground, label_a), version);
             }
         }
 
@@ -740,8 +739,6 @@ bool menu_screen(float alpha)
             }
         }
 
-        if (target_menu(plate, alpha))
-            sign_out = true;
         switch (profile_menu(plate, alpha))
         {
         case profile_sign_out:
