@@ -16,6 +16,9 @@
     <Filter Include="Auth">
       <UniqueIdentifier>{1097BB8E-99B6-43F0-B40F-C8EE2B40456B}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Security">
+      <UniqueIdentifier>{a1b2c3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Backend">
       <UniqueIdentifier>{6C2E8E36-6C0B-4C41-9A0B-2E7B0F6A9C11}</UniqueIdentifier>
     </Filter>
@@ -145,6 +148,15 @@
     </ClCompile>
     <ClCompile Include="src\backend\keyauth.cpp">
       <Filter>Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\updater.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\security\anti_debug.cpp">
+      <Filter>Security</Filter>
+    </ClCompile>
+    <ClCompile Include="src\security\anti_dump.cpp">
+      <Filter>Security</Filter>
     </ClCompile>
     <ClCompile Include="src\backend\ed25519_verify.cpp">
       <Filter>Backend</Filter>
@@ -297,6 +309,21 @@
     </ClInclude>
     <ClInclude Include="src\backend\keyauth.h">
       <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\backend\updater.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\security\sk_crypter.h">
+      <Filter>Security</Filter>
+    </ClInclude>
+    <ClInclude Include="src\security\lazy_import.h">
+      <Filter>Security</Filter>
+    </ClInclude>
+    <ClInclude Include="src\security\anti_debug.h">
+      <Filter>Security</Filter>
+    </ClInclude>
+    <ClInclude Include="src\security\anti_dump.h">
+      <Filter>Security</Filter>
     </ClInclude>
     <ClInclude Include="src\backend\keyauth_config.h">
       <Filter>Backend</Filter>

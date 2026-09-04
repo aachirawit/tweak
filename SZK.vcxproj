@@ -31,6 +31,9 @@
     <ClCompile Include="src\backend\hardware_info.cpp" />
     <ClCompile Include="src\backend\ed25519_verify.cpp" />
     <ClCompile Include="src\backend\keyauth.cpp" />
+    <ClCompile Include="src\backend\updater.cpp" />
+    <ClCompile Include="src\security\anti_debug.cpp" />
+    <ClCompile Include="src\security\anti_dump.cpp" />
     <ClCompile Include="src\backend\os_tweaks.cpp" />
     <ClCompile Include="src\backend\power_plan.cpp" />
     <ClCompile Include="src\backend\reshade_manager.cpp" />
@@ -123,6 +126,11 @@
     <ClInclude Include="src\backend\hardware_info.h" />
     <ClInclude Include="src\backend\ed25519_verify.h" />
     <ClInclude Include="src\backend\keyauth.h" />
+    <ClInclude Include="src\backend\updater.h" />
+    <ClInclude Include="src\security\sk_crypter.h" />
+    <ClInclude Include="src\security\lazy_import.h" />
+    <ClInclude Include="src\security\anti_debug.h" />
+    <ClInclude Include="src\security\anti_dump.h" />
     <ClInclude Include="src\backend\keyauth_config.h" />
     <ClInclude Include="src\backend\os_tweaks.h" />
     <ClInclude Include="src\backend\power_plan.h" />
