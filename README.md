@@ -21,9 +21,12 @@ point before any bulk change and refuses to proceed if Windows will not give it 
 
 SZK is not offline. It makes network requests in two places:
 
-1. **Licence check.** On launch it contacts `keyauth.win` to validate your licence key.
-   The request sends the key and a hardware ID derived from this machine's Windows
-   machine GUID. Responses are verified with HMAC-SHA256 against the application secret.
+1. **Licence check.** On launch it validates your licence key against one of two
+   backends (selected at build time — see below). The request sends the key and a
+   hardware ID derived from this machine's Windows machine GUID.
+   - **License Platform** (default): a single `POST /api/activate` to your own
+     self-hosted dashboard over HTTPS.
+   - **KeyAuth**: `keyauth.win`, with responses verified by Ed25519 signature.
 2. **Ping.** The dashboard's latency tile sends ICMP echo requests to `1.1.1.1`.
 
 It does not send telemetry, and it does not transmit any of the settings it reads.
@@ -36,13 +39,23 @@ Requires Visual Studio 2022 (or newer) with **Desktop development with C++**.
 .\scripts\build.ps1 -Configuration Release -Run
 ```
 
-Before the first build, fill in your KeyAuth application details in
-[`src/backend/keyauth_config.h`](src/backend/keyauth_config.h). Until you do, the login
-screen says so instead of attempting a request.
+Before the first build, copy `src/backend/keyauth_secrets.example.h` to
+`keyauth_secrets.h` (gitignored) and fill it in. Until you do, the login screen
+says the build is unconfigured instead of attempting a request.
 
-Note that the application secret is compiled into the client, which is how KeyAuth
-works — it can be recovered from the shipped binary by anyone who looks. Do not commit
-real credentials to a public repository, and do not reuse the secret as a password.
+The licence backend is chosen at compile time by `szk::license_backend::active`
+in [`src/backend/keyauth_config.h`](src/backend/keyauth_config.h):
+
+- **License Platform** (default): set `SZK_PLATFORM_HOST` to your dashboard's
+  domain and `SZK_PLATFORM_APP_ID` to the app's public id (Apps → your app in
+  the dashboard). These are not secrets — the host is public and the id is sent
+  in the clear. The server owns every decision and the reply is trusted over TLS.
+- **KeyAuth**: set the KeyAuth `NAME`/`OWNERID`/`SECRET`/`VERSION`. Note the
+  application secret is compiled into the client — it can be recovered from the
+  shipped binary by anyone who looks, so never reuse it as a password. The
+  platform backend has no such compiled-in secret.
+
+Do not commit real credentials to a public repository.
 
 ## Requirements at runtime
 
