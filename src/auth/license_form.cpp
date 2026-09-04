@@ -35,28 +35,12 @@ struct form_state
     float banner_h = 0.f;
     std::string banner_text;
     bool banner_is_error = true;
-
-    bool hwid_copied = false;
-    float hwid_copied_timer = 0.f;
 };
 
 form_state& state()
 {
     static form_state s;
     return s;
-}
-
-// The full machine GUID is long and the user only ever reads it aloud or
-// pastes it, so the screen shows a shortened form and the Copy link puts the
-// whole thing on the clipboard.
-std::string hwid_display()
-{
-    const std::string full = backend::auth_hwid();
-    if (full.empty())
-        return "unavailable";
-    if (full.size() <= 18)
-        return full;
-    return full.substr(0, 8) + "\xE2\x80\xA6" + full.substr(full.size() - 6);
 }
 } // namespace
 
@@ -96,16 +80,6 @@ auth_action license_screen()
     }
 
     const bool submitting = (s.status == btn_loading);
-
-    if (s.hwid_copied)
-    {
-        s.hwid_copied_timer += dt;
-        if (s.hwid_copied_timer > 1.8f)
-        {
-            s.hwid_copied = false;
-            s.hwid_copied_timer = 0.f;
-        }
-    }
 
     const bool key_empty = (s.key[0] == 0);
     const char* key_error = (s.touched && key_empty) ? "Enter your licence key." : nullptr;
@@ -154,8 +128,7 @@ auth_action license_screen()
     height += input_height(s.in_key);
     height += s.banner_h;
     height += px(sp_5);
-    height += px(sp_12);           // submit button
-    height += px(sp_5) + px(44.f); // hardware id row
+    height += px(sp_12); // submit button
     height += px(sp_5) + px(leading_sm);
     height += px(sp_6 + 1.f);
 
@@ -260,54 +233,6 @@ auth_action license_screen()
         }
 
         y += px(sp_12);
-        y += px(sp_5);
-
-        // ── Hardware ID ─────────────────────────────────────────────────────
-        // Support's first question on a rejected key is always "what is your
-        // HWID", so the answer lives on the screen that shows the rejection.
-        {
-            const float row_h = px(44.f);
-            const ImVec2 rmin(x, y);
-            const ImVec2 rmax(x + content_w, y + row_h);
-
-            dl->AddRectFilled(rmin, rmax, mo::with_alpha(c_card, 0.6f), px(12.f));
-            dl->AddRect(ImVec2(rmin.x + px(0.5f), rmin.y + px(0.5f)),
-                        ImVec2(rmax.x - px(0.5f), rmax.y - px(0.5f)), c_border, px(12.f), px(1.f),
-                        ImDrawFlags_None);
-
-            ImFont* label_font = font_regular(text_xs);
-            draw_text(dl, label_font, ImVec2(rmin.x + px(sp_3), rmin.y + px(7.f)), c_dim_foreground,
-                      "Hardware ID");
-
-            ImFont* value_font = font_medium(text_xs);
-            const std::string shown = hwid_display();
-            draw_text(dl, value_font, ImVec2(rmin.x + px(sp_3), rmin.y + px(23.f)), c_foreground,
-                      shown.c_str());
-
-            ImFont* link_font = font_medium(text_xs);
-            const char* copy_label = s.hwid_copied ? "Copied" : "Copy";
-            const float link_w = text_width(link_font, copy_label);
-            const ImVec2 link_at(rmax.x - px(sp_3) - link_w,
-                                 rmin.y + row_h * 0.5f - link_font->LegacySize * 0.5f);
-
-            if (s.hwid_copied)
-            {
-                draw_text(dl, link_font, link_at, c_accent, copy_label);
-            }
-            else if (link("copy-hwid", dl, link_font, link_at, copy_label, c_muted_foreground, 1.f))
-            {
-                const std::string full = backend::auth_hwid();
-                if (!full.empty())
-                {
-                    ImGui::SetClipboardText(full.c_str());
-                    s.hwid_copied = true;
-                    s.hwid_copied_timer = 0.f;
-                }
-            }
-
-            y += row_h;
-        }
-
         y += px(sp_5);
 
         // ── Legal ───────────────────────────────────────────────────────────
