@@ -263,7 +263,11 @@ bool response_is_trusted(const http_response& response)
                           keyauth_config::signing_public_key);
 }
 
-http_response post_form(const std::string& form)
+// One HTTPS POST. Shared by both backends: KeyAuth sends form-urlencoded to
+// keyauth.win, the License Platform sends JSON to its own host. The caller
+// supplies host, path, the Content-Type header line, and the raw body.
+http_response http_post(const wchar_t* host, const wchar_t* path, const wchar_t* content_type,
+                        const std::string& body)
 {
     http_response out;
 
@@ -276,8 +280,7 @@ http_response post_form(const std::string& form)
     // network is black-holed; these are deliberately shorter than the defaults.
     ::WinHttpSetTimeouts(session, 5000, 5000, 8000, 8000);
 
-    HINTERNET connection =
-        ::WinHttpConnect(session, keyauth_config::api_host, INTERNET_DEFAULT_HTTPS_PORT, 0);
+    HINTERNET connection = ::WinHttpConnect(session, host, INTERNET_DEFAULT_HTTPS_PORT, 0);
     if (!connection)
     {
         ::WinHttpCloseHandle(session);
@@ -285,8 +288,8 @@ http_response post_form(const std::string& form)
     }
 
     HINTERNET request =
-        ::WinHttpOpenRequest(connection, L"POST", keyauth_config::api_path, nullptr,
-                             WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_SECURE);
+        ::WinHttpOpenRequest(connection, L"POST", path, nullptr, WINHTTP_NO_REFERER,
+                             WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_SECURE);
     if (!request)
     {
         ::WinHttpCloseHandle(connection);
@@ -294,10 +297,9 @@ http_response post_form(const std::string& form)
         return out;
     }
 
-    static constexpr wchar_t k_content_type[] =
-        L"Content-Type: application/x-www-form-urlencoded\r\n";
+    const std::string& form = body;
 
-    bool ok = ::WinHttpAddRequestHeaders(request, k_content_type, static_cast<DWORD>(-1),
+    bool ok = ::WinHttpAddRequestHeaders(request, content_type, static_cast<DWORD>(-1),
                                          WINHTTP_ADDREQ_FLAG_ADD) != FALSE;
 
     ok = ok && ::WinHttpSendRequest(request, WINHTTP_NO_ADDITIONAL_HEADERS, 0,
@@ -341,6 +343,104 @@ http_response post_form(const std::string& form)
     ::WinHttpCloseHandle(connection);
     ::WinHttpCloseHandle(session);
     return out;
+}
+
+// KeyAuth's form-urlencoded POST to the fixed KeyAuth endpoint.
+http_response post_form(const std::string& form)
+{
+    return http_post(keyauth_config::api_host, keyauth_config::api_path,
+                     L"Content-Type: application/x-www-form-urlencoded\r\n", form);
+}
+
+// ── License Platform helpers ─────────────────────────────────────────────────
+
+std::wstring utf8_to_wide(const std::string& in)
+{
+    if (in.empty())
+        return {};
+
+    const int size =
+        ::MultiByteToWideChar(CP_UTF8, 0, in.data(), static_cast<int>(in.size()), nullptr, 0);
+    if (size <= 0)
+        return {};
+
+    std::wstring out(static_cast<size_t>(size), L'\0');
+    ::MultiByteToWideChar(CP_UTF8, 0, in.data(), static_cast<int>(in.size()), out.data(), size);
+    return out;
+}
+
+std::string json_escape(const std::string& in)
+{
+    std::string out;
+    out.reserve(in.size() + 8);
+    for (const unsigned char c : in)
+    {
+        switch (c)
+        {
+        case '"': out += "\\\""; break;
+        case '\\': out += "\\\\"; break;
+        case '\n': out += "\\n"; break;
+        case '\r': out += "\\r"; break;
+        case '\t': out += "\\t"; break;
+        default:
+            if (c < 0x20)
+            {
+                char buffer[8];
+                std::snprintf(buffer, sizeof(buffer), "\\u%04x", c);
+                out += buffer;
+            }
+            else
+            {
+                out.push_back(static_cast<char>(c));
+            }
+        }
+    }
+    return out;
+}
+
+// "2026-10-04T00:00:00.000Z" -> unix seconds (UTC). 0 for null/empty/unparseable
+// or a lifetime licence (the server sends null).
+long long parse_iso8601_utc(const std::string& s)
+{
+    int y = 0, mo = 0, d = 0, h = 0, mi = 0, se = 0;
+    // sscanf_s matches sscanf for %d (no buffer arguments); MSVC's /WX rejects
+    // the non-_s form as deprecated.
+    if (::sscanf_s(s.c_str(), "%d-%d-%dT%d:%d:%d", &y, &mo, &d, &h, &mi, &se) != 6)
+        return 0;
+
+    tm parts{};
+    parts.tm_year = y - 1900;
+    parts.tm_mon = mo - 1;
+    parts.tm_mday = d;
+    parts.tm_hour = h;
+    parts.tm_min = mi;
+    parts.tm_sec = se;
+
+    const long long unix = static_cast<long long>(::_mkgmtime(&parts));
+    return unix < 0 ? 0 : unix;
+}
+
+// Maps the platform's stable refusal codes to an actionable sentence. The server
+// also sends a `message`, but the code is the contract, so we key off it.
+std::string explain_platform(const std::string& code)
+{
+    if (code == "INVALID_LICENSE")
+        return "That key was not recognised. Check for a typo, or paste it again from your "
+               "purchase email.";
+    if (code == "HWID_MISMATCH")
+        return "This key is locked to a different machine. Send the hardware ID shown below to "
+               "support for a reset.";
+    if (code == "LICENSE_EXPIRED")
+        return "This key has expired. Renew it to sign in again.";
+    if (code == "LICENSE_BANNED")
+        return "This key has been banned. Contact support if you think that is a mistake.";
+    if (code == "LICENSE_REVOKED")
+        return "This key has been revoked. Contact support if you think that is a mistake.";
+    if (code == "RATE_LIMITED")
+        return "Too many attempts. Wait a moment, then try again.";
+    if (code == "VALIDATION_ERROR")
+        return "The app sent a request the server rejected. Update to the latest version.";
+    return "The licence server refused the key. Try again in a moment.";
 }
 
 // ── Worker state ────────────────────────────────────────────────────────────
@@ -534,6 +634,72 @@ void run_check(std::string key)
     publish_success(subscription, expiry);
     g_running.store(false);
 }
+
+// License Platform check: a single POST /api/activate with a JSON body. The
+// server owns every decision (validity, expiry, HWID binding) and answers with
+// the shared envelope { success, code, data }. Unlike the KeyAuth path there is
+// no per-response signature - the platform is our own first-party server and
+// the reply is trusted over TLS. (If parity with KeyAuth's Ed25519 anti-MITM
+// guarantee is ever needed, sign the activate response server-side and verify
+// it here; the transport and threading below would not change.)
+void run_check_platform(std::string key)
+{
+    const std::string hwid = hwid_for_request();
+
+    std::string body;
+    body.reserve(160);
+    body += "{\"appId\":\"" + json_escape(platform_config::app_id) + "\",";
+    body += "\"key\":\"" + json_escape(key) + "\",";
+    body += "\"hwid\":\"" + json_escape(hwid) + "\"}";
+
+    const std::wstring host = utf8_to_wide(platform_config::api_host);
+    const std::wstring path = utf8_to_wide(platform_config::api_path);
+
+    const http_response res =
+        http_post(host.c_str(), path.c_str(), L"Content-Type: application/json\r\n", body);
+
+    if (!res.sent)
+    {
+        publish(auth_status::failed,
+                "Could not reach the licence server. Check your internet connection, then try "
+                "again.");
+        g_running.store(false);
+        return;
+    }
+
+    // A refusal (403/429/400) still returns a well-formed envelope with
+    // success:false and a code. Only fall back to the HTTP status when the body
+    // is not the envelope at all (e.g. a proxy error page).
+    if (!json_is_true(res.body, "success"))
+    {
+        const std::string code = json_field(res.body, "code");
+        publish(auth_status::failed,
+                code.empty() ? "The licence server refused the key. Try again in a moment."
+                             : explain_platform(code));
+        g_running.store(false);
+        return;
+    }
+
+    // expiresAt is an ISO-8601 string, or null for a lifetime licence.
+    const std::string expiry_text = json_field(res.body, "expiresAt");
+    long long expiry = 0;
+    if (!expiry_text.empty() && expiry_text != "null")
+        expiry = parse_iso8601_utc(expiry_text);
+
+    // Second opinion on expiry, mirroring the KeyAuth path: catch a clock or
+    // timezone surprise before handing the user a shell they cannot use.
+    if (expiry > 0 && expiry <= static_cast<long long>(::time(nullptr)))
+    {
+        publish(auth_status::failed, "This key has expired. Renew it to sign in again.");
+        g_running.store(false);
+        return;
+    }
+
+    // The activate response carries no plan name, only status; leave the
+    // subscription blank rather than showing the status enum to the user.
+    publish_success(/*subscription=*/std::string(), expiry);
+    g_running.store(false);
+}
 } // namespace
 
 bool auth_begin(const std::string& key)
@@ -547,11 +713,25 @@ bool auth_begin(const std::string& key)
         return false;
     }
 
-    if (!keyauth_config::is_configured())
+    if constexpr (license_backend::active == license_backend::kind::platform)
     {
-        publish(auth_status::failed, "This build has no licence credentials compiled in. Fill in "
-                                     "src/backend/keyauth_config.h and rebuild.");
-        return false;
+        if (!platform_config::is_configured())
+        {
+            publish(auth_status::failed,
+                    "This build has no licence server configured. Set SZK_PLATFORM_HOST and "
+                    "SZK_PLATFORM_APP_ID in src/backend/keyauth_secrets.h and rebuild.");
+            return false;
+        }
+    }
+    else
+    {
+        if (!keyauth_config::is_configured())
+        {
+            publish(auth_status::failed,
+                    "This build has no licence credentials compiled in. Fill in "
+                    "src/backend/keyauth_config.h and rebuild.");
+            return false;
+        }
     }
 
     if (g_worker.joinable())
@@ -559,7 +739,12 @@ bool auth_begin(const std::string& key)
 
     publish(auth_status::working, "Checking your key...");
     g_running.store(true);
-    g_worker = std::thread(run_check, key);
+
+    if constexpr (license_backend::active == license_backend::kind::platform)
+        g_worker = std::thread(run_check_platform, key);
+    else
+        g_worker = std::thread(run_check, key);
+
     return true;
 }
 

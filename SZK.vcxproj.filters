@@ -328,6 +328,9 @@
     <ClInclude Include="src\backend\keyauth_config.h">
       <Filter>Backend</Filter>
     </ClInclude>
+    <ClInclude Include="src\backend\keyauth_secrets.example.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
     <ClInclude Include="src\backend\ed25519_verify.h">
       <Filter>Backend</Filter>
     </ClInclude>

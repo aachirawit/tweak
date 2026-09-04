@@ -11,6 +11,12 @@ $filtersPath = Join-Path $repositoryRoot "SZK.vcxproj.filters"
 $failures = [System.Collections.Generic.List[string]]::new()
 $sourceExtensions = ".c", ".cpp", ".h", ".hpp", ".inl"
 
+# Local, gitignored config that is not part of the committed project manifest.
+# keyauth_secrets.h is created by copying keyauth_secrets.example.h and holds
+# real credentials; it exists only on a configured machine, so the project files
+# (which must round-trip on a clean clone) never list it.
+$ignoredSourceFiles = "keyauth_secrets.h"
+
 function Get-NormalizedSourceItems {
     param(
         [xml] $Document,
@@ -49,7 +55,7 @@ $filtersNamespace = [System.Xml.XmlNamespaceManager]::new($filters.NameTable)
 $filtersNamespace.AddNamespace("m", "http://schemas.microsoft.com/developer/msbuild/2003")
 
 $diskItems = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
-    Where-Object { $_.Extension -in $sourceExtensions } |
+    Where-Object { $_.Extension -in $sourceExtensions -and $_.Name -notin $ignoredSourceFiles } |
     ForEach-Object {
         $_.FullName.Substring($repositoryRoot.Length + 1).Replace("/", "\")
     } |

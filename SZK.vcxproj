@@ -132,6 +132,7 @@
     <ClInclude Include="src\security\anti_debug.h" />
     <ClInclude Include="src\security\anti_dump.h" />
     <ClInclude Include="src\backend\keyauth_config.h" />
+    <ClInclude Include="src\backend\keyauth_secrets.example.h" />
     <ClInclude Include="src\backend\os_tweaks.h" />
     <ClInclude Include="src\backend\power_plan.h" />
     <ClInclude Include="src\backend\reshade_manager.h" />
