@@ -355,18 +355,13 @@ bool target_menu(const ImRect& viewport, float alpha)
         const float chip = px(24.f);
         const ImVec2 at(r.Min.x + px(8.f), r.GetCenter().y - chip * 0.5f);
 
-        if (!avatars::draw(dl, avatars::logo(i), at, chip, a.opacity, px(7.f)))
-        {
-            dl->AddRectFilled(at, ImVec2(at.x + chip, at.y + chip),
-                              mo::with_alpha(c_foreground, 0.08f * a.opacity), px(7.f));
-
-            ImFont* cf = font_semibold(10.f);
-            char initial[2] = {k_targets[i].name[0], 0};
-            draw_text(dl, cf,
-                      ImVec2(at.x + chip * 0.5f - text_width(cf, initial) * 0.5f,
-                             at.y + chip * 0.5f - cf->LegacySize * 0.5f),
-                      mo::with_alpha(c_foreground, a.opacity), initial);
-        }
+        // SZK mark on a dark chip, matching the sidebar brand tile and the
+        // taskbar icon rather than the placeholder logo PNGs this list used to
+        // pull per target.
+        dl->AddRectFilled(at, ImVec2(at.x + chip, at.y + chip),
+                          mo::with_alpha(c_card_raised, a.opacity), px(7.f));
+        icons::draw(icons::id::szk_mark, dl, ImVec2(at.x + px(5.f), at.y + px(5.f)), px(14.f),
+                    mo::with_alpha(c_accent, a.opacity));
 
         ImFont* nf = font_medium(text_sm);
         row_text(dl, nf,

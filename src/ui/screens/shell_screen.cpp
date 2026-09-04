@@ -418,16 +418,20 @@ bool menu_screen(float alpha)
                 dl->AddRectFilled(chip.Min, chip.Max, mo::with_alpha(c_card, alpha),
                                   px(k_item_round));
 
+            // The SZK brand tile: a dark rounded square with the emerald mark,
+            // the same pairing as the taskbar icon so the app reads as one
+            // identity. Drawn as vector rather than a logo PNG - crisp at 28px
+            // and theme-independent.
             const ImVec2 tile(origin.x + px(20.f), origin.y + px(20.f));
             const float tile_size = px(28.f);
+            const ImVec2 tile_max(tile.x + tile_size, tile.y + tile_size);
 
-            if (!avatars::draw(dl, avatars::logo(target_index()), tile, tile_size, alpha, px(8.f)))
-            {
-                dl->AddRectFilled(tile, ImVec2(tile.x + tile_size, tile.y + tile_size),
-                                  mo::with_alpha(c_foreground, alpha), px(8.f));
-                icons::draw(icons::id::szk_mark, dl, ImVec2(tile.x + px(6.f), tile.y + px(6.f)),
-                            px(k_icon), mo::with_alpha(c_background, alpha));
-            }
+            dl->AddRectFilled(tile, tile_max, mo::with_alpha(c_card_raised, alpha), px(8.f));
+            dl->AddRect(ImVec2(tile.x + px(0.5f), tile.y + px(0.5f)),
+                        ImVec2(tile_max.x - px(0.5f), tile_max.y - px(0.5f)),
+                        mo::with_alpha(c_border_strong, alpha), px(8.f), px(1.f), ImDrawFlags_None);
+            icons::draw(icons::id::szk_mark, dl, ImVec2(tile.x + px(6.f), tile.y + px(6.f)),
+                        px(k_icon), mo::with_alpha(c_accent, alpha));
 
             if (label_a > 0.004f)
             {
