@@ -4,24 +4,23 @@ namespace szk
 {
 // Storage order, not menu order. page_renderer indexes its blurb, column and
 // scroll tables straight off route_index(), and shell_screen's k_items table
-// is required to line up with the first route::profile entries, so nothing
-// here may be reordered or removed. What the user actually sees is the rail
-// table in shell_screen.cpp, which is free to name, group and order rows any
-// way it likes and points back at these routes.
+// must line up with the entries before route::profile, so the order here is
+// load-bearing: the non-account routes come first (their blurbs are one array),
+// then the account routes (profile, preferences) sit together at the end so a
+// single "nav >= profile" test tells them apart. The route-content switches key
+// off route_index(route::X) named labels, so they follow this order on their
+// own. What the user actually sees is the rail table in shell_screen.cpp.
 enum class route : int
 {
-    search = 0,
-    assistant,
-    messages,
+    // Non-account routes. k_items in shell_screen.cpp mirrors these, in order.
+    assistant, // About
+    messages,  // This machine
     settings,
-    presets,
-    patches,
-    tasks,
-    notes,
-    automation,
+    presets,    // Auto ReShade
+    automation, // Drivers
     dashboard,
+    // Account routes, grouped at the end.
     profile,
-    notifications,
     preferences,
     count,
 };
@@ -35,14 +34,14 @@ inline constexpr int route_count = static_cast<int>(route::count);
 
 [[nodiscard]] constexpr route route_from_index(int value) noexcept
 {
-    return value < 0              ? route::search
+    return value < 0              ? route::dashboard
            : value >= route_count ? route::preferences
                                   : static_cast<route>(value);
 }
 
 [[nodiscard]] constexpr bool is_account_route(route value) noexcept
 {
-    return value == route::profile || value == route::notifications || value == route::preferences;
+    return value == route::profile || value == route::preferences;
 }
 
 // route::settings is the one page with tabs. Naming them keeps the rail, the

@@ -1133,10 +1133,10 @@ float page_aside(ImDrawList* dl, int nav, const ImVec2& pos, float width, float 
 {
     switch (nav)
     {
-    case 10:
+    case route_index(route::profile):
         return aside_stats(dl, pos, width, alpha, "SIGNED IN ON", k_aside_sessions,
                            IM_ARRAYSIZE(k_aside_sessions), card_gap);
-    case 12:
+    case route_index(route::preferences):
         return aside_stats(dl, pos, width, alpha, "ABOUT", k_aside_about,
                            IM_ARRAYSIZE(k_aside_about), card_gap);
     default:
@@ -1148,10 +1148,10 @@ float page_aside_more(ImDrawList* dl, int nav, const ImVec2& pos, float width, f
 {
     switch (nav)
     {
-    case 10:
+    case route_index(route::profile):
         return aside_stats(dl, pos, width, alpha, "SECURITY", k_aside_security,
                            IM_ARRAYSIZE(k_aside_security));
-    case 12:
+    case route_index(route::preferences):
         return aside_stats(dl, pos, width, alpha, "STORAGE", k_aside_storage,
                            IM_ARRAYSIZE(k_aside_storage));
     default:
@@ -1188,34 +1188,35 @@ route draw_page(route destination, const char* title, const char* const* subs, i
     auto stagger = [&](int index) -> float
     { return mo::EASE_OUT(ImClamp((s.entered - (float)index * 0.045f) / 0.34f, 0.f, 1.f)); };
 
-    const int slot = ImClamp(nav, 0, 12);
+    const int slot = ImClamp(nav, 0, route_count - 1);
     const float measured = s.content[slot] > 0.f ? s.content[slot] : area.GetHeight();
     dl->PushClipRect(area.Min, area.Max, true);
     const float scroll = scroll_area(s.body[slot], area, measured);
 
     float y = area.Min.y - scroll;
 
+    // Both tables are route-indexed. k_blurbs covers the non-account routes in
+    // enum order (assistant..dashboard); k_account_blurbs covers profile and
+    // preferences, which sit together at the end of the enum.
     static const char* const k_account_blurbs[] = {
-        "Your account, and what the game is allowed to send you.",
-        "Everything the game wanted you to know about, newest first.",
-        "How this game behaves, and how loudly.",
+        "Your licence and account details.",
+        "How SZK behaves, and how loudly.",
     };
 
-    static const char* k_blurbs[] = {
-        "Jump anywhere in the game without lifting your hands off the keyboard.",
-        "Version, support, and a couple of useful Windows shortcuts.",
-        "This machine, at a glance.",
-        "Everything you can change, and what it is set to.",
-        "Drop ReShade and the 2K Road Mod straight into FiveM's game folder.",
-        "What is in test for the next patch, and how stable it looks.",
-        "The short list. Anything older than a fortnight gets a nudge.",
-        "Longer-form thinking that does not belong in a changelog.",
-        "One click to the driver page for this exact board.",
-        "What this machine is doing, and what would make it quicker.",
+    static const char* const k_blurbs[] = {
+        "Version, support, and a couple of useful Windows shortcuts.", // assistant / About
+        "This machine, at a glance.",                                  // messages / This machine
+        "Everything you can change, and what it is set to.",           // settings
+        "Drop ReShade and the 2K Road Mod straight into FiveM's game folder.", // presets
+        "One click to the driver page for this exact board.",                  // automation
+        "What this machine is doing, and what would make it quicker.",         // dashboard
     };
+    static_assert(IM_ARRAYSIZE(k_blurbs) == route_index(route::profile),
+                  "one blurb per non-account route");
 
-    const char* blurb =
-        (nav >= 10) ? k_account_blurbs[ImClamp(nav - 10, 0, 2)] : k_blurbs[ImClamp(nav, 0, 9)];
+    const int account_base = route_index(route::profile);
+    const char* blurb = (nav >= account_base) ? k_account_blurbs[ImClamp(nav - account_base, 0, 1)]
+                                              : k_blurbs[ImClamp(nav, 0, account_base - 1)];
     y += heading(dl, ImVec2(x, y), title, blurb, w, alpha);
 
     if (sub_count > 0)
@@ -1235,14 +1236,16 @@ route draw_page(route destination, const char* title, const char* const* subs, i
     const float aside_w = (w - gutter) - col - aside_gap;
     const float aside_y = y;
 
+    // Route-indexed aside-column heading, enum order:
+    // assistant, messages, settings, presets, automation, dashboard, profile, preferences
     static const char* const k_column_labels[] = {
-        "RECENT",    "",      "", "SETTINGS",     "",           "THIS PATCH", "OPEN",
-        "ALL NOTES", "BOARD", "", "YOUR DETAILS", "EVERYTHING", "SETTINGS",
+        "", "", "SETTINGS", "", "BOARD", "", "YOUR DETAILS", "SETTINGS",
     };
+    static_assert(IM_ARRAYSIZE(k_column_labels) == route_count, "one column label per route");
 
     if (two_col)
     {
-        const char* label = k_column_labels[ImClamp(nav, 0, 12)];
+        const char* label = k_column_labels[ImClamp(nav, 0, route_count - 1)];
         if (*label)
             y += aside_head(dl, ImVec2(x, y), c_muted_foreground, alpha, label);
     }
@@ -1250,7 +1253,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
     float aside_offset = 0.f;
     switch (nav)
     {
-    case 12:
+    case route_index(route::preferences):
         aside_offset = px(26.f);
         break;
     default:
@@ -1259,7 +1262,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
     switch (nav)
     {
-    case 3:
+    case route_index(route::settings):
     {
         // aside_y was captured before the "SETTINGS" eyebrow label above —
         // the list card (and anything stacked in the right-hand column
@@ -1545,7 +1548,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         break;
     }
 
-    case 8:
+    case route_index(route::automation):
     {
         if (!s.mobo_queried)
         {
@@ -1586,7 +1589,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         break;
     }
 
-    case 9:
+    case route_index(route::dashboard):
     {
 
         const float dashboard_width = w;
@@ -2094,7 +2097,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         break;
     }
 
-    case 1:
+    case route_index(route::assistant):
     {
         const ImRect card(ImVec2(x, y), ImVec2(x + col, y + px(94.f)));
         panel(dl, card, alpha);
@@ -2255,7 +2258,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         break;
     }
 
-    case 2:
+    case route_index(route::messages):
     {
         const ImRect card(ImVec2(x, y), ImVec2(x + col, y + px(216.f)));
         panel(dl, card, alpha);
@@ -2396,7 +2399,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         break;
     }
 
-    case 4:
+    case route_index(route::presets):
     {
         const backend::reshade_status status = backend::reshade_check();
         const char* status_label = !status.game_found          ? "FiveM not found"
@@ -2516,7 +2519,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         break;
     }
 
-    case 10:
+    case route_index(route::profile):
     {
 
         const ImRect card(ImVec2(x, y), ImVec2(x + col, y + px(96.f)));
@@ -2654,7 +2657,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         break;
     }
 
-    case 12:
+    case route_index(route::preferences):
     {
 
         if (s.reset_cascade < 1e5f)

@@ -54,60 +54,20 @@ struct nav_item
     int sub_count;
 };
 
-// Route-indexed, so this table stays in navigation.h's storage order. It is
-// no longer what the sidebar renders: it supplies each route's page title and
-// its tab strip. See k_rail_rows for the menu the user sees.
+// Route-indexed page title and tab strip, mirroring navigation.h's enum order
+// for the non-account routes (assistant..dashboard). It is not what the sidebar
+// renders - see k_rail_rows for the menu the user sees.
 constexpr nav_item k_items[] = {
-    {"Search",
-     icons::id::search,
-     nullptr,
-     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
-     0},
-    {"About",
-     icons::id::info,
-     nullptr,
-     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
-     0},
-    {"This machine",
-     icons::id::inbox,
-     nullptr,
-     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
-     0},
+    {"About", icons::id::info, nullptr, {nullptr}, 0},         // assistant
+    {"This machine", icons::id::inbox, nullptr, {nullptr}, 0}, // messages
     {"Settings",
      icons::id::circle_user_round,
      nullptr,
      {"All tweaks", "Performance", "Network", "Power plan", "NVIDIA", "AMD", "Cleanup"},
      7},
-    {"Auto Reshade",
-     icons::id::building_2,
-     nullptr,
-     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
-     0},
-    {"Patches",
-     icons::id::target,
-     nullptr,
-     {"Pipeline", "Projection", "Live", nullptr, nullptr, nullptr, nullptr},
-     3},
-    {"Tasks",
-     icons::id::list_todo,
-     nullptr,
-     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
-     0},
-    {"Notes",
-     icons::id::notebook_tabs,
-     nullptr,
-     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
-     0},
-    {"Drivers",
-     icons::id::workflow,
-     nullptr,
-     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
-     0},
-    {"Dashboard",
-     icons::id::layout_grid,
-     nullptr,
-     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
-     0},
+    {"Auto Reshade", icons::id::building_2, nullptr, {nullptr}, 0}, // presets
+    {"Drivers", icons::id::workflow, nullptr, {nullptr}, 0},        // automation
+    {"Dashboard", icons::id::layout_grid, nullptr, {nullptr}, 0},   // dashboard
 };
 
 constexpr int k_item_count = IM_ARRAYSIZE(k_items);
@@ -119,8 +79,6 @@ const char* page_title(route destination, int sub)
 {
     if (destination == route::profile)
         return "Profile";
-    if (destination == route::notifications)
-        return "Notifications";
     if (destination == route::preferences)
         return "Preferences";
 
@@ -169,8 +127,7 @@ const search_item k_search[] = {
 // strip on the page stays in sync in both directions - press a rail row and
 // its tab opens, press a tab and the rail follows.
 //
-// Routes with no row (search, patches, tasks, notes) still exist and still
-// render; they are simply unreachable from this menu.
+// Every route has a row now; search is the exception, reached with Ctrl+K.
 struct rail_row
 {
     const char* label;
@@ -206,7 +163,7 @@ constexpr rail_row k_rail_rows[] = {
     {"All tweaks", icons::id::settings, nullptr, route::settings, tab_index(settings_tab::all), 1},
 
     // SYSTEM - what this machine is, rather than how it is tuned
-    {"This machine", icons::id::inbox, "4", route::messages, keep_tab, 0},
+    {"This machine", icons::id::inbox, nullptr, route::messages, keep_tab, 0},
     {"Drivers", icons::id::workflow, nullptr, route::automation, keep_tab, 0},
     {"About", icons::id::info, nullptr, route::assistant, keep_tab, 0},
 };
