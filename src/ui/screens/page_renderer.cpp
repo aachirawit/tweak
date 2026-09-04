@@ -11,6 +11,7 @@
 #include "backend/power_plan.h"
 #include "backend/reshade_manager.h"
 #include "backend/system_monitor.h"
+#include "backend/updater.h"
 #include "core/product_info.h"
 #include "ui/controls/form_controls.h"
 #include "ui/controls/scroll.h"
@@ -2900,19 +2901,98 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
         y = card.Max.y + px(sp_4);
 
-        if (action("check-updates", ImVec2(x, y), 200.f, s.check_updates_btn, "Check for Update") &&
-            s.check_updates_btn == btn_idle)
+        // ── Updater: fully async ────────────────────────────────────────────
+        // The button never blocks. It kicks the updater's background thread and
+        // then, every frame, reads back a status the ImGui thread never waits
+        // on. One button drives the whole flow: it checks, and once a version
+        // is offered the same press downloads-and-verifies, and once verified
+        // the same press installs.
         {
-            s.check_updates_btn = btn_loading;
-            s.check_updates_timer = 0.f;
-        }
-        if (s.check_updates_btn == btn_loading)
-        {
-            s.check_updates_timer += dt;
-            if (s.check_updates_timer > 0.9f)
+            const backend::update_state u = backend::update_status_now();
+
+            // Reconcile the button's visual state with the worker's status, so
+            // it is correct even after navigating away and back mid-download.
+            const char* label = "Check for Update";
+            button_state btn = btn_idle;
+            switch (u.status)
             {
-                s.check_updates_btn = btn_success;
-                toast("Up to date", "You're on the latest version", toast_success);
+            case backend::update_status::checking:
+                label = "Checking";
+                btn = btn_loading;
+                break;
+            case backend::update_status::downloading:
+                label = "Downloading";
+                btn = btn_loading;
+                break;
+            case backend::update_status::installing:
+                label = "Restarting";
+                btn = btn_loading;
+                break;
+            case backend::update_status::update_ready:
+                label = "Download update";
+                btn = btn_idle;
+                break;
+            case backend::update_status::verified:
+                label = "Restart to install";
+                btn = btn_idle;
+                break;
+            case backend::update_status::up_to_date:
+                label = "Up to date";
+                btn = btn_success;
+                break;
+            case backend::update_status::failed:
+                label = "Try again";
+                btn = btn_error;
+                break;
+            default:
+                break;
+            }
+
+            const bool pressed = action("check-updates", ImVec2(x, y), 200.f, btn, label);
+            const bool busy = (u.status == backend::update_status::checking ||
+                               u.status == backend::update_status::downloading ||
+                               u.status == backend::update_status::installing);
+
+            if (pressed && !busy)
+            {
+                switch (u.status)
+                {
+                case backend::update_status::update_ready:
+                    backend::update_download_begin();
+                    break;
+                case backend::update_status::verified:
+                    // Launches the swap script and asks the app to quit so the
+                    // running exe can be replaced.
+                    if (backend::update_install_and_restart())
+                        nav_request = route::count; // no-op nav; real exit is host-driven
+                    break;
+                default:
+                    // idle, up_to_date, failed -> (re)start a check
+                    backend::update_reset();
+                    backend::update_check_begin();
+                    break;
+                }
+            }
+
+            // One line of feedback under the button. Comes straight from the
+            // worker, so it says "Checking..." then the version, the download
+            // percent, the verified state, or a plain failure line.
+            if (!u.message.empty())
+            {
+                char line[160];
+                if (u.status == backend::update_status::downloading && u.percent > 0)
+                    std::snprintf(line, sizeof(line), "%s  %d%%", u.message.c_str(), u.percent);
+                else
+                    std::snprintf(line, sizeof(line), "%s", u.message.c_str());
+
+                const ImU32 tone = u.status == backend::update_status::failed ? c_destructive
+                                   : u.status == backend::update_status::verified ||
+                                           u.status == backend::update_status::up_to_date
+                                       ? c_accent
+                                       : c_muted_foreground;
+
+                ImFont* mf = font_regular(text_xs);
+                draw_text(dl, mf, ImVec2(x, y + px(52.f)), mo::with_alpha(tone, alpha), line);
             }
         }
         y += px(44.f);

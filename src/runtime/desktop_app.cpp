@@ -5,6 +5,7 @@
 #include "assets/avatars.h"
 #include "assets/images.h"
 #include "backend/keyauth.h"
+#include "backend/updater.h"
 #include "core/diagnostics.h"
 #include "core/environment.h"
 #include "core/product_info.h"
@@ -226,6 +227,7 @@ class ui_services final
         // First: a licence check in flight writes into state this function is
         // about to tear down, so let it finish before anything else goes.
         backend::auth_shutdown();
+        backend::update_shutdown();
 
         images::shutdown();
         glass::cursor_shutdown();

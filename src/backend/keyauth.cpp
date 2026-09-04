@@ -2,6 +2,7 @@
 
 #include "backend/ed25519_verify.h"
 #include "backend/keyauth_config.h"
+#include "security/anti_debug.h"
 
 #include <atomic>
 #include <cstdio>
@@ -137,6 +138,57 @@ std::string read_machine_guid()
         return {};
 
     return wide_to_utf8(buffer);
+}
+
+// ── Anti-debug, folded into the HWID ────────────────────────────────────────
+//
+// The design goal is that a debugger does not cause a visible, patchable
+// branch. Instead its presence becomes data: a taint byte that is zero on a
+// clean machine and non-zero under analysis. The taint is XORed into a copy of
+// the HWID, so:
+//
+//   - Clean machine: taint 0, HWID unchanged, login works.
+//   - Under a debugger: HWID silently wrong, KeyAuth returns "HWID mismatch",
+//     login fails like any other machine-mismatch - no anti-debug string, no
+//     local branch, the deciding logic sits on a server the cracker cannot
+//     patch.
+//
+// It degrades rather than destroys: detaching the debugger restores the real
+// HWID, so a false positive (some legit overlays trip PEB checks) costs the
+// user a retry, never a permanently bricked licence. That reversibility is the
+// whole reason this is preferable to corrupting state or calling exit().
+//
+// Kept deliberately plain here; the value it produces is what matters, not the
+// obfuscation of the check. Obfuscating the check is what SK() and the lazy
+// import of NtQueryInformationProcess inside debugger_present() already do.
+unsigned char anti_debug_taint()
+{
+    // Any set bit invalidates the HWID. A fixed non-zero constant keeps the
+    // result deterministic, so a debugged machine fails the same way every
+    // time rather than flapping.
+    return szk::sec::debugger_present() ? 0x5Au : 0x00u;
+}
+
+// The HWID actually sent in the licence request. auth_hwid() stays truthful for
+// the value shown on the licence screen (support needs the real one); only the
+// wire value carries the taint, and only when clean are the two identical.
+std::string hwid_for_request()
+{
+    std::string hwid = read_machine_guid();
+    const unsigned char taint = anti_debug_taint();
+    if (taint && !hwid.empty())
+    {
+        // Perturb one character so the string stays a plausible 36-char GUID -
+        // the server does a normal lookup and returns mismatch, not "malformed
+        // HWID", which would stand out. Rotating a hex digit keeps it hex.
+        const char c = hwid[0];
+        const char rotated = (c >= '0' && c <= '9') ? static_cast<char>('0' + ((c - '0' + 1) % 10))
+                             : (c >= 'a' && c <= 'f') ? static_cast<char>('a' + ((c - 'a' + 1) % 6))
+                             : (c >= 'A' && c <= 'F') ? static_cast<char>('A' + ((c - 'A' + 1) % 6))
+                                                      : c;
+        hwid[0] = rotated;
+    }
+    return hwid;
 }
 
 // ── HTTP ────────────────────────────────────────────────────────────────────
@@ -421,10 +473,17 @@ void run_check(std::string key)
     const std::string session_id = json_field(init.body, "sessionid");
 
     // 2. license - the actual key check, bound to this machine.
+    //
+    // The HWID sent here is the display HWID with an anti-debug taint folded
+    // in. See hwid_for_request(): under a debugger it is perturbed, so KeyAuth
+    // returns an ordinary "HWID mismatch" and the login fails for a reason that
+    // looks nothing like an anti-debug trip. The deciding branch is on KeyAuth's
+    // servers, not a local `if` a patch can cut, and the failure surfaces one
+    // network round trip away from the check that caused it.
     form.clear();
     form += "type=license";
     form += "&key=" + url_encode(key);
-    form += "&hwid=" + url_encode(auth_hwid());
+    form += "&hwid=" + url_encode(hwid_for_request());
     form += "&sessionid=" + url_encode(session_id);
     form += "&name=" + url_encode(keyauth_config::name);
     form += "&ownerid=" + url_encode(keyauth_config::ownerid);

@@ -1,5 +1,6 @@
 #include "backend/updater.h"
 
+#include "backend/ed25519_verify.h"
 #include "core/product_info.h"
 #include "security/sk_crypter.h"
 
@@ -39,6 +40,38 @@ const wchar_t* manifest_host()
 const wchar_t* manifest_path()
 {
     return L"/szk/latest.json";
+}
+
+// ── Manifest signing key ────────────────────────────────────────────────────
+//
+// This is SZK's OWN Ed25519 public key - not KeyAuth's. You generate the key
+// pair once, keep the private half offline on the machine that publishes
+// releases, and paste the public half here. Every manifest must carry a
+// "signature" over its canonical fields (see canonical_manifest below), and
+// the client verifies it against this key before trusting a word of it.
+//
+// This is what makes the hash check meaningful: TLS stops a passive MITM, but
+// a compromised or mistaken CDN can serve a manifest with an attacker's hash
+// over valid TLS. Signing moves trust from "whoever controls the endpoint" to
+// "whoever holds the private key", which is only you.
+//
+// Generate a key pair with any Ed25519 tool, e.g. openssl:
+//   openssl genpkey -algorithm ed25519 -out szk_update.key
+//   openssl pkey -in szk_update.key -pubout -outform DER | tail -c 32 | xxd -p -c 64
+// The last command prints the 64-hex public key to paste below. Keep the .key
+// file off every public machine.
+inline constexpr char update_signing_public_key[] =
+    "0000000000000000000000000000000000000000000000000000000000000000"; // <-- your key
+
+// The exact bytes a manifest's signature covers. Fixed field order with a
+// separator that cannot appear in the values, so the signature does not depend
+// on JSON whitespace or key ordering - the server signs this string, the
+// client rebuilds it and verifies. Add a field here only by appending, and
+// only in lockstep with the signer, or every existing manifest fails.
+std::string canonical_manifest(const std::string& version, const std::string& sha256,
+                               const std::string& url)
+{
+    return version + "\n" + sha256 + "\n" + url;
 }
 
 // ── Tiny helpers (same style as keyauth.cpp) ────────────────────────────────
@@ -250,10 +283,31 @@ void run_check()
     const std::string hash = json_field(manifest, "sha256");
     const std::string url = json_field(manifest, "url");
     const std::string notes = json_field(manifest, "notes");
+    const std::string signature = json_field(manifest, "signature");
 
     if (latest.empty() || hash.size() != 64 || url.empty())
     {
         publish(update_status::failed, "The update information was malformed.");
+        g_running.store(false);
+        return;
+    }
+
+    // ── Signature gate ──────────────────────────────────────────────────────
+    // Nothing past this point trusts the manifest until its signature verifies
+    // against our own key. A missing or bad signature aborts the whole update -
+    // and the user-facing message says only "could not be completed", never
+    // "signature failed", so an attacker probing the endpoint learns nothing
+    // about why their forged manifest was rejected.
+    //
+    // ed25519_verify fails closed: if TweetNaCl is not vendored it returns
+    // false here just as a bad signature would, so a build without the
+    // primitive cannot silently skip the check.
+    const bool trusted =
+        !signature.empty() &&
+        ed25519_verify(signature, canonical_manifest(latest, hash, url), update_signing_public_key);
+    if (!trusted)
+    {
+        publish(update_status::failed, "The update check could not be completed.");
         g_running.store(false);
         return;
     }
