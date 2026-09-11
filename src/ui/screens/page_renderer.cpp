@@ -65,7 +65,11 @@ float heading(ImDrawList* dl, const ImVec2& pos, const char* title, const char* 
 
 void panel(ImDrawList* dl, const ImRect& r, float alpha)
 {
-    dl->AddRectFilled(r.Min, r.Max, mo::with_alpha(c_card, 0.5f * alpha), px(16.f));
+    // Opaque, not half-transparent. A card is where text lives, so it owns its
+    // own ground: whatever is behind the shell - a flat fill or a background
+    // image - cannot reach the text and change its contrast. This is what lets
+    // the background scrim stay light enough for an image to actually read.
+    dl->AddRectFilled(r.Min, r.Max, mo::with_alpha(c_card, alpha), px(16.f));
     dl->AddRect(ImVec2(r.Min.x + px(0.5f), r.Min.y + px(0.5f)),
                 ImVec2(r.Max.x - px(0.5f), r.Max.y - px(0.5f)), mo::with_alpha(c_border, alpha),
                 px(16.f), px(1.f), ImDrawFlags_None);

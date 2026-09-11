@@ -38,15 +38,20 @@ ImVec2 animate_size(const ImVec2& target)
 
 // How much of c_background is laid back over a background image.
 //
-// 0.92 is measured, not chosen for looks: the weakest text in the app
-// (c_muted_foreground) needs a ground no brighter than 0.019 relative luminance
-// to hold WCAG AA 4.5:1, and a white area of an image - large display type, a
-// blown-out highlight - only falls to that once 92% of the ground colour is
-// back on top. Lower it and text over the bright parts of the image drops below
-// AA (0.90 measures 4.23:1, 0.88 measures 3.96:1). The cost is that the image
-// reads as a faint texture rather than a picture; that is the trade a legible
-// dashboard demands, and it is why a busy image is a poor choice here.
-constexpr float k_background_scrim = 0.92f;
+// The surfaces that carry text - content cards and the sidebar - are opaque, so
+// they keep their own ground and the image cannot reach the text inside them.
+// That is what allows a light scrim here: at 0.70 a dark artwork reads clearly
+// in the gaps between cards while every card and nav row is unaffected.
+//
+// What the scrim still has to cover is the text drawn straight onto the plate:
+// the header row and the footer strip. Over a DARK image those are safe at this
+// value. Over a bright one they are not - c_muted_foreground needs a ground no
+// brighter than 0.019 relative luminance to hold WCAG AA 4.5:1, and a white
+// area of an image only falls to that at 0.92 (0.90 measures 4.23:1, 0.88
+// measures 3.96:1). So this is a knob, not a constant: 0.70 for dark artwork,
+// toward 0.92 if the image has large light areas, and a bright busy image is
+// still the wrong choice for a background behind a text-dense dashboard.
+constexpr float k_background_scrim = 0.70f;
 
 ImRect plate()
 {

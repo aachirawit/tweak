@@ -346,6 +346,15 @@ bool menu_screen(float alpha)
         const float nav_scroll = scroll_area(
             s.rail, nav_box, s.rail_content > 0.f ? s.rail_content : nav_box.GetHeight());
 
+        // The sidebar owns an opaque ground for the same reason a card does: its
+        // rows are text, and a background image behind the shell must not reach
+        // them. Filled with the plate's own colour, so a build with no
+        // background image looks exactly as it did before.
+        dl->AddRectFilled(ImVec2(origin.x + px(1.f), origin.y + px(1.f)),
+                          ImVec2(origin.x + bar_w, plate.Max.y - px(1.f)),
+                          mo::with_alpha(c_background, alpha), px(shell::rounding),
+                          ImDrawFlags_RoundCornersLeft);
+
         dl->AddRectFilled(ImVec2(origin.x + bar_w, origin.y + px(1.f)),
                           ImVec2(origin.x + bar_w + px(1.f), plate.Max.y - px(1.f)),
                           mo::with_alpha(c_border, alpha));
