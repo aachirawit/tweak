@@ -16,6 +16,7 @@
 #include "ui/controls/morph_slider.h"
 #include "ui/controls/widgets.h"
 #include "ui/effects/glass_cursor.h"
+#include "ui/foundation/motion/motion.h"
 #include "ui/foundation/rounded_panel.h"
 #include "ui/foundation/runtime.h"
 #include "ui/foundation/theme.h"
@@ -54,6 +55,19 @@ void warm_fonts()
     fonts.get(geist_semibold, 20);
 }
 
+// Mirror the OS animation preference into the motion system. Windows exposes
+// "Show animations in Windows" (Settings -> Accessibility -> Visual effects) as
+// SPI_GETCLIENTAREAANIMATION: TRUE when animations are wanted. A user who turns
+// it off has usually done so because motion makes them ill, so honour it rather
+// than asking again in our own settings.
+void sync_reduced_motion()
+{
+    BOOL animations_wanted = TRUE;
+    if (!::SystemParametersInfoW(SPI_GETCLIENTAREAANIMATION, 0, &animations_wanted, 0))
+        animations_wanted = TRUE; // query failed: keep motion rather than guess
+    szk::mo::set_reduced_motion(animations_wanted == FALSE);
+}
+
 std::optional<LRESULT> handle_window_message(void*, HWND window, UINT message, WPARAM w_param,
                                              LPARAM l_param)
 {
@@ -64,6 +78,12 @@ std::optional<LRESULT> handle_window_message(void*, HWND window, UINT message, W
     {
     case WM_DPICHANGED:
         set_ui_dpi(static_cast<UINT>(HIWORD(w_param)), true);
+        break;
+
+    case WM_SETTINGCHANGE:
+        // The accessibility toggle can flip while we are running; pick it up
+        // immediately instead of only at startup.
+        sync_reduced_motion();
         break;
 
     case WM_SETCURSOR:
@@ -103,6 +123,8 @@ class imgui_session final
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         context_created_ = true;
+
+        sync_reduced_motion();
 
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;

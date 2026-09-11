@@ -66,10 +66,26 @@ float ease::operator()(float t) const
     return ((ay * u + by) * u + cy) * u;
 }
 
+namespace
+{
+bool g_reduced_motion = false;
+}
+
+void set_reduced_motion(bool reduced)
+{
+    g_reduced_motion = reduced;
+}
+
+bool reduced_motion()
+{
+    return g_reduced_motion;
+}
+
 float spring::to(float target, const spring_cfg& cfg, float dt)
 {
-    if (!seeded)
+    if (!seeded || g_reduced_motion)
     {
+        // Reduced motion: land on the target this frame instead of travelling.
         snap(target);
         return value;
     }
@@ -98,6 +114,11 @@ float spring::to(float target, const spring_cfg& cfg, float dt)
 
 float clock::progress(float duration, float delay) const
 {
+    // Reduced motion: report the animation as already finished, so anything
+    // driven by a clock renders in its final state.
+    if (g_reduced_motion)
+        return 1.f;
+
     if (duration <= 0.f)
         return elapsed >= delay ? 1.f : 0.f;
 
@@ -121,6 +142,18 @@ float keyframes(const float* values, int count, float t, float duration, const e
 
 bool presence::update(bool want, float dt, float exit_duration)
 {
+    // Reduced motion: mount and unmount in the same frame the state changes,
+    // with the enter phase already complete, so nothing fades or slides.
+    if (g_reduced_motion)
+    {
+        mounted = want;
+        exiting = false;
+        in = 1e6f;
+        out = 0.f;
+        skip_enter = false;
+        return mounted;
+    }
+
     if (want)
     {
         if (!mounted)

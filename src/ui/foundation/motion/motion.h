@@ -5,6 +5,18 @@
 namespace szk::mo
 {
 
+// Reduced motion, honouring the OS preference (Windows: "Show animations in
+// Windows", SPI_GETCLIENTAREAANIMATION).
+//
+// Motion is resolved instantly rather than removed: springs snap to their
+// target and timed progress reads as finished, so every element still lands in
+// exactly the state it would have animated to - nothing disappears, nothing
+// half-renders. Guarding the three primitives below (spring::to,
+// clock::progress, presence::update) covers every animation in the app, so no
+// call site has to opt in and none can forget to.
+void set_reduced_motion(bool reduced);
+[[nodiscard]] bool reduced_motion();
+
 struct ease
 {
     float x1, y1, x2, y2;
