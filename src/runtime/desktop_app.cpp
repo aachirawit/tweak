@@ -206,6 +206,13 @@ class ui_services final
         slides.saturate = 1.f;
         images::load_folder(asset_io::asset_directory(L"slides", L"SLIDES"), slides);
 
+        // Optional shell background: the first image in assets/background. With
+        // the folder empty or missing, the shell keeps its flat fill.
+        const std::vector<std::filesystem::path> background_files =
+            asset_io::image_files(asset_io::asset_directory(L"background", L"BACKGROUND"));
+        if (!background_files.empty())
+            images::load_background(background_files.front());
+
         const bool slider_initialized =
             slides::morph_slider_init(renderer.device(), renderer.context());
         const bool panel_initialized =

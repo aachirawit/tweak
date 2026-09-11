@@ -153,6 +153,25 @@ void run()
         l.finished.push_back(std::move(reduced));
     }
 }
+
+// ── Optional full-window background ──────────────────────────────────────────
+// One image, decoded on the calling thread (a single file, so the thread pool
+// the slides use would cost more than it saves) and turned into a texture on
+// the next update() once a device exists.
+struct bg_slot
+{
+    decoded pending;
+    bool has_pending = false;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view;
+    texture tex;
+    bool loaded = false;
+};
+
+bg_slot& bg()
+{
+    static bg_slot b;
+    return b;
+}
 } // namespace
 
 void load_folder(const std::filesystem::path& directory, const options& opts)
@@ -171,6 +190,48 @@ void load_folder(const std::filesystem::path& directory, const options& opts)
     const int count = ImClamp(hardware ? (int)hardware / 2 : 2, 1, 4);
     for (int i = 0; i < count; i++)
         l.workers.emplace_back(run);
+}
+
+bool load_background(const std::filesystem::path& file, int max_edge)
+{
+    bg_slot& b = bg();
+    if (b.loaded || b.has_pending || file.empty())
+        return b.loaded;
+
+    const std::vector<unsigned char> bytes = asset_io::read_binary(file);
+    if (bytes.empty())
+        return false;
+
+    int w = 0, h = 0, comp = 0;
+    unsigned char* pixels =
+        stbi_load_from_memory(bytes.data(), (int)bytes.size(), &w, &h, &comp, 4);
+    if (!pixels)
+        return false;
+
+    // No crop: the window's aspect is not known here and changes on resize, so
+    // the whole image is kept and the draw call cover-fits it via UVs.
+    const int dw = ImMax(1, ImMin(max_edge, w));
+    const int dh = ImMax(1, (int)((float)h * ((float)dw / (float)w) + 0.5f));
+
+    options plain;
+    plain.max_edge = max_edge;
+    plain.aspect = (float)w / (float)h;
+    plain.radius_ratio = 0.f;
+    plain.saturate = 1.f;
+
+    decoded reduced = downscale(pixels, w, h, 0, 0, w, h, dw, dh, plain);
+    stbi_image_free(pixels);
+
+    reduced.name = asset_io::stem_utf8(file);
+    b.pending = std::move(reduced);
+    b.has_pending = true;
+    return true;
+}
+
+const texture* background()
+{
+    const bg_slot& b = bg();
+    return b.loaded ? &b.tex : nullptr;
 }
 
 void update(ID3D11Device* device, ID3D11DeviceContext* context)
@@ -202,6 +263,25 @@ void update(ID3D11Device* device, ID3D11DeviceContext* context)
         l.views.push_back(std::move(view));
         l.textures.push_back(t);
     }
+
+    bg_slot& b = bg();
+    if (b.has_pending)
+    {
+        auto view = dx11::create_rgba_texture(device, context, b.pending.rgba.data(),
+                                              static_cast<unsigned int>(b.pending.width),
+                                              static_cast<unsigned int>(b.pending.height));
+        if (view)
+        {
+            b.tex.id = reinterpret_cast<ImTextureID>(view.Get());
+            b.tex.width = b.pending.width;
+            b.tex.height = b.pending.height;
+            b.tex.name = b.pending.name;
+            b.view = std::move(view);
+            b.loaded = true;
+        }
+        b.has_pending = false;
+        b.pending = decoded{};
+    }
 }
 
 const std::vector<texture>& ready()
@@ -230,5 +310,12 @@ void shutdown()
     l.quit.store(false);
     l.started = false;
     l.opts = options{};
+
+    bg_slot& b = bg();
+    b.view.Reset();
+    b.tex = texture{};
+    b.pending = decoded{};
+    b.has_pending = false;
+    b.loaded = false;
 }
 } // namespace szk::images
