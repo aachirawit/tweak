@@ -1732,7 +1732,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             draw_text_tracked(
                 dl, cf,
                 ImVec2(ring_c.x - text_width(cf, score_cap) * 0.5f - px(0.7f), ring_c.y + px(9.f)),
-                mo::with_alpha(c_dim_foreground, alpha), score_cap, px(1.4f));
+                mo::with_alpha(c_muted_foreground, alpha), score_cap, px(1.4f));
 
             const float btn_w = 178.f;
             const float btn_x = card.Max.x - px(sp_5) - px(btn_w);
@@ -1870,11 +1870,11 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
             const float trust_y = card.Min.y + px(102.f);
             icons::draw(icons::id::check, dl, ImVec2(btn_x, trust_y), px(13.f),
-                        mo::with_alpha(c_dim_foreground, alpha));
+                        mo::with_alpha(c_muted_foreground, alpha));
 
             ImFont* trf = font_regular(text_xs);
             draw_text(dl, trf, ImVec2(btn_x + px(18.f), trust_y + px(1.f)),
-                      mo::with_alpha(c_dim_foreground, alpha),
+                      mo::with_alpha(c_muted_foreground, alpha),
                       s.dash_finding_count > 0 ? "Restore point created first"
                                                : "Reads the registry, changes nothing");
 
@@ -1922,7 +1922,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 // A bare 61% is a number; 19.4 / 32 GB is an answer.
                 ImFont* df = font_medium(text_xs);
                 draw_text_ellipsis(dl, df, ImVec2(t.Min.x + px(sp_4), t.Min.y + px(70.f)),
-                                   mo::with_alpha(c_dim_foreground, alpha), detail_buf[i],
+                                   mo::with_alpha(c_muted_foreground, alpha), detail_buf[i],
                                    tile_w - px(sp_4) * 2.f);
 
                 const bool good = (i == 3 && !have_ping) ? true : tile_deltas[i] <= 0.f;
@@ -2084,7 +2084,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
                 ImFont* lf = font_medium(text_xs);
                 draw_text(dl, lf, ImVec2(cx, card.Min.y + px(20.f)),
-                          mo::with_alpha(c_dim_foreground, alpha), k_stat_label[i]);
+                          mo::with_alpha(c_muted_foreground, alpha), k_stat_label[i]);
 
                 ImFont* vf = font_medium(text_sm);
                 draw_text_ellipsis(dl, vf, ImVec2(cx, card.Min.y + px(42.f)),

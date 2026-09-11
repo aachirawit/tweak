@@ -17,8 +17,11 @@ inline ImU32 c_background = IM_COL32(0x13, 0x14, 0x16, 0xFF);
 inline ImU32 c_foreground = IM_COL32(0xF2, 0xF2, 0xF3, 0xFF);
 inline ImU32 c_card = IM_COL32(0x1A, 0x1B, 0x1E, 0xFF);
 inline ImU32 c_card_raised = IM_COL32(0x26, 0x29, 0x30, 0xFF);
+// Secondary text stops here. A third, dimmer tier cannot meet WCAG AA 4.5:1 in
+// the light theme (dimmer means lighter means less contrast, and forcing it past
+// 4.5:1 lands on top of this token), so hierarchy below this level is carried by
+// size and weight, never by a fainter colour.
 inline ImU32 c_muted_foreground = IM_COL32(0x8A, 0x8C, 0x91, 0xFF);
-inline ImU32 c_dim_foreground = IM_COL32(0x5E, 0x61, 0x67, 0xFF);
 inline ImU32 c_border = IM_COL32(0xFF, 0xFF, 0xFF, 0x12);
 inline ImU32 c_border_strong = IM_COL32(0xFF, 0xFF, 0xFF, 0x21);
 inline ImU32 c_primary = IM_COL32(0xF2, 0xF2, 0xF3, 0xFF);
