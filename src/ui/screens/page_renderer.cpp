@@ -1722,10 +1722,13 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
             char score_buf[8];
             ImFormatString(score_buf, IM_ARRAYSIZE(score_buf), "%.0f", shown_score);
+            // Tabular, and centred on the tabular width: the score animates up
+            // from 0, so proportional digits shifted it sideways as it counted.
             ImFont* sf = font_semibold(28.f);
-            draw_text_tracked(
-                dl, sf, ImVec2(ring_c.x - text_width(sf, score_buf) * 0.5f, ring_c.y - px(20.f)),
-                mo::with_alpha(c_foreground, alpha), score_buf, px(-1.f));
+            draw_text_tabular(dl, sf,
+                              ImVec2(ring_c.x - text_width_tabular(sf, score_buf, px(-1.f)) * 0.5f,
+                                     ring_c.y - px(20.f)),
+                              mo::with_alpha(c_foreground, alpha), score_buf, px(-1.f));
 
             ImFont* cf = font_medium(10.f);
             const char* score_cap = "SCORE";
@@ -1914,8 +1917,10 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 ImFormatString(nid, IM_ARRAYSIZE(nid), "kpi%d", i);
                 number_value(nid, tile_targets[i]); // keeps the easing state warm
 
+                // Tabular: this counter is live, and proportional digits made it
+                // twitch every time the percentage ticked.
                 ImFont* vf = font_semibold(22.f);
-                draw_text_tracked(dl, vf, ImVec2(t.Min.x + px(sp_4), t.Min.y + px(36.f)),
+                draw_text_tabular(dl, vf, ImVec2(t.Min.x + px(sp_4), t.Min.y + px(36.f)),
                                   mo::with_alpha(c_foreground, alpha), value_buf[i], px(-0.4f));
 
                 // The second line is what the percentage is a percentage of.

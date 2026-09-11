@@ -254,6 +254,83 @@ void draw_text_tracked(ImDrawList* dl, ImFont* f, const ImVec2& pos, ImU32 col, 
          { dl->AddText(f, f->LegacySize, ImVec2(IM_ROUND(pos.x + x), pos.y), col, b, e); });
 }
 
+namespace
+{
+// The advance every digit gets: the widest of 0-9 at this size.
+float digit_cell(ImFont* f)
+{
+    const float size = f->LegacySize;
+    float widest = 0.f;
+    for (char d = '0'; d <= '9'; d++)
+    {
+        const char one[2] = {d, '\0'};
+        widest = ImMax(widest, f->CalcTextSizeA(size, FLT_MAX, 0.f, one, one + 1).x);
+    }
+    return widest;
+}
+
+constexpr bool is_digit(unsigned int c)
+{
+    return c >= '0' && c <= '9';
+}
+
+// One pass over the string in tabular layout. `fn(begin, end, x, advance)` is
+// called per glyph; the return value is the total width.
+template <typename F> float walk_tabular(ImFont* f, const char* s, float tracking, F&& fn)
+{
+    if (!f || !s)
+        return 0.f;
+
+    const float size = f->LegacySize;
+    const float cell = digit_cell(f);
+    const char* end = s + strlen(s);
+
+    float x = 0.f;
+    unsigned int prev = 0;
+
+    for (const char* p = s; p < end && *p;)
+    {
+        unsigned int c = 0;
+        const int consumed = decode(p, end, &c);
+        if (consumed <= 0)
+            break;
+
+        // No kerning into or out of a digit: the fixed cell is what keeps the
+        // column aligned, and kerning would reintroduce the jitter.
+        if (prev && !is_digit(prev) && !is_digit(c))
+            x += ImFontGetKerning(f, size, prev, c);
+
+        const float natural = f->CalcTextSizeA(size, FLT_MAX, 0.f, p, p + consumed).x;
+        const float advance = is_digit(c) ? cell : natural;
+
+        fn(p, p + consumed, x + (advance - natural) * 0.5f, advance);
+
+        x += advance + tracking;
+        prev = c;
+        p += consumed;
+    }
+
+    // The trailing tracking is not part of the text's own width.
+    return x > 0.f ? x - tracking : 0.f;
+}
+} // namespace
+
+float text_width_tabular(ImFont* f, const char* s, float tracking)
+{
+    return walk_tabular(f, s, tracking, [](const char*, const char*, float, float) {});
+}
+
+void draw_text_tabular(ImDrawList* dl, ImFont* f, const ImVec2& pos, ImU32 col, const char* s,
+                       float tracking)
+{
+    if (!f || !s || (col & IM_COL32_A_MASK) == 0)
+        return;
+
+    walk_tabular(f, s, tracking,
+                 [&](const char* b, const char* e, float x, float)
+                 { dl->AddText(f, f->LegacySize, ImVec2(IM_ROUND(pos.x + x), pos.y), col, b, e); });
+}
+
 int wrapped_line_count(ImFont* f, const char* s, float wrap_width)
 {
     int line_count = 0;

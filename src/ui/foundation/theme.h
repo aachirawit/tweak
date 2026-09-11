@@ -16,7 +16,13 @@ namespace szk
 inline ImU32 c_background = IM_COL32(0x13, 0x14, 0x16, 0xFF);
 inline ImU32 c_foreground = IM_COL32(0xF2, 0xF2, 0xF3, 0xFF);
 inline ImU32 c_card = IM_COL32(0x1A, 0x1B, 0x1E, 0xFF);
-inline ImU32 c_card_raised = IM_COL32(0x26, 0x29, 0x30, 0xFF);
+// The raised surface (menus, popovers) is held one notch darker than an
+// elevation-only palette would pick it, because secondary text sits on it: at
+// #262930 muted text measured 4.33:1, just under AA. The light theme solves the
+// same problem from the other side - lightening its raised fill to clear 4.5:1
+// would have left it indistinguishable from c_card, so there the muted token is
+// darkened instead and the fill keeps its elevation.
+inline ImU32 c_card_raised = IM_COL32(0x23, 0x26, 0x2C, 0xFF);
 // Secondary text stops here. A third, dimmer tier cannot meet WCAG AA 4.5:1 in
 // the light theme (dimmer means lighter means less contrast, and forcing it past
 // 4.5:1 lands on top of this token), so hierarchy below this level is carried by
@@ -34,7 +40,12 @@ inline ImU32 c_accent_hi = IM_COL32(0x34, 0xD3, 0x99, 0xFF);
 
 // Severity. These are no longer constants: a red that reads on #131416 is
 // glaring on a light ground, so each theme gets its own.
-inline ImU32 c_destructive = IM_COL32(0xEE, 0x34, 0x3B, 0xFF);
+//
+// Each one is pushed past what the plain ground needs, because pills and toasts
+// draw their label in the colour on a 13% wash of the same colour - roughly a
+// full contrast point - so a value that only just clears 4.5:1 fails inside its
+// own badge. #EE343B measured 4.56:1 on the ground but 4.08:1 in a pill.
+inline ImU32 c_destructive = IM_COL32(0xF0, 0x4F, 0x55, 0xFF);
 inline ImU32 c_success = IM_COL32(0x00, 0xBD, 0x6C, 0xFF);
 inline ImU32 c_amber_500 = IM_COL32(0xF9, 0x9C, 0x00, 0xFF);
 inline ImU32 c_amber_400 = IM_COL32(0xFC, 0xBB, 0x00, 0xFF);

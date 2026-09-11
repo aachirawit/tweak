@@ -16,6 +16,19 @@ float text_width(ImFont* f, const char* s, const char* end);
 void draw_text(ImDrawList* dl, ImFont* f, const ImVec2& pos, ImU32 col, const char* s,
                const char* end = nullptr);
 
+// Tabular figures, for text that changes while it is on screen - a percentage
+// counting up, a clock, a value beside a live meter.
+//
+// Geist's digits are proportional, so "11%" is narrower than "88%" and a
+// readout twitches every time a digit changes. These give every digit the
+// advance of the widest one and centre the glyph in that cell, so the text box
+// is the same width for any value and nothing beside it can be nudged. Kerning
+// is suppressed around digits, which is the point of a uniform cell. Use them
+// only for changing values: proportional figures read better in prose.
+float text_width_tabular(ImFont* f, const char* s, float tracking = 0.f);
+void draw_text_tabular(ImDrawList* dl, ImFont* f, const ImVec2& pos, ImU32 col, const char* s,
+                       float tracking = 0.f);
+
 int wrapped_line_count(ImFont* f, const char* s, float wrap_width);
 void draw_text_wrapped(ImDrawList* dl, ImFont* f, const ImVec2& pos, ImU32 col, const char* s,
                        float wrap_width, float line_height);
