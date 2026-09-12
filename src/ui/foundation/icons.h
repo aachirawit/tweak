@@ -50,7 +50,7 @@ enum class id
     cpu,
     zap,
     trash,
-    szk_mark,
+    score_ring,
 };
 
 void draw(id which, ImDrawList* dl, const ImVec2& top_left, float box, ImU32 col);

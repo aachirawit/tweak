@@ -28,6 +28,15 @@ bool background_uv(const ImRect& area, ImVec2& uv0, ImVec2& uv1);
 // there is one and the built-in vector mark when there is not.
 void brand_avatar(ImDrawList* dl, const ImVec2& top_left, float size, float alpha);
 
+// The mark on its own, for surfaces that already supply a ground of their own -
+// the sign-in chip sits on a dark panel and would only lose contrast under a
+// second tile. Same source of truth as brand_avatar, which is the point: the
+// chip drew the vector directly and so kept showing the old mark long after the
+// logo image replaced it everywhere else. vector_tint colours the fallback
+// only; an image mark carries its own colour.
+void brand_mark(ImDrawList* dl, const ImVec2& top_left, float size, ImU32 vector_tint,
+                float alpha);
+
 // How much of the ground colour a surface must lay back over the image to keep
 // the text on it above WCAG AA in the worst case - a white area of the picture.
 //

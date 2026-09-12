@@ -316,12 +316,13 @@ void draw(id which, ImDrawList* dl, const ImVec2& tl, float box, ImU32 col)
         path("M13 2L3 14L12 14L11 22L21 10L12 10Z");
         break;
 
-    case id::szk_mark:
-        // The score ring and the wordmark's Z in one glyph: a gauge arc with a
-        // gap at the lower right, and a Z cutting through it. Stroked rather
-        // than filled so it stays legible at the 16px the sidebar uses.
+    case id::score_ring:
+        // The gauge arc, with a gap at the lower right where the dial would
+        // read out. This is only the fallback for a missing assets/logos image
+        // - it used to carry a Z from an earlier wordmark, which outlived the
+        // wordmark itself. Stroked rather than filled so it stays legible at
+        // the 16px the sidebar uses.
         path("M19.6 16.5A9 9 0 1 0 16.5 19.6");
-        path("M8.5 8.5h7l-7 7h7");
         break;
 
     case id::trash:

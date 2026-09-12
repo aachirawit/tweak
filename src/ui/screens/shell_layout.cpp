@@ -135,16 +135,21 @@ void brand_avatar(ImDrawList* dl, const ImVec2& top_left, float size, float alph
 
     const float glyph = size * 0.62f;
     const float inset = (size - glyph) * 0.5f;
-    const ImVec2 glyph_min(top_left.x + inset, top_left.y + inset);
+
+    brand_mark(dl, ImVec2(top_left.x + inset, top_left.y + inset), glyph, c_accent, alpha);
+}
+
+void brand_mark(ImDrawList* dl, const ImVec2& top_left, float size, ImU32 vector_tint, float alpha)
+{
+    const ImVec2 bottom_right(top_left.x + size, top_left.y + size);
 
     if (const ImTextureID logo = avatars::logo(0); logo != ImTextureID_Invalid)
     {
-        dl->AddImageRounded(logo, glyph_min, ImVec2(glyph_min.x + glyph, glyph_min.y + glyph),
-                            ImVec2(0.f, 0.f), ImVec2(1.f, 1.f),
-                            mo::with_alpha(IM_COL32_WHITE, alpha), glyph * 0.22f);
+        dl->AddImageRounded(logo, top_left, bottom_right, ImVec2(0.f, 0.f), ImVec2(1.f, 1.f),
+                            mo::with_alpha(IM_COL32_WHITE, alpha), size * 0.22f);
         return;
     }
 
-    icons::draw(icons::id::szk_mark, dl, glyph_min, glyph, mo::with_alpha(c_accent, alpha));
+    icons::draw(icons::id::score_ring, dl, top_left, size, mo::with_alpha(vector_tint, alpha));
 }
 } // namespace szk::shell

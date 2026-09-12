@@ -5,6 +5,7 @@
 #include "ui/controls/morph_slider.h"
 #include "ui/foundation/primitives.h"
 #include "ui/foundation/rounded_panel.h"
+#include "ui/screens/shell.h"
 
 #include <cmath>
 #include <vector>
@@ -230,9 +231,8 @@ void auth_stage(ImDrawList* dl, const ImRect& stage, const ImRect& card, float r
                           ImVec2(stage.Min.x + pad + w, stage.Min.y + pad + px(38.f)));
 
         panel_chip(dl, chip, 1.f);
-        icons::draw(icons::id::szk_mark, dl,
-                    ImVec2(chip.Min.x + px(14.f), chip.GetCenter().y - px(10.f)), px(20.f),
-                    IM_COL32(0xFF, 0xFF, 0xFF, 0xFF));
+        shell::brand_mark(dl, ImVec2(chip.Min.x + px(14.f), chip.GetCenter().y - px(10.f)),
+                          px(20.f), IM_COL32(0xFF, 0xFF, 0xFF, 0xFF), 1.f);
         draw_text(dl, f, ImVec2(chip.Min.x + px(42.f), chip.GetCenter().y - f->LegacySize * 0.5f),
                   IM_COL32(0xFF, 0xFF, 0xFF, 0xFF), name);
     }
