@@ -214,11 +214,13 @@ ImFont* font_cache::add(const std::vector<unsigned char>& family, float size)
     // Merge Thai on top of the Latin face at the same size. The range is Thai
     // only: GetGlyphRangesThai() would also pull in Latin, and every Latin glyph
     // is already here from the face above.
-    // Geist semibold takes the bold Thai; regular and medium take the regular,
-    // since the bundled family has no weight between them.
+    // Every weight takes the bold Thai cut, not just semibold. Thai has no
+    // capitals and far more strokes per glyph, so at interface sizes the regular
+    // cut goes thin and grey next to Geist even once the sizes match - the
+    // strokes, not the size, are what fall away. The bold cut lands at the
+    // apparent weight Geist regular has.
     const thai_faces& faces = thai();
-    const std::vector<unsigned char>& thai_blob =
-        (&family == &szk::geist_semibold) ? faces.bold : faces.regular;
+    const std::vector<unsigned char>& thai_blob = faces.bold;
     if (!thai_blob.empty())
     {
         static const ImWchar thai_range[] = {0x0E00, 0x0E7F, 0};

@@ -11,6 +11,7 @@ bundling with this application and commercial use. It does not permit selling
 the font files on their own.
 
 Only the Thai block (U+0E00–U+0E7F) is taken from these files; Latin, digits and
-punctuation come from Geist. Two weights are bundled because the interface uses
-three: Geist semibold pairs with the bold cut, regular and medium with the
-regular cut, since this family has no weight in between.
+punctuation come from Geist. Every Geist weight merges the **bold** cut: Thai
+has no capitals and many more strokes per glyph, so the regular cut reads thin
+and grey beside Geist at interface sizes. The regular cut stays bundled for the
+display sizes, where the bold one is too heavy.
