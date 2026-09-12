@@ -1,10 +1,13 @@
 #include "ui/foundation/typography/font_cache.h"
 #include "ui/foundation/runtime.h"
 #include "assets/asset_io.h"
+#include "generated/fonts/geist_data.h"
 #include "ui/foundation/typography/kerning.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <cwctype>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -36,34 +39,62 @@ std::vector<unsigned char> read_file(const std::wstring& path)
                                       std::istreambuf_iterator<char>());
 }
 
-const std::vector<unsigned char>& thai_face()
+bool name_looks_bold(const std::filesystem::path& file)
 {
-    static const std::vector<unsigned char> blob = []
+    std::wstring stem = file.stem().wstring();
+    std::transform(stem.begin(), stem.end(), stem.begin(),
+                   [](wchar_t c) { return static_cast<wchar_t>(std::towlower(c)); });
+    return stem.find(L"bold") != std::wstring::npos || stem.find(L"_bd") != std::wstring::npos;
+}
+
+struct thai_faces
+{
+    std::vector<unsigned char> regular;
+    std::vector<unsigned char> bold;
+};
+
+// Two weights, because the interface uses three and Thai rendered at one of them
+// looks wrong beside the others: a semibold English heading with regular-weight
+// Thai in it reads as a mistake. A bundled file whose name says bold fills the
+// bold slot, the first of the rest fills the regular slot, and either slot left
+// empty falls back to the other.
+const thai_faces& thai()
+{
+    static const thai_faces faces = []
     {
+        thai_faces out;
+
         // Bundled first. asset_io resolves assets/ next to the executable or up
-        // to three directories above it, which is the same search the images
-        // and slides use.
+        // to three directories above it, the same search images and slides use.
         for (const std::filesystem::path& file :
              szk::asset_io::font_files(szk::asset_io::asset_directory(L"fonts", L"FONTS")))
         {
-            std::vector<unsigned char> bundled = read_file(file.wstring());
-            if (!bundled.empty())
-                return bundled;
+            std::vector<unsigned char>& slot = name_looks_bold(file) ? out.bold : out.regular;
+            if (slot.empty())
+                slot = read_file(file.wstring());
         }
 
-        wchar_t windows_dir[MAX_PATH] = {};
-        if (::GetWindowsDirectoryW(windows_dir, MAX_PATH) == 0)
-            return std::vector<unsigned char>{};
-
-        for (const wchar_t* file : {L"/Fonts/LeelawUI.ttf", L"/Fonts/tahoma.ttf"})
+        if (out.regular.empty() && out.bold.empty())
         {
-            std::vector<unsigned char> system_face = read_file(std::wstring(windows_dir) + file);
-            if (!system_face.empty())
-                return system_face;
+            wchar_t windows_dir[MAX_PATH] = {};
+            if (::GetWindowsDirectoryW(windows_dir, MAX_PATH) != 0)
+            {
+                for (const wchar_t* file : {L"/Fonts/LeelawUI.ttf", L"/Fonts/tahoma.ttf"})
+                {
+                    out.regular = read_file(std::wstring(windows_dir) + file);
+                    if (!out.regular.empty())
+                        break;
+                }
+            }
         }
-        return std::vector<unsigned char>{};
+
+        if (out.regular.empty())
+            out.regular = out.bold;
+        if (out.bold.empty())
+            out.bold = out.regular;
+        return out;
     }();
-    return blob;
+    return faces;
 }
 
 float ttf_em_scale(const std::vector<unsigned char>& blob)
@@ -183,7 +214,12 @@ ImFont* font_cache::add(const std::vector<unsigned char>& family, float size)
     // Merge Thai on top of the Latin face at the same size. The range is Thai
     // only: GetGlyphRangesThai() would also pull in Latin, and every Latin glyph
     // is already here from the face above.
-    if (const std::vector<unsigned char>& thai = thai_face(); !thai.empty())
+    // Geist semibold takes the bold Thai; regular and medium take the regular,
+    // since the bundled family has no weight between them.
+    const thai_faces& faces = thai();
+    const std::vector<unsigned char>& thai_blob =
+        (&family == &szk::geist_semibold) ? faces.bold : faces.regular;
+    if (!thai_blob.empty())
     {
         static const ImWchar thai_range[] = {0x0E00, 0x0E7F, 0};
 
@@ -193,8 +229,9 @@ ImFont* font_cache::add(const std::vector<unsigned char>& family, float size)
 #ifdef IMGUI_ENABLE_FREETYPE
         merge.FontLoaderFlags = 0;
 #endif
-        ImGui::GetIO().Fonts->AddFontFromMemoryTTF(const_cast<unsigned char*>(thai.data()),
-                                                   (int)thai.size(), pixels, &merge, thai_range);
+        ImGui::GetIO().Fonts->AddFontFromMemoryTTF(const_cast<unsigned char*>(thai_blob.data()),
+                                                   (int)thai_blob.size(), pixels, &merge,
+                                                   thai_range);
     }
 
     data.push_back({&family, size, result});
