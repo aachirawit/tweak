@@ -634,7 +634,9 @@ ImU32 severity_color(finding_severity s)
 
 const char* severity_label(finding_severity s)
 {
-    return s == finding_urgent ? "Urgent" : s == finding_advised ? "Advised" : "Optional";
+    return s == finding_urgent   ? i18n::tr("Urgent")
+           : s == finding_advised ? i18n::tr("Advised")
+                                  : i18n::tr("Optional");
 }
 
 apply_result apply_module(int index)
@@ -1270,7 +1272,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
     {
         const char* label = k_column_labels[ImClamp(nav, 0, route_count - 1)];
         if (*label)
-            y += aside_head(dl, ImVec2(x, y), c_muted_foreground, alpha, label);
+            y += aside_head(dl, ImVec2(x, y), c_muted_foreground, alpha, i18n::tr(label));
     }
 
     float aside_offset = 0.f;
@@ -1603,11 +1605,10 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                              ImVec2(aside_x + aside_w, content_top + px(150.f)));
             panel(dl, sum, alpha);
 
-            row_label(dl, ImVec2(sum.Min.x + px(sp_4), sum.Min.y + px(16.f)), "This tab",
-                      "What is already applied here", alpha);
+            row_label(dl, ImVec2(sum.Min.x + px(sp_4), sum.Min.y + px(16.f)), i18n::tr("This tab"), i18n::tr("What is already applied here"), alpha);
 
             char headline[48];
-            ImFormatString(headline, IM_ARRAYSIZE(headline), "%d of %d applied", tab_applied,
+            ImFormatString(headline, IM_ARRAYSIZE(headline), i18n::tr("%d of %d applied"), tab_applied,
                            ImMax(readable, 0));
             ImFont* hf = font_semibold(text_xl);
             draw_text_tabular(dl, hf,
@@ -1623,10 +1624,10 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
             char note[72];
             if (tab_unknown > 0)
-                ImFormatString(note, IM_ARRAYSIZE(note), "%d more cannot be read back",
+                ImFormatString(note, IM_ARRAYSIZE(note), i18n::tr("%d more cannot be read back"),
                                tab_unknown);
             else
-                ImFormatString(note, IM_ARRAYSIZE(note), "Every setting here reports its state");
+                ImFormatString(note, IM_ARRAYSIZE(note), "%s", i18n::tr("Every setting here reports its state"));
             ImFont* nf2 = font_regular(text_xs);
             draw_text(dl, nf2, ImVec2(sum.Min.x + px(sp_4), sum.Min.y + px(118.f)),
                       mo::with_alpha(c_muted_foreground, alpha), note);
@@ -1738,7 +1739,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         else
             std::snprintf(value_buf[3], sizeof(value_buf[3]), "--");
 
-        const char* tile_labels[4] = {"CPU Usage", "RAM Usage", "Disk Usage", "Ping"};
+        const char* tile_labels[4] = {i18n::tr("CPU Usage"), i18n::tr("RAM Usage"), i18n::tr("Disk Usage"), i18n::tr("Ping")};
         const float tile_deltas[4] = {
             s.sys_snap.cpu_percent - s.sys_prev.cpu_percent,
             s.sys_snap.ram_percent - s.sys_prev.ram_percent,
@@ -1880,13 +1881,13 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                     px(sp_2);
             }
             if (s.dash_finding_count == 0)
-                pill(dl, ImVec2(pill_x, pill_y), "All verified", c_accent, alpha);
+                pill(dl, ImVec2(pill_x, pill_y), i18n::tr("All verified"), c_accent, alpha);
 
             const float btn_y = card.Min.y + px(44.f);
             if (s.dash_finding_count > 0)
             {
                 if (action("dash-optimize", ImVec2(btn_x, btn_y), btn_w, s.dash_optimize_btn,
-                           "Optimize now") &&
+                           i18n::tr("Optimize now")) &&
                     s.dash_optimize_btn == btn_idle)
                 {
                     s.dash_optimize_btn = btn_loading;
@@ -1953,7 +1954,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 }
             }
             else if (action("dash-rescan-hero", ImVec2(btn_x, btn_y), btn_w, s.dash_rescan_btn,
-                            "Scan again") &&
+                            i18n::tr("Scan again")) &&
                      s.dash_rescan_btn == btn_idle)
             {
                 s.dash_scanned = false;
@@ -1966,8 +1967,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             ImFont* trf = font_regular(text_xs);
             draw_text(dl, trf, ImVec2(btn_x + px(18.f), trust_y + px(1.f)),
                       mo::with_alpha(c_muted_foreground, alpha),
-                      s.dash_finding_count > 0 ? "Restore point created first"
-                                               : "Reads the registry, changes nothing");
+                      s.dash_finding_count > 0 ? i18n::tr("Restore point created first")
+                                               : i18n::tr("Reads the registry, changes nothing"));
 
             y = card.Max.y + px(sp_3);
         }
@@ -2043,7 +2044,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             const ImRect card(ImVec2(x, y), ImVec2(x + dashboard_width, y + head_h + body_h));
             panel(dl, card, alpha);
 
-            row_label(dl, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(16.f)), "Needs attention",
+            row_label(dl, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(16.f)), i18n::tr("Needs attention"),
                       nullptr, alpha);
 
             {
@@ -2054,7 +2055,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                     s.dash_scanned = false;
 
                 ImFont* rf = font_medium(text_xs);
-                const char* rl = "Scan again";
+                const char* rl = i18n::tr("Scan again");
                 draw_text(dl, rf,
                           ImVec2(rescan.GetCenter().x - text_width(rf, rl) * 0.5f,
                                  rescan.GetCenter().y - rf->LegacySize * 0.5f),
@@ -2120,9 +2121,9 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
                 ImFont* ff = font_medium(text_sm);
                 draw_text(dl, ff,
-                          ImVec2(fix.GetCenter().x - text_width(ff, "Fix") * 0.5f,
+                          ImVec2(fix.GetCenter().x - text_width(ff, i18n::tr("Fix")) * 0.5f,
                                  fix.GetCenter().y - ff->LegacySize * 0.5f),
-                          mo::with_alpha(c_foreground, alpha), "Fix");
+                          mo::with_alpha(c_foreground, alpha), i18n::tr("Fix"));
             }
 
             y = card.Max.y + px(sp_3);
@@ -2177,7 +2178,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
                 ImFont* lf = font_medium(text_xs);
                 draw_text(dl, lf, ImVec2(cx, card.Min.y + px(20.f)),
-                          mo::with_alpha(c_muted_foreground, alpha), k_stat_label[i]);
+                          mo::with_alpha(c_muted_foreground, alpha), i18n::tr(k_stat_label[i]));
 
                 ImFont* vf = font_medium(text_sm);
                 draw_text_ellipsis(dl, vf, ImVec2(cx, card.Min.y + px(42.f)),
