@@ -1,5 +1,7 @@
 #include "ui/screens/shell_menus.h"
 
+#include "ui/screens/shell.h"
+
 #include "application/brand.h"
 #include "assets/avatars.h"
 #include "ui/controls/widgets.h"
@@ -109,16 +111,7 @@ void account_block(ImDrawList* dl, const ImRect& panel, float y, const row_anim&
 
     // SZK mark tile, matching the sidebar footer avatar - the account is the
     // licence, so the brand stands in for a profile photo.
-    const float radius = avatar * 0.28f;
-    dl->AddRectFilled(at, ImVec2(at.x + avatar, at.y + avatar),
-                      mo::with_alpha(c_card_raised, a.opacity), radius);
-    dl->AddRect(ImVec2(at.x + px(0.5f), at.y + px(0.5f)),
-                ImVec2(at.x + avatar - px(0.5f), at.y + avatar - px(0.5f)),
-                mo::with_alpha(c_border_strong, a.opacity), radius, px(1.f), ImDrawFlags_None);
-    const float glyph = avatar * 0.62f;
-    const float inset = (avatar - glyph) * 0.5f;
-    icons::draw(icons::id::szk_mark, dl, ImVec2(at.x + inset, at.y + inset), glyph,
-                mo::with_alpha(c_accent, a.opacity));
+    shell::brand_avatar(dl, at, avatar, a.opacity);
 
     ImFont* nf = font_medium(text_sm);
     row_text(dl, nf,

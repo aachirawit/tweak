@@ -21,6 +21,13 @@ ImRect plate();
 // it. Returns false when no background image is loaded.
 bool background_uv(const ImRect& area, ImVec2& uv0, ImVec2& uv1);
 
+// The product mark in its rounded tile, as the sidebar header, the account chip,
+// the profile card and the account menu all draw it. One helper because four
+// copies of the same tile drifted apart the moment a logo image was added and
+// only one of them learned about it: it uses the image from assets/logos when
+// there is one and the built-in vector mark when there is not.
+void brand_avatar(ImDrawList* dl, const ImVec2& top_left, float size, float alpha);
+
 // How much of the ground colour a surface must lay back over the image to keep
 // the text on it above WCAG AA in the worst case - a white area of the picture.
 //

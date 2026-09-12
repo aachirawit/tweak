@@ -223,14 +223,26 @@ ImFont* font_cache::add(const std::vector<unsigned char>& family, float size)
     {
         static const ImWchar thai_range[] = {0x0E00, 0x0E7F, 0};
 
+        // Thai is merged a step larger than the Latin it sits beside. At equal
+        // pixel size it reads noticeably smaller: the script carries its weight
+        // in a shorter body while reserving vertical room above and below for
+        // vowels and tone marks, so a matching em box leaves the letterforms
+        // themselves smaller than Geist's lowercase. 1.15 brings the two to the
+        // same apparent size; the baseline nudge keeps them sitting on one line
+        // rather than the larger face riding high.
+        constexpr float k_thai_scale = 1.15f;
+        constexpr float k_thai_baseline_nudge = 0.06f;
+
         ImFontConfig merge;
         merge.FontDataOwnedByAtlas = false;
         merge.MergeMode = true;
+        merge.GlyphOffset = ImVec2(0.f, floorf(pixels * k_thai_baseline_nudge + 0.5f));
 #ifdef IMGUI_ENABLE_FREETYPE
         merge.FontLoaderFlags = 0;
 #endif
         ImGui::GetIO().Fonts->AddFontFromMemoryTTF(const_cast<unsigned char*>(thai_blob.data()),
-                                                   (int)thai_blob.size(), pixels, &merge,
+                                                   (int)thai_blob.size(),
+                                                   floorf(pixels * k_thai_scale + 0.5f), &merge,
                                                    thai_range);
     }
 

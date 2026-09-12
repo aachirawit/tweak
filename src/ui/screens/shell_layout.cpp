@@ -1,6 +1,8 @@
 #include "ui/screens/shell.h"
 
+#include "assets/avatars.h"
 #include "assets/images.h"
+#include "ui/foundation/icons.h"
 #include "ui/foundation/primitives.h"
 #include "ui/foundation/rounded_panel.h"
 
@@ -119,5 +121,30 @@ bool background_uv(const ImRect& area, ImVec2& uv0, ImVec2& uv1)
     uv0 = ImVec2(full0.x + (full1.x - full0.x) * t0.x, full0.y + (full1.y - full0.y) * t0.y);
     uv1 = ImVec2(full0.x + (full1.x - full0.x) * t1.x, full0.y + (full1.y - full0.y) * t1.y);
     return true;
+}
+
+void brand_avatar(ImDrawList* dl, const ImVec2& top_left, float size, float alpha)
+{
+    const ImVec2 bottom_right(top_left.x + size, top_left.y + size);
+    const float radius = size * 0.28f;
+
+    dl->AddRectFilled(top_left, bottom_right, mo::with_alpha(c_card_raised, alpha), radius);
+    dl->AddRect(ImVec2(top_left.x + px(0.5f), top_left.y + px(0.5f)),
+                ImVec2(bottom_right.x - px(0.5f), bottom_right.y - px(0.5f)),
+                mo::with_alpha(c_border_strong, alpha), radius, px(1.f), ImDrawFlags_None);
+
+    const float glyph = size * 0.62f;
+    const float inset = (size - glyph) * 0.5f;
+    const ImVec2 glyph_min(top_left.x + inset, top_left.y + inset);
+
+    if (const ImTextureID logo = avatars::logo(0); logo != ImTextureID_Invalid)
+    {
+        dl->AddImageRounded(logo, glyph_min, ImVec2(glyph_min.x + glyph, glyph_min.y + glyph),
+                            ImVec2(0.f, 0.f), ImVec2(1.f, 1.f),
+                            mo::with_alpha(IM_COL32_WHITE, alpha), glyph * 0.22f);
+        return;
+    }
+
+    icons::draw(icons::id::szk_mark, dl, glyph_min, glyph, mo::with_alpha(c_accent, alpha));
 }
 } // namespace szk::shell

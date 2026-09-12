@@ -274,17 +274,7 @@ sidebar_state& state()
 // round brand tile at the top.
 void draw_brand_avatar(ImDrawList* dl, const ImVec2& tl, float size, float alpha)
 {
-    const ImVec2 br(tl.x + size, tl.y + size);
-    const float radius = size * 0.28f;
-
-    dl->AddRectFilled(tl, br, mo::with_alpha(c_card_raised, alpha), radius);
-    dl->AddRect(ImVec2(tl.x + px(0.5f), tl.y + px(0.5f)), ImVec2(br.x - px(0.5f), br.y - px(0.5f)),
-                mo::with_alpha(c_border_strong, alpha), radius, px(1.f), ImDrawFlags_None);
-
-    const float glyph = size * 0.62f;
-    const float inset = (size - glyph) * 0.5f;
-    icons::draw(icons::id::szk_mark, dl, ImVec2(tl.x + inset, tl.y + inset), glyph,
-                mo::with_alpha(c_accent, alpha));
+    shell::brand_avatar(dl, tl, size, alpha);
 }
 } // namespace
 
@@ -395,9 +385,6 @@ bool menu_screen(float alpha)
             dl->AddRect(ImVec2(tile.x + px(0.5f), tile.y + px(0.5f)),
                         ImVec2(tile_max.x - px(0.5f), tile_max.y - px(0.5f)),
                         mo::with_alpha(c_border_strong, alpha), px(8.f), px(1.f), ImDrawFlags_None);
-            // A logo image in assets/logos replaces the built-in vector mark.
-            // Drawn to the same box the mark occupies, so the header geometry
-            // does not move; with the folder empty the mark is used as before.
             if (const ImTextureID brand_logo = avatars::logo(0);
                 brand_logo != ImTextureID_Invalid)
             {
