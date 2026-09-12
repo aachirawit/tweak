@@ -1,5 +1,6 @@
 #include "application/brand.h"
 #include "assets/avatars.h"
+#include "assets/images.h"
 #include "core/i18n.h"
 #include "core/product_info.h"
 #include "ui/controls/scroll.h"
@@ -349,12 +350,29 @@ bool menu_screen(float alpha)
 
         // The sidebar owns an opaque ground for the same reason a card does: its
         // rows are text, and a background image behind the shell must not reach
-        // them. Filled with the plate's own colour, so a build with no
-        // background image looks exactly as it did before.
-        dl->AddRectFilled(ImVec2(origin.x + px(1.f), origin.y + px(1.f)),
-                          ImVec2(origin.x + bar_w, plate.Max.y - px(1.f)),
-                          mo::with_alpha(c_background, alpha), px(shell::rounding),
-                          ImDrawFlags_RoundCornersLeft);
+        // them. Like a card it paints the slice of the picture behind it and
+        // lays the ground back over that, so the image stays continuous across
+        // the window instead of being interrupted by a flat column.
+        {
+            const ImVec2 rail_min(origin.x + px(1.f), origin.y + px(1.f));
+            const ImVec2 rail_max(origin.x + bar_w, plate.Max.y - px(1.f));
+            const ImRect rail_rect(rail_min, rail_max);
+
+            if (ImVec2 uv0, uv1; shell::background_uv(rail_rect, uv0, uv1))
+            {
+                dl->AddImageRounded(images::background()->id, rail_min, rail_max, uv0, uv1,
+                                    mo::with_alpha(IM_COL32_WHITE, alpha), px(shell::rounding),
+                                    ImDrawFlags_RoundCornersLeft);
+                dl->AddRectFilled(rail_min, rail_max,
+                                  mo::with_alpha(c_background, shell::card_scrim * alpha),
+                                  px(shell::rounding), ImDrawFlags_RoundCornersLeft);
+            }
+            else
+            {
+                dl->AddRectFilled(rail_min, rail_max, mo::with_alpha(c_background, alpha),
+                                  px(shell::rounding), ImDrawFlags_RoundCornersLeft);
+            }
+        }
 
         dl->AddRectFilled(ImVec2(origin.x + bar_w, origin.y + px(1.f)),
                           ImVec2(origin.x + bar_w + px(1.f), plate.Max.y - px(1.f)),

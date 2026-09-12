@@ -1,4 +1,4 @@
-﻿#include "ui/screens/shell.h"
+#include "ui/screens/shell.h"
 
 #include "assets/images.h"
 #include "ui/foundation/primitives.h"
@@ -66,30 +66,58 @@ ImRect plate()
     if (const images::texture* bg = images::background();
         bg != nullptr && bg->id != ImTextureID_Invalid && bg->width > 0 && bg->height > 0)
     {
-        const float plate_aspect = rect.GetWidth() / ImMax(1.f, rect.GetHeight());
-        const float image_aspect = (float)bg->width / (float)bg->height;
-
-        // Crop the overflowing axis in UV space, centred, so the image fills the
-        // plate without stretching whatever it is a picture of.
-        ImVec2 uv0(0.f, 0.f), uv1(1.f, 1.f);
-        if (image_aspect > plate_aspect)
-        {
-            const float keep = plate_aspect / image_aspect;
-            uv0.x = (1.f - keep) * 0.5f;
-            uv1.x = 1.f - uv0.x;
-        }
-        else
-        {
-            const float keep = image_aspect / plate_aspect;
-            uv0.y = (1.f - keep) * 0.5f;
-            uv1.y = 1.f - uv0.y;
-        }
-
+        ImVec2 uv0, uv1;
+        background_uv(rect, uv0, uv1);
         dl->AddImageRounded(bg->id, rect.Min, rect.Max, uv0, uv1, IM_COL32_WHITE, px(rounding));
         dl->AddRectFilled(rect.Min, rect.Max,
                           mo::with_alpha(c_background, k_background_scrim), px(rounding));
     }
 
     return rect;
+}
+
+bool background_uv(const ImRect& area, ImVec2& uv0, ImVec2& uv1)
+{
+    const images::texture* bg = images::background();
+    if (bg == nullptr || bg->id == ImTextureID_Invalid || bg->width <= 0 || bg->height <= 0)
+        return false;
+
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    if (window == nullptr)
+        return false;
+
+    const ImRect plate_rect(window->Pos, window->Pos + window->Size);
+    if (plate_rect.GetWidth() <= 0.f || plate_rect.GetHeight() <= 0.f)
+        return false;
+
+    // Cover-fit for the whole plate: crop the overflowing axis in UV space,
+    // centred, so the picture fills the window without being stretched.
+    const float plate_aspect = plate_rect.GetWidth() / plate_rect.GetHeight();
+    const float image_aspect = (float)bg->width / (float)bg->height;
+
+    ImVec2 full0(0.f, 0.f), full1(1.f, 1.f);
+    if (image_aspect > plate_aspect)
+    {
+        const float keep = plate_aspect / image_aspect;
+        full0.x = (1.f - keep) * 0.5f;
+        full1.x = 1.f - full0.x;
+    }
+    else
+    {
+        const float keep = image_aspect / plate_aspect;
+        full0.y = (1.f - keep) * 0.5f;
+        full1.y = 1.f - full0.y;
+    }
+
+    // Then take the slice of that range the requested rect covers, so a surface
+    // drawn anywhere on the plate lands on the part of the picture behind it.
+    const ImVec2 t0((area.Min.x - plate_rect.Min.x) / plate_rect.GetWidth(),
+                    (area.Min.y - plate_rect.Min.y) / plate_rect.GetHeight());
+    const ImVec2 t1((area.Max.x - plate_rect.Min.x) / plate_rect.GetWidth(),
+                    (area.Max.y - plate_rect.Min.y) / plate_rect.GetHeight());
+
+    uv0 = ImVec2(full0.x + (full1.x - full0.x) * t0.x, full0.y + (full1.y - full0.y) * t0.y);
+    uv1 = ImVec2(full0.x + (full1.x - full0.x) * t1.x, full0.y + (full1.y - full0.y) * t1.y);
+    return true;
 }
 } // namespace szk::shell

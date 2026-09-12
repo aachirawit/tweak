@@ -2,6 +2,7 @@
 
 #include "application/brand.h"
 #include "assets/avatars.h"
+#include "assets/images.h"
 #include "backend/activity_log.h"
 #include "backend/cleanup_tweaks.h"
 #include "backend/debloat_tweaks.h"
@@ -17,6 +18,7 @@
 #include "ui/controls/form_controls.h"
 #include "ui/controls/scroll.h"
 #include "ui/controls/widgets.h"
+#include "ui/screens/shell.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -66,11 +68,27 @@ float heading(ImDrawList* dl, const ImVec2& pos, const char* title, const char* 
 
 void panel(ImDrawList* dl, const ImRect& r, float alpha)
 {
-    // Opaque, not half-transparent. A card is where text lives, so it owns its
-    // own ground: whatever is behind the shell - a flat fill or a background
-    // image - cannot reach the text and change its contrast. This is what lets
-    // the background scrim stay light enough for an image to actually read.
-    dl->AddRectFilled(r.Min, r.Max, mo::with_alpha(c_card, alpha), px(16.f));
+    // A card still owns an opaque ground - text has to keep its contrast - but
+    // when there is a background image it paints the part of the picture that
+    // sits behind it rather than a flat colour, in register with the plate, and
+    // lays the ground back over it. The window then reads as one image with
+    // darker panes over it instead of a picture with grey blocks parked on top,
+    // which is what a flat fill looked like.
+    //
+    // shell::card_scrim is the measured floor: over a white area of a picture
+    // anything lighter drops c_muted_foreground below WCAG AA 4.5:1.
+    if (ImVec2 uv0, uv1; shell::background_uv(r, uv0, uv1))
+    {
+        dl->AddImageRounded(images::background()->id, r.Min, r.Max, uv0, uv1,
+                            mo::with_alpha(IM_COL32_WHITE, alpha), px(16.f));
+        dl->AddRectFilled(r.Min, r.Max,
+                          mo::with_alpha(c_background, shell::card_scrim * alpha), px(16.f));
+        dl->AddRectFilled(r.Min, r.Max, mo::with_alpha(c_card, 0.55f * alpha), px(16.f));
+    }
+    else
+    {
+        dl->AddRectFilled(r.Min, r.Max, mo::with_alpha(c_card, alpha), px(16.f));
+    }
     dl->AddRect(ImVec2(r.Min.x + px(0.5f), r.Min.y + px(0.5f)),
                 ImVec2(r.Max.x - px(0.5f), r.Max.y - px(0.5f)), mo::with_alpha(c_border, alpha),
                 px(16.f), px(1.f), ImDrawFlags_None);
