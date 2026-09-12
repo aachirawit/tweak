@@ -463,7 +463,7 @@ bool apply_sapphire_network_defaults()
     //   "SapphireOS Default Network Settings.bat"
     const int failed = run_default_netsh_bundle();
     const bool ok = failed == 0;
-    log("SZK network defaults",
+    log("numbanine network defaults",
         ok ? "All netsh commands applied" : std::to_string(failed) + " netsh command(s) failed");
     return ok;
 }

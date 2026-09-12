@@ -267,7 +267,7 @@ sidebar_state& state()
     return s;
 }
 
-// The account avatar is the SZK mark on a dark rounded tile, not a person's
+// The account avatar is the numbanine mark on a dark rounded tile, not a person's
 // photo - the licence is the account, so the brand is the right identity here.
 // Shared by the sidebar footer and the profile dropdown so both match. Square
 // with a soft radius rather than a circle, to read as an app tile beside the
@@ -370,10 +370,10 @@ bool menu_screen(float alpha)
 
         {
             // Static brand header. This was a "game" switcher from the template
-            // (SZK / Beta / Gamma); a single product has nothing to switch, so
+            // (numbanine / Beta / Gamma); a single product has nothing to switch, so
             // it is now just the mark, the name and the version - no dropdown.
             //
-            // The SZK brand tile: a dark rounded square with the emerald mark,
+            // The numbanine brand tile: a dark rounded square with the emerald mark,
             // the same pairing as the taskbar icon so the app reads as one
             // identity. Drawn as vector rather than a logo PNG - crisp at 28px
             // and theme-independent.

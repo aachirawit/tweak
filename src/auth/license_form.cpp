@@ -14,7 +14,7 @@ namespace
 {
 constexpr float k_message_duration = 0.2f;
 
-const char* k_title = "Sign in to SZK";
+const char* k_title = "Sign in to numbanine";
 const char* k_description =
     "Enter the licence key from your purchase email. It binds to this machine the first time "
     "you use it.";
@@ -96,7 +96,7 @@ auth_action license_screen()
     const char* submit_label = s.status == btn_loading   ? "Checking key"
                                : s.status == btn_success ? "Unlocked"
                                : s.status == btn_error   ? "Try again"
-                                                         : "Unlock SZK";
+                                                         : "Unlock numbanine";
 
     input_update(s.in_key, d_key, dt);
     stateful_button_update(s.submit, s.status, submit_label, dt);

@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string] $Version = "0.1.0",
@@ -27,7 +27,7 @@ if ($Version -cne $sourceVersion) {
     throw "Package version '$Version' does not match source version '$sourceVersion'."
 }
 
-$packageName = "SZK-$Version-win64"
+$packageName = "numbanine-$Version-win64"
 $outputRoot = if ([IO.Path]::IsPathRooted($OutputDirectory)) {
     [IO.Path]::GetFullPath($OutputDirectory)
 }
@@ -42,7 +42,7 @@ if (-not $SkipBuild) {
     & (Join-Path $PSScriptRoot "build.ps1") -Configuration Release -Rebuild -StopRunning
 }
 
-$applicationPath = Join-Path $repositoryRoot "Release\SZK.exe"
+$applicationPath = Join-Path $repositoryRoot "Release\numbanine.exe"
 $assetsRoot = Join-Path $repositoryRoot "assets"
 $entries = [System.Collections.Generic.List[object]]::new()
 
@@ -74,7 +74,7 @@ function Add-PackageEntry {
     })
 }
 
-Add-PackageEntry $applicationPath "SZK.exe"
+Add-PackageEntry $applicationPath "numbanine.exe"
 Add-PackageEntry (Join-Path $repositoryRoot "LICENSE") "LICENSE"
 Add-PackageEntry (Join-Path $repositoryRoot "README.md") "README.md"
 Add-PackageEntry (Join-Path $repositoryRoot "THIRD_PARTY_NOTICES.md") "THIRD_PARTY_NOTICES.md"
@@ -200,7 +200,7 @@ if ($ValidateStartup) {
     $process = $null
     try {
         [IO.Compression.ZipFile]::ExtractToDirectory($archivePath, $validationRoot)
-        $packagedExecutable = Join-Path $validationRoot "$packageName\SZK.exe"
+        $packagedExecutable = Join-Path $validationRoot "$packageName\numbanine.exe"
         $packagedWorkingDirectory = Split-Path -Parent $packagedExecutable
         $process = Start-Process -FilePath $packagedExecutable `
             -WorkingDirectory $packagedWorkingDirectory -WindowStyle Hidden -PassThru

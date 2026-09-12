@@ -6,7 +6,7 @@ namespace szk::sec
 // of a debugger; the result is OR-ed. Cheap enough to call on a timer.
 //
 // Read the .cpp before relying on any of this. The short version: these are
-// speed bumps. A researcher who knows what SZK is running (all of it is public
+// speed bumps. A researcher who knows what numbanine is running (all of it is public
 // technique) bypasses the lot in minutes with ScyllaHide or a few patches.
 // They keep out the casual "attach x64dbg and poke around" attempt, and that
 // is the whole of what a hand-rolled anti-debug buys.

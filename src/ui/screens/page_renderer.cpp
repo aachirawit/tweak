@@ -1225,7 +1225,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
     // preferences, which sit together at the end of the enum.
     static const char* const k_account_blurbs[] = {
         "Your licence and account details.",
-        "How SZK behaves, and how loudly.",
+        "How numbanine behaves, and how loudly.",
     };
 
     static const char* const k_blurbs[] = {
@@ -1507,7 +1507,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         if (*sub == 0 || *sub == 3)
         {
             const backend::power_plan_info info = backend::power_plan_active();
-            const bool is_szk = info.available && std::strcmp(info.name, "SZK") == 0;
+            const bool is_szk = info.available && std::strcmp(info.name, "numbanine") == 0;
             const char* status_label = !info.available ? "Unknown"
                                        : is_szk        ? "Active"
                                                        : "Not applied";
@@ -2195,7 +2195,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
     {
         const ImRect card(ImVec2(x, y), ImVec2(x + col, y + px(94.f)));
         panel(dl, card, alpha);
-        row_label(dl, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(16.f)), "SZK",
+        row_label(dl, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(16.f)), "numbanine",
                   "Build information", alpha);
 
         {
@@ -2229,7 +2229,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 px(16.f), mo::with_alpha(c_foreground, alpha));
 
             row_label(dl, ImVec2(icon_rect.Max.x + px(10.f), community.Min.y + px(14.f)),
-                      "Community", "Support, updates, and the rest of the SZK crew", alpha,
+                      "Community", "Support, updates, and the rest of the numbanine crew", alpha,
                       community.Max.x - (icon_rect.Max.x + px(10.f)) - px(sp_4));
 
             hairline(dl, community, community.Min.y + px(56.f), alpha);
@@ -2619,7 +2619,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         const ImRect card(ImVec2(x, y), ImVec2(x + col, y + px(96.f)));
         panel(dl, card, alpha);
 
-        // SZK mark tile, matching the sidebar footer and profile-menu avatars.
+        // numbanine mark tile, matching the sidebar footer and profile-menu avatars.
         const float avatar = px(56.f);
         const ImVec2 at(card.Min.x + px(sp_5), card.GetCenter().y - avatar * 0.5f);
         {

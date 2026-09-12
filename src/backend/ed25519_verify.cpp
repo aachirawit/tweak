@@ -15,7 +15,7 @@ extern "C"
 #else
 #define SZK_HAVE_TWEETNACL 0
 #pragma message(                                                                                   \
-    "SZK: tweetnacl not found - KeyAuth replies will NOT have their Ed25519 signature verified. "  \
+    "numbanine: tweetnacl not found - KeyAuth replies will NOT have their Ed25519 signature verified. "  \
     "See thirdparty/tweetnacl/README.md before shipping.")
 #endif
 

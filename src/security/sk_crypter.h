@@ -12,7 +12,7 @@
 // the brief window it is actually being read.
 //
 // What this is for: keeping API URLs, registry paths and message strings out
-// of a plain `strings SZK.exe` dump. It raises the effort to find them from
+// of a plain `strings numbanine.exe` dump. It raises the effort to find them from
 // "grep" to "set a breakpoint on the decryptor". It does NOT hide anything
 // from a debugger sitting on the decrypt call - nothing compiled into the
 // client can. Treat it as obfuscation, not secrecy.
@@ -23,7 +23,7 @@
 //
 // The object must outlive the pointer, so bind it to a name when you keep the
 // pointer around:
-//   auto path = SK("SOFTWARE\\SZK");
+//   auto path = SK("SOFTWARE\\numbanine");
 //   use(path.get());
 
 namespace szk::sec

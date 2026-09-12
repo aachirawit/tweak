@@ -347,7 +347,7 @@ bool launch_nvidia_profile_inspector()
 {
     wchar_t temp_path[MAX_PATH] = {};
     ::GetTempPathW(MAX_PATH, temp_path);
-    const std::wstring dir = std::wstring(temp_path) + L"SZKNvidiaTools\\";
+    const std::wstring dir = std::wstring(temp_path) + L"numbanineNvidiaTools\\";
     ::CreateDirectoryW(dir.c_str(), nullptr);
 
     const std::wstring exe_path = dir + L"nvidiaProfileInspector.exe";

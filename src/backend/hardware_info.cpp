@@ -128,7 +128,7 @@ bool create_system_restore_point()
     RESTOREPOINTINFOW info{};
     info.dwEventType = BEGIN_SYSTEM_CHANGE;
     info.dwRestorePtType = APPLICATION_INSTALL;
-    wcsncpy_s(info.szDescription, L"SZK checkpoint", _TRUNCATE);
+    wcsncpy_s(info.szDescription, L"numbanine checkpoint", _TRUNCATE);
 
     STATEMGRSTATUS status{};
     const bool ok = ::SRSetRestorePointW(&info, &status) != FALSE;

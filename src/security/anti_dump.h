@@ -3,7 +3,7 @@
 namespace szk::sec
 {
 // Anti-dump: erase the PE headers in the running image so a naive memory dump
-// of SZK.exe produces a file that will not load or open cleanly in a PE tool.
+// of numbanine.exe produces a file that will not load or open cleanly in a PE tool.
 //
 // ─── Read this before enabling it ───────────────────────────────────────────
 //

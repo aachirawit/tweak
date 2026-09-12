@@ -7,7 +7,7 @@
 // Calling an API the ordinary way puts its name in the Import Address Table,
 // where `dumpbin /imports` reads it straight off. Resolving it at runtime by
 // name keeps it out of the IAT, so a static look at the binary does not reveal
-// that SZK calls, say, NtQueryInformationProcess.
+// that numbanine calls, say, NtQueryInformationProcess.
 //
 // Worth doing for the handful of calls that give away a technique - the
 // anti-debug syscalls, VirtualProtect for the anti-dump step. Not worth doing

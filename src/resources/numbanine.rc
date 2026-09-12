@@ -1,11 +1,8 @@
 #include <windows.h>
 
-#define IDI_SZK 101
-#define IDR_NVIDIA_PROFILE_INSPECTOR_EXE 201
-#define IDR_NVIDIA_PROFILE_INSPECTOR_XML 202
-#define IDR_NVIDIA_PROFILE_INSPECTOR_NIP 203
+#include "resource.h"
 
-IDI_SZK ICON "szk.ico"
+IDI_NUMBANINE ICON "numbanine.ico"
 
 // NVIDIA Profile Inspector by Orbmu2k (open source), bundled so the app is
 // a single self-contained exe. Extracted to a temp folder and launched on
@@ -33,13 +30,13 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "CompanyName", "SZK\0"
-            VALUE "FileDescription", "SZK Interface\0"
+            VALUE "CompanyName", "numbanine\0"
+            VALUE "FileDescription", "numbanine Interface\0"
             VALUE "FileVersion", "0.1.0.0\0"
-            VALUE "InternalName", "SZK\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 SZK\0"
-            VALUE "OriginalFilename", "SZK.exe\0"
-            VALUE "ProductName", "SZK\0"
+            VALUE "InternalName", "numbanine\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 numbanine\0"
+            VALUE "OriginalFilename", "numbanine.exe\0"
+            VALUE "ProductName", "numbanine\0"
             VALUE "ProductVersion", "0.1.0\0"
         END
     END

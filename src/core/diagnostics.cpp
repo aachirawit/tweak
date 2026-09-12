@@ -37,7 +37,7 @@ std::filesystem::path log_path()
 {
     static const std::filesystem::path path = []
     {
-        std::filesystem::path directory = local_app_data() / L"SZK" / L"logs";
+        std::filesystem::path directory = local_app_data() / L"numbanine" / L"logs";
         std::error_code error;
         std::filesystem::create_directories(directory, error);
 
@@ -82,7 +82,7 @@ void write(const char* level, std::string_view subsystem, std::string_view messa
     }
     catch (...)
     {
-        ::OutputDebugStringA("[SZK] diagnostics write failed.\n");
+        ::OutputDebugStringA("[numbanine] diagnostics write failed.\n");
     }
 }
 } // namespace

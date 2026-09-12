@@ -14,7 +14,7 @@ namespace szk
 namespace
 {
 // What the panel says while the user finds their key. These are statements
-// about what SZK does, not testimonials - inventing customers and quoting
+// about what numbanine does, not testimonials - inventing customers and quoting
 // them is not something a licence screen should be doing.
 struct highlight
 {
@@ -24,7 +24,7 @@ struct highlight
 
 const highlight k_highlights[] = {
     {"Read the machine before changing it.",
-     "Every tweak on the dashboard is one SZK can verify against the registry, so the score is a "
+     "Every tweak on the dashboard is one numbanine can verify against the registry, so the score is a "
      "measurement rather than a promise."},
 
     {"A restore point before anything moves.",

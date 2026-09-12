@@ -29,7 +29,7 @@ namespace
 // ── Update endpoint ─────────────────────────────────────────────────────────
 // SK-wrapped so the host is not a plaintext string in the binary. Point these
 // at your own HTTPS host. The manifest is a tiny JSON document:
-//   {"version":"1.1.0","sha256":"<64 hex>","url":"/downloads/SZK-1.1.0.exe",
+//   {"version":"1.1.0","sha256":"<64 hex>","url":"/downloads/numbanine-1.1.0.exe",
 //    "notes":"What changed"}
 // Keep the download on the same host as the manifest so one TLS trust covers
 // both.
@@ -44,7 +44,7 @@ const wchar_t* manifest_path()
 
 // ── Manifest signing key ────────────────────────────────────────────────────
 //
-// This is SZK's OWN Ed25519 public key - not KeyAuth's. You generate the key
+// This is numbanine's OWN Ed25519 public key - not KeyAuth's. You generate the key
 // pair once, keep the private half offline on the machine that publishes
 // releases, and paste the public half here. Every manifest must carry a
 // "signature" over its canonical fields (see canonical_manifest below), and
@@ -150,7 +150,7 @@ bool https_get(const wchar_t* host, const wchar_t* path, std::string& body,
                const std::function<void(int)>& on_progress = {})
 {
     body.clear();
-    HINTERNET session = ::WinHttpOpen(L"SZK-Updater", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
+    HINTERNET session = ::WinHttpOpen(L"numbanine-Updater", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
                                       WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
     if (!session)
         return false;
@@ -314,7 +314,7 @@ void run_check()
 
     if (compare_versions(latest, product_info::version) <= 0)
     {
-        publish(update_status::up_to_date, "SZK is up to date.");
+        publish(update_status::up_to_date, "numbanine is up to date.");
         g_running.store(false);
         return;
     }
@@ -450,7 +450,7 @@ bool update_install_and_restart()
     // The script:
     //   1. waits for this PID to disappear (up to ~30s), so the exe is unlocked
     //   2. replaces the old exe with the verified .tmp
-    //   3. relaunches SZK and deletes itself
+    //   3. relaunches numbanine and deletes itself
     // %~f0 self-delete at the end keeps no turd in %TEMP%.
     HANDLE h = ::CreateFileW(script.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
                              FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -502,7 +502,7 @@ bool update_install_and_restart()
     ::CloseHandle(pi.hThread);
     ::CloseHandle(pi.hProcess);
 
-    publish(update_status::installing, "Installing update. SZK will restart.");
+    publish(update_status::installing, "Installing update. numbanine will restart.");
     return true; // caller should now exit so the script can swap the file
 }
 

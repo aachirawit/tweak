@@ -1,5 +1,7 @@
 #include "platform/win32_window.h"
 
+#include "resources/resource.h"
+
 #include <dwmapi.h>
 
 #pragma comment(lib, "dwmapi.lib")
@@ -32,6 +34,17 @@ bool win32_window::create(const window_config& config, UINT initial_dpi, message
     window_class.hInstance = instance_;
     window_class.hCursor = ::LoadCursorW(nullptr, IDC_ARROW);
     window_class.lpszClassName = class_name_.c_str();
+
+    // Without these the taskbar, Alt+Tab and the window menu all fall back to
+    // the generic Windows icon even though the exe carries one. Both slots are
+    // filled from the same resource so the shell picks the right size out of
+    // the icon group rather than downscaling the large one.
+    window_class.hIcon = static_cast<HICON>(
+        ::LoadImageW(instance_, MAKEINTRESOURCEW(IDI_NUMBANINE), IMAGE_ICON,
+                     ::GetSystemMetrics(SM_CXICON), ::GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR));
+    window_class.hIconSm = static_cast<HICON>(::LoadImageW(
+        instance_, MAKEINTRESOURCEW(IDI_NUMBANINE), IMAGE_ICON, ::GetSystemMetrics(SM_CXSMICON),
+        ::GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR));
 
     class_atom_ = ::RegisterClassExW(&window_class);
     if (!class_atom_)

@@ -109,7 +109,7 @@ void account_block(ImDrawList* dl, const ImRect& panel, float y, const row_anim&
     const float avatar = px(32.f);
     const ImVec2 at(panel.Min.x + px(12.f), y + a.dy + (px(k_account_h) - avatar) * 0.5f);
 
-    // SZK mark tile, matching the sidebar footer avatar - the account is the
+    // numbanine mark tile, matching the sidebar footer avatar - the account is the
     // licence, so the brand stands in for a profile photo.
     shell::brand_avatar(dl, at, avatar, a.opacity);
 

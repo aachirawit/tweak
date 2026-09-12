@@ -271,7 +271,7 @@ http_response http_post(const wchar_t* host, const wchar_t* path, const wchar_t*
 {
     http_response out;
 
-    HINTERNET session = ::WinHttpOpen(L"SZK", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
+    HINTERNET session = ::WinHttpOpen(L"numbanine", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
                                       WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
     if (!session)
         return out;

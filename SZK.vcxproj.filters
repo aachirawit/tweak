@@ -69,13 +69,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="src\resources\SZK.rc">
+    <ResourceCompile Include="src\resources\numbanine.rc">
       <Filter>Resources</Filter>
     </ResourceCompile>
+    <ClInclude Include="src\resources\resource.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
     <Manifest Include="src\resources\app.manifest">
       <Filter>Resources</Filter>
     </Manifest>
-    <Image Include="src\resources\szk.ico">
+    <Image Include="src\resources\numbanine.ico">
       <Filter>Resources</Filter>
     </Image>
     <None Include="src\resources\embedded\nvidiaProfileInspector.exe">
