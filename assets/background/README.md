@@ -14,9 +14,10 @@ they keep their own ground and the image cannot reach the text inside them. The
 image shows through everywhere else: the content padding, the gaps between
 cards, behind the header and footer strips.
 
-A scrim of the ground colour is laid back over the image at 70%
-(`k_background_scrim` in `src/ui/screens/shell_layout.cpp`). That value is
-chosen for dark artwork. The text it still has to protect is the text drawn
+A scrim of the ground colour is laid back over the image
+(`k_background_scrim` in `src/ui/screens/shell_layout.cpp`). It ships at 0.50,
+matched to the artwork bundled here: near-black except for display type in the
+middle of the frame, which the cards cover. The text it still has to protect is the text drawn
 straight onto the plate - the header row and the footer strip - and the limit is
 measured: `c_muted_foreground` needs a ground no brighter than 0.019 relative
 luminance to hold WCAG AA 4.5:1, which a white area of an image only reaches at
@@ -26,7 +27,8 @@ So pick the scrim to match the image:
 
 | Image | Scrim |
 |-------|-------|
-| Dark, low-contrast, no large light areas | 0.70 (default) |
+| Near-black, light only where cards cover it | 0.50 (shipped) |
+| Dark, low-contrast, no large light areas | 0.70 |
 | Mixed, some light areas | 0.80 - 0.85 |
 | Bright, or large light areas | 0.92, and it will read as a faint texture |
 

@@ -1,4 +1,4 @@
-#include "ui/screens/shell.h"
+﻿#include "ui/screens/shell.h"
 
 #include "assets/images.h"
 #include "ui/foundation/primitives.h"
@@ -40,18 +40,18 @@ ImVec2 animate_size(const ImVec2& target)
 //
 // The surfaces that carry text - content cards and the sidebar - are opaque, so
 // they keep their own ground and the image cannot reach the text inside them.
-// That is what allows a light scrim here: at 0.70 a dark artwork reads clearly
-// in the gaps between cards while every card and nav row is unaffected.
+// That is what allows a scrim this light: the only text it still has to protect
+// is what is drawn straight onto the plate, the header row and the footer strip.
 //
-// What the scrim still has to cover is the text drawn straight onto the plate:
-// the header row and the footer strip. Over a DARK image those are safe at this
-// value. Over a bright one they are not - c_muted_foreground needs a ground no
-// brighter than 0.019 relative luminance to hold WCAG AA 4.5:1, and a white
-// area of an image only falls to that at 0.92 (0.90 measures 4.23:1, 0.88
-// measures 3.96:1). So this is a knob, not a constant: 0.70 for dark artwork,
-// toward 0.92 if the image has large light areas, and a bright busy image is
-// still the wrong choice for a background behind a text-dense dashboard.
-constexpr float k_background_scrim = 0.70f;
+// 0.50 is matched to the artwork in assets/background, which is near-black
+// except for display type in the middle of the frame - the cards cover that
+// band, and the header and footer sit over the dark edges. It is not a value
+// that is safe for any image: c_muted_foreground needs a ground no brighter
+// than 0.019 relative luminance to hold WCAG AA 4.5:1, and a white area only
+// falls to that at 0.92 (0.90 measures 4.23:1, 0.88 measures 3.96:1). Swap the
+// image for a bright one and this has to come up with it - see
+// assets/background/README.md for the value per image type.
+constexpr float k_background_scrim = 0.50f;
 
 ImRect plate()
 {
