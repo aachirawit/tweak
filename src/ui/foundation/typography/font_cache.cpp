@@ -1,9 +1,11 @@
 #include "ui/foundation/typography/font_cache.h"
 #include "ui/foundation/runtime.h"
+#include "assets/asset_io.h"
 #include "ui/foundation/typography/kerning.h"
 
 #include <cmath>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <string>
 
@@ -16,31 +18,48 @@
 namespace
 {
 
-// Thai glyphs, merged in from the system font.
+// Thai glyphs, merged in on top of Geist, which has no Thai coverage of its own
+// (without a fallback Thai text renders as boxes).
 //
-// Geist has no Thai coverage, so Thai text renders as boxes without a fallback.
-// Rather than embed a Thai face - which would either bloat the binary or, in the
-// case of the fonts already on the machine, be a licence we do not have - the
-// system's own Thai UI font is loaded at runtime and merged into each size.
-// Leelawadee UI ships with every Windows since 8.1 and is a neutral sans that
-// sits beside Geist without a visible clash; Tahoma is the fallback for older
-// installs. With neither present nothing is merged and Thai simply renders as
-// it did before, so this can never stop the app from starting.
+// A font shipped in assets/fonts wins, because a bundled face is the only way
+// every machine renders the app identically - the system fonts differ by
+// Windows version and can be replaced. Failing that the system's Thai UI font
+// is used: Leelawadee UI on anything since 8.1, Tahoma on older installs. With
+// nothing found, nothing is merged and Thai renders as it did before, so this
+// can never stop the app from starting.
+std::vector<unsigned char> read_file(const std::wstring& path)
+{
+    std::ifstream in(path, std::ios::binary);
+    if (!in)
+        return {};
+    return std::vector<unsigned char>((std::istreambuf_iterator<char>(in)),
+                                      std::istreambuf_iterator<char>());
+}
+
 const std::vector<unsigned char>& thai_face()
 {
     static const std::vector<unsigned char> blob = []
     {
+        // Bundled first. asset_io resolves assets/ next to the executable or up
+        // to three directories above it, which is the same search the images
+        // and slides use.
+        for (const std::filesystem::path& file :
+             szk::asset_io::font_files(szk::asset_io::asset_directory(L"fonts", L"FONTS")))
+        {
+            std::vector<unsigned char> bundled = read_file(file.wstring());
+            if (!bundled.empty())
+                return bundled;
+        }
+
         wchar_t windows_dir[MAX_PATH] = {};
         if (::GetWindowsDirectoryW(windows_dir, MAX_PATH) == 0)
             return std::vector<unsigned char>{};
 
         for (const wchar_t* file : {L"/Fonts/LeelawUI.ttf", L"/Fonts/tahoma.ttf"})
         {
-            std::ifstream in(std::wstring(windows_dir) + file, std::ios::binary);
-            if (!in)
-                continue;
-            return std::vector<unsigned char>((std::istreambuf_iterator<char>(in)),
-                                              std::istreambuf_iterator<char>());
+            std::vector<unsigned char> system_face = read_file(std::wstring(windows_dir) + file);
+            if (!system_face.empty())
+                return system_face;
         }
         return std::vector<unsigned char>{};
     }();

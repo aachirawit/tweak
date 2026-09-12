@@ -16,7 +16,7 @@ struct credit_profile
 namespace profiles
 {
 constexpr credit_profile szk{
-    "SZK", "SZK", "S", "SZK", "SZK",
+    "numbanine", "numbanine", "N", "numbanine", "numbanine",
 };
 } // namespace profiles
 
@@ -32,5 +32,5 @@ constexpr const char* user_initials = active.user_initials;
 constexpr const char* author = active.author;
 constexpr const char* repo = active.repo;
 
-constexpr const char* game = "SZK";
+constexpr const char* game = "numbanine";
 } // namespace szk::brand

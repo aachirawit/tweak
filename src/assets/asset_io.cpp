@@ -45,6 +45,14 @@ bool is_image(const std::filesystem::path& path)
     return extension == L".jpg" || extension == L".jpeg" || extension == L".png" ||
            extension == L".bmp";
 }
+
+bool is_font(const std::filesystem::path& path)
+{
+    std::wstring extension = path.extension().wstring();
+    std::transform(extension.begin(), extension.end(), extension.begin(),
+                   [](wchar_t value) { return static_cast<wchar_t>(std::towlower(value)); });
+    return extension == L".ttf" || extension == L".otf";
+}
 } // namespace
 
 std::filesystem::path asset_directory(const wchar_t* name, const wchar_t* environment_key)
@@ -75,6 +83,21 @@ std::vector<std::filesystem::path> image_files(const std::filesystem::path& dire
          it.increment(error))
     {
         if (it->is_regular_file(error) && !error && is_image(it->path()))
+            files.push_back(it->path());
+    }
+
+    std::sort(files.begin(), files.end());
+    return files;
+}
+
+std::vector<std::filesystem::path> font_files(const std::filesystem::path& directory)
+{
+    std::vector<std::filesystem::path> files;
+    std::error_code error;
+    for (std::filesystem::directory_iterator it(directory, error), end; !error && it != end;
+         it.increment(error))
+    {
+        if (it->is_regular_file(error) && !error && is_font(it->path()))
             files.push_back(it->path());
     }
 
