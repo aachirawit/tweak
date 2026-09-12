@@ -66,6 +66,13 @@ template <typename F> void for_each_blur_tap(float blur, ImU32 col, F&& fn)
         }
 }
 
+// True for a code point that has no width of its own and draws on top of the
+// character before it: the Thai vowel signs and tone marks, and the combining
+// diacriticals Latin uses. Anything that steps through text a character at a
+// time - tracking, the button's letter cascade - has to keep one of these with
+// its base, or the mark slides off the letter it belongs to.
+bool is_combining_mark(unsigned int codepoint);
+
 void draw_text_blur(ImDrawList* dl, ImFont* f, const ImVec2& pos, ImU32 col, const char* s,
                     float blur);
 void draw_text_wrapped_blur(ImDrawList* dl, ImFont* f, const ImVec2& pos, ImU32 col, const char* s,

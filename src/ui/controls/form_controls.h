@@ -7,6 +7,7 @@
 #include "ui/foundation/primitives.h"
 
 #include <string>
+#include <vector>
 
 namespace szk
 {
@@ -91,6 +92,15 @@ struct icon_slot
 struct cascade_layer
 {
     std::string text;
+
+    // Byte offsets of each animated unit in `text`, with a trailing entry at
+    // text.size(). A unit is a whole grapheme, not a byte: Thai is three bytes
+    // per code point and stacks its vowels and tone marks on the consonant, so
+    // stepping a byte at a time both split the encoding into invalid pieces -
+    // the button read as a row of "?" - and would have flown the marks in
+    // separately from the letter they belong to.
+    std::vector<int> unit;
+
     bool exiting = false;
     float t = 0.f;
     mo::spring letter[64];

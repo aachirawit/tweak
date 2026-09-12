@@ -23,7 +23,18 @@ int decode(const char* p, const char* end, unsigned int* out)
     }
     return ImTextCharFromUtf8(out, p, end);
 }
+} // namespace
 
+bool is_combining_mark(unsigned int codepoint)
+{
+    return codepoint == 0x0E31 || (codepoint >= 0x0E34 && codepoint <= 0x0E3A) ||
+           (codepoint >= 0x0E47 && codepoint <= 0x0E4E) ||
+           (codepoint >= 0x0300 && codepoint <= 0x036F) || codepoint == 0x200C ||
+           codepoint == 0x200D;
+}
+
+namespace
+{
 template <typename F> float walk(ImFont* f, const char* s, const char* end, float tracking, F&& fn)
 {
     if (!f || !s)
@@ -35,6 +46,7 @@ template <typename F> float walk(ImFont* f, const char* s, const char* end, floa
 
     float x = 0.f;
     unsigned int prev = 0;
+    bool first = true;
 
     for (const char* p = s; p < end && *p;)
     {
@@ -43,17 +55,27 @@ template <typename F> float walk(ImFont* f, const char* s, const char* end, floa
         if (consumed <= 0)
             break;
 
-        if (prev)
-            x += ImFontGetKerning(f, size, prev, c);
+        // Tracking and kerning sit between characters, and a combining mark is
+        // not the next character - it draws on the one already placed. Putting
+        // either in front of it would carry a Thai vowel or tone mark off its
+        // consonant by the whole tracking amount.
+        if (!is_combining_mark(c))
+        {
+            if (!first)
+                x += tracking;
+            if (prev)
+                x += ImFontGetKerning(f, size, prev, c);
+        }
 
         fn(c, p, p + consumed, x);
 
-        x += f->CalcTextSizeA(size, FLT_MAX, 0.f, p, p + consumed).x + tracking;
+        x += f->CalcTextSizeA(size, FLT_MAX, 0.f, p, p + consumed).x;
         prev = c;
+        first = false;
         p += consumed;
     }
 
-    return x > 0.f ? x - tracking : 0.f;
+    return x;
 }
 
 template <typename F>
@@ -287,6 +309,7 @@ template <typename F> float walk_tabular(ImFont* f, const char* s, float trackin
 
     float x = 0.f;
     unsigned int prev = 0;
+    bool first = true;
 
     for (const char* p = s; p < end && *p;)
     {
@@ -295,23 +318,32 @@ template <typename F> float walk_tabular(ImFont* f, const char* s, float trackin
         if (consumed <= 0)
             break;
 
-        // No kerning into or out of a digit: the fixed cell is what keeps the
-        // column aligned, and kerning would reintroduce the jitter.
-        if (prev && !is_digit(prev) && !is_digit(c))
-            x += ImFontGetKerning(f, size, prev, c);
+        // As in walk(): a combining mark belongs on the character already
+        // placed, so no tracking and no kerning go in front of it.
+        const bool mark = is_combining_mark(c);
+        if (!mark)
+        {
+            if (!first)
+                x += tracking;
+
+            // No kerning into or out of a digit: the fixed cell is what keeps
+            // the column aligned, and kerning would reintroduce the jitter.
+            if (prev && !is_digit(prev) && !is_digit(c))
+                x += ImFontGetKerning(f, size, prev, c);
+        }
 
         const float natural = f->CalcTextSizeA(size, FLT_MAX, 0.f, p, p + consumed).x;
         const float advance = is_digit(c) ? cell : natural;
 
         fn(p, p + consumed, x + (advance - natural) * 0.5f, advance);
 
-        x += advance + tracking;
+        x += advance;
         prev = c;
+        first = false;
         p += consumed;
     }
 
-    // The trailing tracking is not part of the text's own width.
-    return x > 0.f ? x - tracking : 0.f;
+    return x;
 }
 } // namespace
 

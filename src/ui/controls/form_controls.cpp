@@ -478,6 +478,36 @@ constexpr float k_icon_size = 16.f;
 constexpr float k_slot_exit = 0.16f;
 constexpr float k_roll_blur = 6.f;
 constexpr float k_cascade_stagger = 0.025f;
+
+// Split into the units the cascade animates: one base code point plus whatever
+// marks hang off it - animating a mark on its own would fly a Thai tone mark in
+// without the consonant it sits on. Ends with an entry at text.size() so
+// unit[i + 1] is always the end of unit i.
+void split_units(const std::string& text, std::vector<int>& out)
+{
+    out.clear();
+
+    const char* begin = text.c_str();
+    const char* end = begin + text.size();
+    const char* p = begin;
+
+    while (p < end)
+    {
+        unsigned int cp = 0;
+        const int bytes = ImTextCharFromUtf8(&cp, p, end);
+        if (bytes <= 0)
+            break;
+
+        // A leading mark has no base to attach to, so it stands as its own unit
+        // rather than being dropped.
+        if (!is_combining_mark(cp) || out.empty())
+            out.push_back((int)(p - begin));
+
+        p += bytes;
+    }
+
+    out.push_back((int)text.size());
+}
 } // namespace
 
 static void icon_slot_update(icon_slot& slot, bool want, float dt)
@@ -554,6 +584,7 @@ void stateful_button_update(stateful_button_state& st, button_state state, const
 
         st.layers[0] = cascade_layer();
         st.layers[0].text = next;
+        split_units(st.layers[0].text, st.layers[0].unit);
         st.layers[0].live = true;
         st.layers[0].t = 0.f;
 
@@ -564,7 +595,7 @@ void stateful_button_update(stateful_button_state& st, button_state state, const
 
             // The update loop below honors the per-letter stagger. Seed the
             // first label past it so it cannot collapse back to one glyph.
-            const int count = (int)ImMin(next.size(), (size_t)64);
+            const int count = ImMin((int)st.layers[0].unit.size() - 1, 64);
             st.layers[0].t = (float)count * k_cascade_stagger;
         }
 
@@ -579,14 +610,16 @@ void stateful_button_update(stateful_button_state& st, button_state state, const
 
         layer.t += dt;
 
+        const int units = ImMax(0, (int)layer.unit.size() - 1);
+
         if (layer.exiting)
         {
-            if (layer.t >= k_slot_exit + (float)layer.text.size() * k_cascade_stagger * 0.5f)
+            if (layer.t >= k_slot_exit + (float)units * k_cascade_stagger * 0.5f)
                 layer.live = false;
         }
         else
         {
-            const int count = (int)ImMin(layer.text.size(), (size_t)64);
+            const int count = ImMin(units, 64);
             for (int i = 0; i < count; i++)
             {
                 if (layer.t < (float)i * k_cascade_stagger)
@@ -705,14 +738,15 @@ bool stateful_button_draw(const char* id, stateful_button_state& st, button_stat
             if (!layer.live || layer.text.empty())
                 continue;
 
-            const int count = (int)ImMin(layer.text.size(), (size_t)64);
+            const int count = ImMin((int)layer.unit.size() - 1, 64);
             float lx = x;
 
             for (int i = 0; i < count; i++)
             {
-                const char* ch = layer.text.c_str() + i;
+                const char* ch = layer.text.c_str() + layer.unit[i];
+                const char* ch_end = layer.text.c_str() + layer.unit[i + 1];
                 const float advance =
-                    f->CalcTextSizeA(f->LegacySize, FLT_MAX, 0.f, ch, ch + 1).x * scale;
+                    f->CalcTextSizeA(f->LegacySize, FLT_MAX, 0.f, ch, ch_end).x * scale;
 
                 float opacity, offset, blur;
                 if (layer.exiting)
@@ -735,7 +769,15 @@ bool stateful_button_draw(const char* id, stateful_button_state& st, button_stat
 
                 if (opacity > 0.004f)
                 {
-                    char glyph[2] = {*ch, '\0'};
+                    // A unit is one code point plus its marks - at most a dozen
+                    // bytes in Thai. The buffer is sized well past that and the
+                    // clamp is only there so a malformed string cannot run off
+                    // the end of it.
+                    char glyph[32];
+                    const size_t len = ImMin((size_t)(ch_end - ch), sizeof(glyph) - 1);
+                    memcpy(glyph, ch, len);
+                    glyph[len] = '\0';
+
                     draw_text_blur(dl, f, ImVec2(lx, top + glyph_top + offset),
                                    mo::with_alpha(fg, opacity), glyph, px(blur) * scale);
                 }
