@@ -4,6 +4,10 @@
 
 #include <cmath>
 #include <cstring>
+#include <fstream>
+#include <string>
+
+#include <windows.h>
 
 #ifdef IMGUI_ENABLE_FREETYPE
 #include "imgui_freetype.h"
@@ -11,6 +15,37 @@
 
 namespace
 {
+
+// Thai glyphs, merged in from the system font.
+//
+// Geist has no Thai coverage, so Thai text renders as boxes without a fallback.
+// Rather than embed a Thai face - which would either bloat the binary or, in the
+// case of the fonts already on the machine, be a licence we do not have - the
+// system's own Thai UI font is loaded at runtime and merged into each size.
+// Leelawadee UI ships with every Windows since 8.1 and is a neutral sans that
+// sits beside Geist without a visible clash; Tahoma is the fallback for older
+// installs. With neither present nothing is merged and Thai simply renders as
+// it did before, so this can never stop the app from starting.
+const std::vector<unsigned char>& thai_face()
+{
+    static const std::vector<unsigned char> blob = []
+    {
+        wchar_t windows_dir[MAX_PATH] = {};
+        if (::GetWindowsDirectoryW(windows_dir, MAX_PATH) == 0)
+            return std::vector<unsigned char>{};
+
+        for (const wchar_t* file : {L"/Fonts/LeelawUI.ttf", L"/Fonts/tahoma.ttf"})
+        {
+            std::ifstream in(std::wstring(windows_dir) + file, std::ios::binary);
+            if (!in)
+                continue;
+            return std::vector<unsigned char>((std::istreambuf_iterator<char>(in)),
+                                              std::istreambuf_iterator<char>());
+        }
+        return std::vector<unsigned char>{};
+    }();
+    return blob;
+}
 
 float ttf_em_scale(const std::vector<unsigned char>& blob)
 {
@@ -125,6 +160,23 @@ ImFont* font_cache::add(const std::vector<unsigned char>& family, float size)
     const float pixels = floorf(size * ttf_em_scale(family) * szk::ui_runtime::scale + 0.5f);
     ImFont* result = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(
         const_cast<unsigned char*>(family.data()), (int)family.size(), pixels, &cfg);
+
+    // Merge Thai on top of the Latin face at the same size. The range is Thai
+    // only: GetGlyphRangesThai() would also pull in Latin, and every Latin glyph
+    // is already here from the face above.
+    if (const std::vector<unsigned char>& thai = thai_face(); !thai.empty())
+    {
+        static const ImWchar thai_range[] = {0x0E00, 0x0E7F, 0};
+
+        ImFontConfig merge;
+        merge.FontDataOwnedByAtlas = false;
+        merge.MergeMode = true;
+#ifdef IMGUI_ENABLE_FREETYPE
+        merge.FontLoaderFlags = 0;
+#endif
+        ImGui::GetIO().Fonts->AddFontFromMemoryTTF(const_cast<unsigned char*>(thai.data()),
+                                                   (int)thai.size(), pixels, &merge, thai_range);
+    }
 
     data.push_back({&family, size, result});
     return result;

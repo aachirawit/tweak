@@ -1,5 +1,6 @@
 #include "application/brand.h"
 #include "assets/avatars.h"
+#include "core/i18n.h"
 #include "core/product_info.h"
 #include "ui/controls/scroll.h"
 #include "ui/controls/theme_toggle.h"
@@ -445,7 +446,7 @@ bool menu_screen(float alpha)
                 ImFont* f = font_medium(k_label_size);
                 draw_text_tracked(
                     dl, f, ImVec2(menu_x + px(8.f + label_dx), y + line_top(f, px(16.f))),
-                    mo::with_alpha(c_muted_foreground, label_a), group_label, px(k_label_track));
+                    mo::with_alpha(c_muted_foreground, label_a), i18n::tr(group_label), px(k_label_track));
             }
             if (group_label)
                 y += px(k_label_h + k_label_mb);
@@ -502,7 +503,7 @@ bool menu_screen(float alpha)
                 draw_text(dl, f,
                           ImVec2(icon_slot.x + px(k_icon_slot + k_item_gap_x + label_dx),
                                  centre.y - f->LegacySize * 0.5f),
-                          mo::with_alpha(text_col, label_a), item.label);
+                          mo::with_alpha(text_col, label_a), i18n::tr(item.label));
 
                 if (item.badge)
                 {
@@ -621,7 +622,7 @@ bool menu_screen(float alpha)
                               mo::with_alpha(c_border, alpha));
 
             const int active_index = route_index(s.active);
-            const char* crumb_text = page_title(s.active, s.sub_index[active_index]);
+            const char* crumb_text = i18n::tr(page_title(s.active, s.sub_index[active_index]));
             draw_text(dl, f14,
                       ImVec2(ix + px(81.f), origin.y + px(22.f) + line_top(f14, px(leading_sm))),
                       mo::with_alpha(c_foreground, alpha), crumb_text);
@@ -633,6 +634,41 @@ bool menu_screen(float alpha)
             const ImRect toggle_rect(ImVec2(bar_right - button, origin.y + px(12.f)),
                                      ImVec2(bar_right, origin.y + px(52.f)));
             theme_toggle("theme", toggle_rect, 16.f, alpha);
+
+            // Language switch, beside the theme switch because it is the same
+            // kind of choice: a display preference, not a setting about the
+            // machine. The label is the language it will switch TO, so the
+            // button says what pressing it does rather than where you are.
+            const ImRect lang_rect(ImVec2(toggle_rect.Min.x - gap - button, toggle_rect.Min.y),
+                                   ImVec2(toggle_rect.Min.x - gap, toggle_rect.Max.y));
+            {
+                ImGui::PushID("lang");
+                const ImGuiID lang_id = window->GetID("lang-toggle");
+                ImGui::SetCursorScreenPos(lang_rect.Min);
+                ImGui::ItemSize(lang_rect.GetSize());
+                ImGui::ItemAdd(lang_rect, lang_id);
+                bool lang_hovered = false, lang_held = false;
+                const bool lang_pressed =
+                    !pointer_claimed() &&
+                    ImGui::ButtonBehavior(lang_rect, lang_id, &lang_hovered, &lang_held);
+                ImGui::PopID();
+
+                if (lang_pressed)
+                    i18n::toggle_language();
+
+                if (lang_hovered)
+                    dl->AddRectFilled(lang_rect.Min, lang_rect.Max,
+                                      mo::with_alpha(c_card, alpha), px(8.f));
+
+                ImFont* lf2 = font_medium(text_xs);
+                const char* lang_label = i18n::language() == i18n::lang::en ? "TH" : "EN";
+                const float lang_w = text_width(lf2, lang_label);
+                draw_text(dl, lf2,
+                          ImVec2(lang_rect.GetCenter().x - lang_w * 0.5f,
+                                 lang_rect.GetCenter().y - lf2->LegacySize * 0.5f),
+                          mo::with_alpha(lang_hovered ? c_foreground : c_muted_foreground, alpha),
+                          lang_label);
+            }
 
             // The notification bell used to sit between search and the theme
             // toggle; with notifications gone, search extends to the toggle.
@@ -672,7 +708,7 @@ bool menu_screen(float alpha)
 
             ImFont* f10 = font_regular(k_label_size);
             draw_text_tracked(dl, f10, ImVec2(bx, rule_y + px(12.f) + line_top(f10, px(15.f))),
-                              mo::with_alpha(c_muted_foreground, alpha), "ACTIVE VIEW", px(1.6f));
+                              mo::with_alpha(c_muted_foreground, alpha), i18n::tr("ACTIVE VIEW"), px(1.6f));
 
             draw_text(dl, f14, ImVec2(bx, rule_y + px(31.f) + line_top(f14, px(leading_sm))),
                       mo::with_alpha(c_foreground, alpha), crumb_text);

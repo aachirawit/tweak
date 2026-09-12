@@ -95,6 +95,9 @@
     <ClCompile Include="src\core\environment.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="src\core\i18n.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
     <ClCompile Include="src\core\diagnostics.cpp">
       <Filter>Core</Filter>
     </ClCompile>
@@ -281,6 +284,9 @@
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="src\core\environment.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\i18n.h">
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="src\core\diagnostics.h">

@@ -1,5 +1,7 @@
 #include "ui/controls/widgets.h"
 
+#include "core/i18n.h"
+
 #include "ui/foundation/draw.h"
 #include "ui/foundation/icons.h"
 #include "ui/foundation/motion/motion.h"
@@ -601,7 +603,7 @@ float tabs_width(const char* const* labels, int count, tabs_variant variant)
 {
     float w = 0.f;
     for (int i = 0; i < count; i++)
-        w += tab_label_width(labels[i], variant);
+        w += tab_label_width(i18n::tr(labels[i]), variant);
 
     if (variant == tabs_pill)
         w += px(4.f) * 2.f + px(4.f) * (float)ImMax(count - 1, 0);
@@ -644,7 +646,7 @@ bool tabs(const char* id, const ImVec2& pos, const char* const* labels, int coun
 
     for (int i = 0; i < count; i++)
     {
-        const float w = tab_label_width(labels[i], variant);
+        const float w = tab_label_width(i18n::tr(labels[i]), variant);
         const ImRect bb(ImVec2(x, list.Min.y + pad), ImVec2(x + w, list.Max.y - pad));
 
         ImGui::PushID(i);
@@ -690,16 +692,16 @@ bool tabs(const char* id, const ImVec2& pos, const char* const* labels, int coun
     ImFont* f = font_medium(text_sm);
     for (int i = 0; i < count; i++)
     {
-        const float w = tab_label_width(labels[i], variant);
+        const float w = tab_label_width(i18n::tr(labels[i]), variant);
         const bool is_active = (*active == i);
         const ImU32 target = (variant == tabs_underline)
                                  ? (is_active ? c_foreground : c_muted_foreground)
                                  : (is_active ? c_primary_foreground : c_muted_foreground);
 
         const ImU32 col = st->text[i].update(target, dt, 0.15f);
-        const float lw = text_width(f, labels[i]);
+        const float lw = text_width(f, i18n::tr(labels[i]));
         draw_text(dl, f, ImVec2(x + (w - lw) * 0.5f, list.GetCenter().y - f->LegacySize * 0.5f),
-                  col, labels[i]);
+                  col, i18n::tr(labels[i]));
 
         x += w + gap;
     }

@@ -43,6 +43,7 @@
     <ClCompile Include="src\auth\license_form.cpp" />
     <ClCompile Include="src\core\diagnostics.cpp" />
     <ClCompile Include="src\core\environment.cpp" />
+    <ClCompile Include="src\core\i18n.cpp" />
     <ClCompile Include="src\generated\fonts\geist_data.cpp">
       <AdditionalOptions>/utf-8 /Zm2000 /bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -140,6 +141,7 @@
     <ClInclude Include="src\auth\auth.h" />
     <ClInclude Include="src\core\diagnostics.h" />
     <ClInclude Include="src\core\environment.h" />
+    <ClInclude Include="src\core\i18n.h" />
     <ClInclude Include="src\core\product_info.h" />
     <ClInclude Include="src\generated\fonts\geist_data.h" />
     <ClInclude Include="src\graphics\dx11_helpers.h" />

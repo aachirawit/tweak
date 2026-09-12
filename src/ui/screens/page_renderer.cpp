@@ -10,6 +10,7 @@
 #include "backend/os_tweaks.h"
 #include "backend/power_plan.h"
 #include "backend/reshade_manager.h"
+#include "core/i18n.h"
 #include "backend/system_monitor.h"
 #include "backend/updater.h"
 #include "core/product_info.h"
@@ -1221,7 +1222,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
     const int account_base = route_index(route::profile);
     const char* blurb = (nav >= account_base) ? k_account_blurbs[ImClamp(nav - account_base, 0, 1)]
                                               : k_blurbs[ImClamp(nav, 0, account_base - 1)];
-    y += heading(dl, ImVec2(x, y), title, blurb, w, alpha);
+    y += heading(dl, ImVec2(x, y), i18n::tr(title), i18n::tr(blurb), w, alpha);
 
     if (sub_count > 0)
     {
