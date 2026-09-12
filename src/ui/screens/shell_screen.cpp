@@ -376,8 +376,23 @@ bool menu_screen(float alpha)
             dl->AddRect(ImVec2(tile.x + px(0.5f), tile.y + px(0.5f)),
                         ImVec2(tile_max.x - px(0.5f), tile_max.y - px(0.5f)),
                         mo::with_alpha(c_border_strong, alpha), px(8.f), px(1.f), ImDrawFlags_None);
-            icons::draw(icons::id::szk_mark, dl, ImVec2(tile.x + px(6.f), tile.y + px(6.f)),
-                        px(k_icon), mo::with_alpha(c_accent, alpha));
+            // A logo image in assets/logos replaces the built-in vector mark.
+            // Drawn to the same box the mark occupies, so the header geometry
+            // does not move; with the folder empty the mark is used as before.
+            if (const ImTextureID brand_logo = avatars::logo(0);
+                brand_logo != ImTextureID_Invalid)
+            {
+                dl->AddImageRounded(brand_logo, ImVec2(tile.x + px(6.f), tile.y + px(6.f)),
+                                    ImVec2(tile.x + px(6.f) + px(k_icon),
+                                           tile.y + px(6.f) + px(k_icon)),
+                                    ImVec2(0.f, 0.f), ImVec2(1.f, 1.f),
+                                    mo::with_alpha(IM_COL32_WHITE, alpha), px(6.f));
+            }
+            else
+            {
+                icons::draw(icons::id::szk_mark, dl, ImVec2(tile.x + px(6.f), tile.y + px(6.f)),
+                            px(k_icon), mo::with_alpha(c_accent, alpha));
+            }
 
             if (label_a > 0.004f)
             {

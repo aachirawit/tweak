@@ -1273,6 +1273,11 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         // alongside it) actually starts here, after that label.
         const float content_top = y;
 
+        // Counted while the list is built and reported in the aside card below,
+        // so the right-hand column has something to say on the tabs that carry
+        // no tool card of their own.
+        int tab_total = 0, tab_applied = 0, tab_unknown = 0;
+
         if (*sub != 3)
         {
             if (!s.gpu_vendor_queried)
@@ -1313,6 +1318,16 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 s.row_status_checked_sub = *sub;
             }
 
+            for (int j = 0; j < count; j++)
+            {
+                const int idx = shown[j];
+                tab_total++;
+                if (k_modules[idx].check == nullptr)
+                    tab_unknown++;
+                else if (s.row_applied[idx])
+                    tab_applied++;
+            }
+
             const ImRect card(ImVec2(x, y), ImVec2(x + col, y + px(sp_4) * 2.f +
                                                                 px(40.f) * (float)ImMax(count, 1)));
             panel(dl, card, alpha);
@@ -1341,10 +1356,16 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
                 if (m.check)
                 {
-                    const ImU32 dot_color =
-                        mo::with_alpha(s.row_applied[i] ? c_success : c_destructive, alpha);
+                    // Shape carries the state as well as the colour - filled for
+                    // applied, hollow for not - so the two are still distinct
+                    // without colour vision.
+                    const bool on = s.row_applied[i];
+                    const ImU32 dot_color = mo::with_alpha(on ? c_success : c_destructive, alpha);
                     const ImVec2 dot_center(card.Max.x - px(sp_4) - px(4.f), ry + px(9.f));
-                    dl->AddCircleFilled(dot_center, px(3.f), dot_color);
+                    if (on)
+                        dl->AddCircleFilled(dot_center, px(3.5f), dot_color);
+                    else
+                        dl->AddCircle(dot_center, px(3.5f), dot_color, 0, px(1.4f));
                 }
 
                 draw_text(dl, rf, ImVec2(role_x, ry + px(3.f)),
@@ -1549,6 +1570,49 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 y = ImMax(y, szk.Max.y + px(sp_4));
             else
                 y = szk.Max.y + px(sp_4);
+        }
+
+        // The tool cards above only appear on All tweaks and NVIDIA. On every
+        // other tab the right-hand column had nothing in it and simply read as
+        // dead space, so it gets a summary of the tab actually being looked at:
+        // how many of its settings are applied, and how many cannot be read
+        // back at all. The numbers are the same ones the list just drew.
+        if (two_col && !nip_shown && tab_total > 0)
+        {
+            const int readable = tab_total - tab_unknown;
+            const ImRect sum(ImVec2(aside_x, content_top),
+                             ImVec2(aside_x + aside_w, content_top + px(150.f)));
+            panel(dl, sum, alpha);
+
+            row_label(dl, ImVec2(sum.Min.x + px(sp_4), sum.Min.y + px(16.f)), "This tab",
+                      "What is already applied here", alpha);
+
+            char headline[48];
+            ImFormatString(headline, IM_ARRAYSIZE(headline), "%d of %d applied", tab_applied,
+                           ImMax(readable, 0));
+            ImFont* hf = font_semibold(text_xl);
+            draw_text_tabular(dl, hf,
+                              ImVec2(sum.Min.x + px(sp_4),
+                                     sum.Min.y + px(62.f) + line_top(hf, px(leading_xl))),
+                              mo::with_alpha(c_foreground, alpha), headline);
+
+            const ImRect meter_rect(ImVec2(sum.Min.x + px(sp_4), sum.Min.y + px(100.f)),
+                                    ImVec2(sum.Max.x - px(sp_4), sum.Min.y + px(106.f)));
+            const float filled =
+                readable > 0 ? (float)tab_applied / (float)readable : 0.f;
+            meter(dl, meter_rect, filled, filled >= 0.999f ? c_accent : c_amber_500, alpha);
+
+            char note[72];
+            if (tab_unknown > 0)
+                ImFormatString(note, IM_ARRAYSIZE(note), "%d more cannot be read back",
+                               tab_unknown);
+            else
+                ImFormatString(note, IM_ARRAYSIZE(note), "Every setting here reports its state");
+            ImFont* nf2 = font_regular(text_xs);
+            draw_text(dl, nf2, ImVec2(sum.Min.x + px(sp_4), sum.Min.y + px(118.f)),
+                      mo::with_alpha(c_muted_foreground, alpha), note);
+
+            y = ImMax(y, sum.Max.y + px(sp_4));
         }
         break;
     }
