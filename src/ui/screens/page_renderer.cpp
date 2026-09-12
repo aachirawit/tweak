@@ -6,6 +6,7 @@
 #include "backend/activity_log.h"
 #include "backend/cleanup_tweaks.h"
 #include "backend/debloat_tweaks.h"
+#include "backend/game_config.h"
 #include "backend/gpu_tweaks.h"
 #include "backend/hardware_info.h"
 #include "backend/os_tweaks.h"
@@ -370,7 +371,7 @@ float aside_lines(ImDrawList* dl, const ImVec2& pos, float width, float alpha, c
     return (card.Max.y - pos.y);
 }
 
-constexpr int k_module_count = 55;
+constexpr int k_module_count = 57;
 constexpr int k_range_sample_count = 13;
 constexpr int k_sys_history = 60; // rolling live-sample window for the Dashboard
 
@@ -509,7 +510,7 @@ const module_row k_modules[] = {
     {"Disable USB Selective Suspend", "Gaming", 1, backend::check_usb_selective_suspend_disabled,
      finding_advised, "Windows may power down the mouse or keyboard mid-session."},
     {"BCD Timer Tweaks", "Gaming", 1},
-    {"Szk Network Tweaks", "Network", 2},
+    {"numbanine Network Tweaks", "Network", 2},
     {"Network Driver Tweaks", "Network", 2},
     {"Process Priority Tweaks", "Gaming", 1},
     {"Network Hardening", "Network", 2},
@@ -565,6 +566,10 @@ const module_row k_modules[] = {
     {"Empty Recycle Bin", "Cleanup", 6},
     {"FiveM Exclusive Fullscreen", "Gaming", 1,
      backend::check_fivem_disable_fullscreen_optimizations},
+    {"FiveM Launcher Config", "Gaming", 1, backend::check_fivem_citizenfx_config, finding_note,
+     "FiveM still boots through the Rockstar launcher and queues an extra frame."},
+    {"GTA V Graphics Preset", "Gaming", 1, backend::check_gta5_graphics_preset, finding_advised,
+     "Shadows, MSAA and post-processing are still on, and they cost the most frames."},
 };
 static_assert(IM_ARRAYSIZE(k_modules) == k_module_count, "module_rows is per module");
 
@@ -810,6 +815,12 @@ apply_result apply_module(int index)
     case 54:
         ok = backend::fivem_disable_fullscreen_optimizations();
         break;
+    case 55:
+        ok = backend::apply_fivem_citizenfx_config();
+        break;
+    case 56:
+        ok = backend::apply_gta5_graphics_preset();
+        break;
     default:
         break;
     }
@@ -846,7 +857,7 @@ int apply_priority(int index)
     case 7:
         return 80; // Low Latency TCP
     case 10:
-        return 90; // Szk Network Tweaks
+        return 90; // numbanine Network Tweaks
     case 13:
         return 100; // Network Hardening
     case 22:

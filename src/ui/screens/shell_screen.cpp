@@ -276,6 +276,113 @@ void draw_brand_avatar(ImDrawList* dl, const ImVec2& tl, float size, float alpha
 {
     shell::brand_avatar(dl, tl, size, alpha);
 }
+
+// ── Language switch ─────────────────────────────────────────────────────────
+// Both languages, side by side, with the active one carried on a sliding
+// indicator. This replaces a 40px button that showed only the language it would
+// switch to: it read as an abbreviation rather than a control, it never said
+// which language was on, and the search trigger was laid out to the same right
+// edge, so it sat on top of the button and took the clicks.
+struct lang_switch_state
+{
+    mo::spring indicator;
+    mo::spring hover[2];
+    bool seeded = false;
+};
+
+constexpr float k_lang_switch_h = 32.f;
+constexpr float k_lang_pad = 10.f;
+
+struct lang_option
+{
+    i18n::lang value;
+    const char* label;
+};
+
+constexpr lang_option k_languages[2] = {
+    {i18n::lang::en, "EN"},
+    {i18n::lang::th, "\xE0\xB9\x84\xE0\xB8\x97\xE0\xB8\xA2"}, // ไทย
+};
+
+// The width both cells share, so the indicator is one size and the switch does
+// not resize when the active language changes.
+float lang_cell_width(ImFont* f)
+{
+    float widest = 0.f;
+    for (const lang_option& option : k_languages)
+        widest = ImMax(widest, text_width(f, option.label));
+    return widest + px(k_lang_pad) * 2.f;
+}
+
+void language_switch(const ImRect& rect, float alpha)
+{
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    const float dt = ImGui::GetIO().DeltaTime;
+
+    lang_switch_state* st =
+        ui_runtime::animation_state<lang_switch_state>(window->GetID("lang-switch"));
+
+    const float cell = rect.GetWidth() * 0.5f;
+    const int active = i18n::language() == i18n::lang::en ? 0 : 1;
+
+    if (!st->seeded)
+    {
+        st->indicator.snap((float)active);
+        st->seeded = true;
+    }
+
+    dl->AddRectFilled(rect.Min, rect.Max, mo::with_alpha(c_card, alpha), px(9.f));
+    dl->AddRect(ImVec2(rect.Min.x + px(0.5f), rect.Min.y + px(0.5f)),
+                ImVec2(rect.Max.x - px(0.5f), rect.Max.y - px(0.5f)),
+                mo::with_alpha(c_border, alpha), px(9.f), px(1.f), ImDrawFlags_None);
+
+    const float slide = st->indicator.to((float)active, mo::SPRING_SWAP, dt);
+    const ImVec2 pill_min(rect.Min.x + px(3.f) + cell * slide, rect.Min.y + px(3.f));
+    const ImVec2 pill_max(pill_min.x + cell - px(6.f), rect.Max.y - px(3.f));
+    dl->AddRectFilled(pill_min, pill_max, mo::with_alpha(c_card_raised, alpha), px(7.f));
+    dl->AddRect(ImVec2(pill_min.x + px(0.5f), pill_min.y + px(0.5f)),
+                ImVec2(pill_max.x - px(0.5f), pill_max.y - px(0.5f)),
+                mo::with_alpha(c_border_strong, alpha), px(7.f), px(1.f), ImDrawFlags_None);
+
+    ImFont* f = font_medium(text_xs);
+
+    for (int i = 0; i < 2; i++)
+    {
+        const ImRect cell_rect(ImVec2(rect.Min.x + cell * (float)i, rect.Min.y),
+                               ImVec2(rect.Min.x + cell * (float)(i + 1), rect.Max.y));
+
+        ImGui::PushID(i);
+        const ImGuiID id = window->GetID("lang-cell");
+        ImGui::SetCursorScreenPos(cell_rect.Min);
+        ImGui::ItemSize(ImVec2(0, 0));
+        ImGui::ItemAdd(cell_rect, id);
+
+        bool hovered = false, held = false;
+        const bool pressed =
+            !pointer_claimed() && ImGui::ButtonBehavior(cell_rect, id, &hovered, &held);
+        ImGui::PopID();
+
+        if (pressed)
+            i18n::set_language(k_languages[i].value);
+
+        if (hovered && i != active)
+            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+
+        // The inactive side lifts towards the foreground on hover so it reads
+        // as the other half of a control rather than as static text.
+        const float lift = st->hover[i].to((hovered && i != active) ? 1.f : 0.f, mo::SPRING_SWAP, dt);
+        const ImU32 col = i == active
+                              ? c_foreground
+                              : mo::mix(c_muted_foreground, c_foreground, lift);
+
+        const float w = text_width(f, k_languages[i].label);
+        draw_text(dl, f,
+                  ImVec2(cell_rect.GetCenter().x - w * 0.5f,
+                         cell_rect.GetCenter().y - f->LegacySize * 0.5f),
+                  mo::with_alpha(col, alpha), k_languages[i].label);
+    }
+}
 } // namespace
 
 bool menu_screen(float alpha)
@@ -623,43 +730,20 @@ bool menu_screen(float alpha)
 
             // Language switch, beside the theme switch because it is the same
             // kind of choice: a display preference, not a setting about the
-            // machine. The label is the language it will switch TO, so the
-            // button says what pressing it does rather than where you are.
-            const ImRect lang_rect(ImVec2(toggle_rect.Min.x - gap - button, toggle_rect.Min.y),
-                                   ImVec2(toggle_rect.Min.x - gap, toggle_rect.Max.y));
-            {
-                ImGui::PushID("lang");
-                const ImGuiID lang_id = window->GetID("lang-toggle");
-                ImGui::SetCursorScreenPos(lang_rect.Min);
-                ImGui::ItemSize(lang_rect.GetSize());
-                ImGui::ItemAdd(lang_rect, lang_id);
-                bool lang_hovered = false, lang_held = false;
-                const bool lang_pressed =
-                    !pointer_claimed() &&
-                    ImGui::ButtonBehavior(lang_rect, lang_id, &lang_hovered, &lang_held);
-                ImGui::PopID();
-
-                if (lang_pressed)
-                    i18n::toggle_language();
-
-                if (lang_hovered)
-                    dl->AddRectFilled(lang_rect.Min, lang_rect.Max,
-                                      mo::with_alpha(c_card, alpha), px(8.f));
-
-                ImFont* lf2 = font_medium(text_xs);
-                const char* lang_label = i18n::language() == i18n::lang::en ? "TH" : "EN";
-                const float lang_w = text_width(lf2, lang_label);
-                draw_text(dl, lf2,
-                          ImVec2(lang_rect.GetCenter().x - lang_w * 0.5f,
-                                 lang_rect.GetCenter().y - lf2->LegacySize * 0.5f),
-                          mo::with_alpha(lang_hovered ? c_foreground : c_muted_foreground, alpha),
-                          lang_label);
-            }
+            // machine.
+            const float lang_w = lang_cell_width(font_medium(text_xs)) * 2.f;
+            const float lang_top =
+                toggle_rect.GetCenter().y - px(k_lang_switch_h) * 0.5f;
+            const ImRect lang_rect(ImVec2(toggle_rect.Min.x - gap - lang_w, lang_top),
+                                   ImVec2(toggle_rect.Min.x - gap, lang_top + px(k_lang_switch_h)));
+            language_switch(lang_rect, alpha);
 
             // The notification bell used to sit between search and the theme
-            // toggle; with notifications gone, search extends to the toggle.
+            // toggle; with notifications gone, search extends to the language
+            // switch. It used to extend to the theme toggle, which put it over
+            // the language control and let it take those clicks.
             const float crumb_end = ix + px(81.f) + text_width(f14, crumb_text) + px(24.f);
-            const float search_right = toggle_rect.Min.x - gap;
+            const float search_right = lang_rect.Min.x - gap;
             const float search_left = ImMax(crumb_end, search_right - px(search_trigger_w));
 
             if (search_right - search_left >= px(160.f))
