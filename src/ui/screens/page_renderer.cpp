@@ -1502,7 +1502,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             const float bw = badge_width(status_label, true);
             ImFont* tf = font_semibold(text_base);
             draw_text(dl, tf, ImVec2(icon_rect.Max.x + px(14.f), szk.Min.y + px(22.f)),
-                      mo::with_alpha(c_foreground, alpha), "SZK Power Plan");
+                      mo::with_alpha(c_foreground, alpha), "numbanine Power Plan");
             ImFont* df = font_regular(text_xs);
             draw_text_ellipsis(dl, df, ImVec2(icon_rect.Max.x + px(14.f), szk.Min.y + px(44.f)),
                                mo::with_alpha(c_muted_foreground, alpha),
@@ -1537,9 +1537,10 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 s.szk_apply_timer += dt;
                 if (s.szk_apply_timer > 0.6f)
                 {
-                    const bool ok = backend::power_plan_rename_active(L"SZK", L"szk powerplan");
+                    const bool ok =
+                        backend::power_plan_rename_active(L"numbanine", L"numbanine powerplan");
                     s.szk_apply_btn = ok ? btn_success : btn_error;
-                    toast(ok ? "Renamed" : "Failed", "szk powerplan",
+                    toast(ok ? "Renamed" : "Failed", "numbanine powerplan",
                           ok ? toast_success : toast_error);
                 }
             }
