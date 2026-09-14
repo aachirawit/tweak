@@ -96,9 +96,6 @@ constexpr entry k_table[] = {
     // ── Tweak pages ─────────────────────────────────────────────────────────
     {"Everything you can change, and what it is set to.",
      "ทุกอย่างที่ปรับได้ และตอนนี้ตั้งไว้เป็นอะไร"},
-    {"This tab", "แท็บนี้"},
-    {"What is already applied here", "ในแท็บนี้ใช้งานไปแล้วเท่าไหร่"},
-    {"Every setting here reports its state", "ทุกตัวในแท็บนี้อ่านสถานะกลับได้"},
     {"Apply", "ใช้งาน"},
     {"Open", "เปิด"},
     {"Applied", "ใช้งานแล้ว"},
@@ -121,7 +118,7 @@ constexpr entry k_table[] = {
     {"Could not be written - see the activity log.", "เขียนไม่สำเร็จ ดูที่ activity log"},
 
     // ── Settings list ──────────────────────────────────────────────────
-    {"Other", "อื่นๆ"},
+    {"%d actions", "%d คำสั่ง"},
     {"Nothing in this category.", "หมวดนี้ยังไม่มีอะไร"},
     {"Nothing here reports its state", "หมวดนี้อ่านสถานะกลับไม่ได้"},
 

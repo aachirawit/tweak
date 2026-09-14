@@ -273,6 +273,32 @@ void hairline(ImDrawList* dl, const ImRect& card, float y, float alpha)
                       ImVec2(card.Max.x - px(sp_4), y + px(0.5f)), mo::with_alpha(c_border, alpha));
 }
 
+// The header a settings list card wears: what the card holds on the left, how
+// much of it is applied on the right. The count speaks only for the rows that
+// report their state, so a card of one-shot actions says so rather than
+// reporting 0 of 0 and reading as a failure.
+void settings_group_header(ImDrawList* dl, const ImRect& card, float head_h, const char* label,
+                           int applied, int readable, float alpha)
+{
+    ImFont* nf = font_semibold(text_sm);
+    draw_text(dl, nf, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(12.f)),
+              mo::with_alpha(c_foreground, alpha), label);
+
+    char meta[64];
+    if (readable > 0)
+        ImFormatString(meta, IM_ARRAYSIZE(meta), i18n::tr("%d of %d applied"), applied, readable);
+    else
+        ImFormatString(meta, IM_ARRAYSIZE(meta), "%s",
+                       i18n::tr("Nothing here reports its state"));
+
+    ImFont* mf = font_regular(text_xs);
+    const float mw = text_width(mf, meta);
+    draw_text(dl, mf, ImVec2(card.Max.x - px(sp_4) - mw, card.Min.y + px(14.f)),
+              mo::with_alpha(c_muted_foreground, alpha), meta);
+
+    hairline(dl, card, card.Min.y + head_h, alpha);
+}
+
 void chip(ImDrawList* dl, const ImVec2& at, float size, float round, const char* label, ImU32 bg,
           ImU32 fg, int person = -1)
 {
@@ -483,9 +509,11 @@ struct module_row
 {
     const char* name;
     const char* role;
-    int category;              // matches the settings tab index this row shows under:
-                               // 0 = other (All tweaks only), 1 = gaming, 2 = network,
-                               // 4 = NVIDIA, 5 = AMD, 6 = cleanup, 7 = FiveM
+    int category;              // the settings tab index this row lives on:
+                               // 1 = performance, 2 = network, 4 = NVIDIA, 5 = AMD,
+                               // 6 = cleanup, 7 = FiveM, 8 = Windows. Every row has
+                               // exactly one, and All tweaks is an index of the tabs
+                               // rather than a list of every row.
     bool (*check)() = nullptr; // live applied/not-applied status for the
                                // green/red dot; null = no cheap way to
                                // check (one-shot action, or applied via
@@ -503,14 +531,14 @@ struct module_row
 // (Others/, PostInstall/GPU, PostInstall/Others/Network). Each row is a
 // one-shot "Apply" action, matching the source repo's own apply-scripts.
 constexpr module_row k_modules[] = {
-    {"Disable Action Center", "Others", 0, backend::check_disable_action_center},
-    {"Classic Alt-Tab", "Others", 0, backend::check_classic_alt_tab},
-    {"Disable DMA Remapping", "Others", 0},
+    {"Disable Action Center", "Windows", 8, backend::check_disable_action_center},
+    {"Classic Alt-Tab", "Windows", 8, backend::check_classic_alt_tab},
+    {"Disable DMA Remapping", "Windows", 8},
     {"Disable GPU MPO", "Gaming", 1, backend::check_disable_gpu_mpo, finding_advised,
      "Multiplane overlay flickers and drops frames on several driver builds."},
     {"USB Polling Rate Override", "Gaming", 1},
     {"Optimize Network Stack", "Network", 2},
-    {"Disable Background Services", "Others", 0, backend::check_background_services_disabled,
+    {"Disable Background Services", "Windows", 8, backend::check_background_services_disabled,
      finding_advised, "SysMain and Windows Search index in the background while you play."},
     {"Low Latency TCP", "Network", 2},
     {"Disable USB Selective Suspend", "Gaming", 1, backend::check_usb_selective_suspend_disabled,
@@ -520,9 +548,9 @@ constexpr module_row k_modules[] = {
     {"Network Driver Tweaks", "Network", 2},
     {"Process Priority Tweaks", "Gaming", 1},
     {"Network Hardening", "Network", 2},
-    {"Privacy & Telemetry", "Others", 0},
-    {"UI & Explorer Tweaks", "Others", 0},
-    {"Debloat Services", "Others", 0},
+    {"Privacy & Telemetry", "Windows", 8},
+    {"UI & Explorer Tweaks", "Windows", 8},
+    {"Debloat Services", "Windows", 8},
     {"Disable HDCP", "NVIDIA", 4, backend::check_nvidia_disable_hdcp},
     {"Disable Telemetry", "NVIDIA", 4, backend::check_nvidia_disable_telemetry},
     {"Disable ECC", "NVIDIA", 4},
@@ -552,15 +580,15 @@ constexpr module_row k_modules[] = {
      "Windows caps non-multimedia traffic at ten packets per millisecond."},
     {"Reset Filter Keys Timing", "Gaming", 1, backend::check_filter_keys_timing},
     {"Hardware GPU Scheduling", "Gaming", 1, backend::check_hardware_gpu_scheduling},
-    {"Visual Effects: Performance", "Others", 0, backend::check_visual_effects_performance,
+    {"Visual Effects: Performance", "Windows", 8, backend::check_visual_effects_performance,
      finding_note, "Window animations and shadows cost frames on a busy GPU."},
     {"Power Plan: High Performance", "Gaming", 1},
-    {"Remove Startup Delay", "Others", 0, backend::check_startup_delay, finding_note,
+    {"Remove Startup Delay", "Windows", 8, backend::check_startup_delay, finding_note,
      "Explorer holds startup apps back for several seconds after logon."},
-    {"Disable NTFS Last Access", "Others", 0, backend::check_ntfs_last_access, finding_note,
+    {"Disable NTFS Last Access", "Windows", 8, backend::check_ntfs_last_access, finding_note,
      "Every file read also writes a timestamp back to the disk."},
-    {"Disable Advertising ID", "Others", 0, backend::check_advertising_id},
-    {"Disable Tips & Suggested Apps", "Others", 0, backend::check_tips_and_suggestions},
+    {"Disable Advertising ID", "Windows", 8, backend::check_advertising_id},
+    {"Disable Tips & Suggested Apps", "Windows", 8, backend::check_tips_and_suggestions},
     {"FiveM GPU: High Performance", "FiveM", 7, backend::check_fivem_gpu_high_performance,
      finding_advised, "On a laptop, FiveM may be running on the integrated GPU."},
     {"FiveM Defender Exclusion", "FiveM", 7},
@@ -591,8 +619,8 @@ struct settings_group
 };
 
 constexpr settings_group k_settings_groups[] = {
-    {1, "Performance"}, {2, "Network"}, {7, "FiveM"},  {4, "NVIDIA"},
-    {5, "AMD"},         {6, "Cleanup"}, {0, "Other"},
+    {1, "Performance"}, {2, "Network"}, {7, "FiveM"},   {8, "Windows"},
+    {4, "NVIDIA"},      {5, "AMD"},     {6, "Cleanup"},
 };
 
 // A row whose category has no card here would simply not be drawn on All
@@ -1408,8 +1436,31 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         // the app that write a file the game owns, they name a path the user
         // may want to go and look at, and each is a single decision - none of
         // which fits in a 40px row with a dot on the end.
+        //
+        // Side by side, and with the icon beside the title rather than above
+        // it: stacked and centred, the pair ran to 580px on their own and the
+        // rows below them were off the bottom of a 540px body before the list
+        // even started.
         if (*sub == tab_index(settings_tab::fivem))
         {
+            const float gap = px(sp_3);
+            const float card_w = (w - gap) * 0.5f;
+
+            ImFont* tf = font_semibold(text_sm);
+            ImFont* df = font_regular(text_xs);
+            const float inner = card_w - px(sp_4) * 2.f;
+
+            // Both cards take the taller of the two descriptions, so the pair
+            // sits on one baseline instead of stepping.
+            int desc_lines = 1;
+            for (const fivem_feature& feat : k_fivem_features)
+                desc_lines = ImMax(desc_lines,
+                                   wrapped_line_count(df, i18n::tr(feat.description), inner));
+
+            const float card_h = px(sp_4) + px(32.f) + px(sp_3) +
+                                 px(leading_xs) * (float)desc_lines + px(sp_3) + px(sp_10) +
+                                 px(sp_4);
+
             for (int i = 0; i < k_fivem_feature_count; i++)
             {
                 const fivem_feature& feat = k_fivem_features[i];
@@ -1417,50 +1468,34 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 if (module < 0)
                     continue;
 
-                ImFont* tf = font_semibold(text_base);
-                ImFont* df = font_regular(text_xs);
-
-                const float inner = col - px(sp_5) * 2.f;
-                const int desc_lines =
-                    ImMax(1, wrapped_line_count(df, i18n::tr(feat.description), inner));
-
-                const float card_h = px(sp_5) + px(48.f) + px(sp_4) + px(leading_base) +
-                                     px(sp_1) + px(leading_xs) * (float)desc_lines + px(sp_5) +
-                                     px(1.f) + px(sp_4) + px(sp_12) + px(sp_5);
-
-                const ImRect card(ImVec2(x, y), ImVec2(x + col, y + card_h));
+                const ImRect card(ImVec2(x + (card_w + gap) * (float)i, y),
+                                  ImVec2(x + (card_w + gap) * (float)i + card_w, y + card_h));
                 panel(dl, card, alpha);
 
-                float cy = card.Min.y + px(sp_5);
+                float cy = card.Min.y + px(sp_4);
 
-                // Icon tile, centred - the card is read top to bottom, not
-                // left to right like the list rows.
-                const float tile = px(48.f);
-                const ImRect tile_rect(ImVec2(card.GetCenter().x - tile * 0.5f, cy),
-                                       ImVec2(card.GetCenter().x + tile * 0.5f, cy + tile));
+                const float tile = px(32.f);
+                const ImRect tile_rect(ImVec2(card.Min.x + px(sp_4), cy),
+                                       ImVec2(card.Min.x + px(sp_4) + tile, cy + tile));
                 dl->AddRectFilled(tile_rect.Min, tile_rect.Max,
-                                  mo::with_alpha(c_card_raised, alpha), px(14.f));
-                draw_border(dl, tile_rect, px(14.f), px(1.f),
+                                  mo::with_alpha(c_card_raised, alpha), px(10.f));
+                draw_border(dl, tile_rect, px(10.f), px(1.f),
                             mo::with_alpha(c_border_strong, alpha), 0);
                 icons::draw(feat.icon, dl,
-                            ImVec2(tile_rect.GetCenter().x - px(12.f),
-                                   tile_rect.GetCenter().y - px(12.f)),
-                            px(24.f), mo::with_alpha(c_foreground, alpha));
-                cy += tile + px(sp_4);
+                            ImVec2(tile_rect.GetCenter().x - px(9.f),
+                                   tile_rect.GetCenter().y - px(9.f)),
+                            px(18.f), mo::with_alpha(c_foreground, alpha));
 
-                const char* card_title = i18n::tr(feat.title);
-                const float card_title_w = text_width(tf, card_title);
-                draw_text(dl, tf, ImVec2(card.GetCenter().x - card_title_w * 0.5f, cy),
-                          mo::with_alpha(c_foreground, alpha), card_title);
-                cy += px(leading_base) + px(sp_1);
+                const float text_x = tile_rect.Max.x + px(sp_3);
+                draw_text_ellipsis(dl, tf, ImVec2(text_x, cy + px(8.f)),
+                                   mo::with_alpha(c_foreground, alpha), i18n::tr(feat.title),
+                                   card.Max.x - px(sp_4) - text_x);
+                cy += tile + px(sp_3);
 
-                draw_text_wrapped(dl, df, ImVec2(card.Min.x + px(sp_5), cy),
+                draw_text_wrapped(dl, df, ImVec2(card.Min.x + px(sp_4), cy),
                                   mo::with_alpha(c_muted_foreground, alpha),
                                   i18n::tr(feat.description), inner, px(leading_xs));
-                cy += px(leading_xs) * (float)desc_lines + px(sp_5);
-
-                hairline(dl, card, cy, alpha);
-                cy += px(1.f) + px(sp_4);
+                cy += px(leading_xs) * (float)desc_lines + px(sp_3);
 
                 const bool done = s.row_applied[module];
                 const char* label = s.fivem_btn[i] == btn_loading   ? i18n::tr("Applying")
@@ -1470,7 +1505,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                                                                     : i18n::tr(feat.action);
 
                 ImGui::PushID(feat.title);
-                if (action("fivem-feature", ImVec2(card.Min.x + px(sp_5), cy),
+                if (action("fivem-feature", ImVec2(card.Min.x + px(sp_4), cy),
                            inner / ui_runtime::scale, s.fivem_btn[i], label) &&
                     s.fivem_btn[i] == btn_idle)
                 {
@@ -1507,9 +1542,9 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                     if (s.fivem_timer[i] > 2.4f)
                         s.fivem_btn[i] = btn_idle;
                 }
-
-                y = card.Max.y + px(sp_4);
             }
+
+            y += card_h + px(sp_4);
         }
 
         if (*sub != 3)
@@ -1592,112 +1627,145 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                           mo::with_alpha(c_muted_foreground, alpha), m.role);
             };
 
+            // The body is 540px tall and the list area inside it is about 330.
+            // Fifty-seven rows at 40px is 2280, so All tweaks could only ever be
+            // a scroll; the tabs each hold twelve rows at most, which fits once
+            // the rows use the whole width in two columns instead of the 60%
+            // main column with an aside beside it.
+            const float list_w = w;
+
             if (*sub != 0)
             {
-                // A category tab is already one group, and the tab strip has
-                // just named it, so the card carries no header of its own.
-                const ImRect card(
-                    ImVec2(x, y),
-                    ImVec2(x + col, y + px(sp_4) * 2.f + px(40.f) * (float)ImMax(count, 1)));
+                const int per_col = (count + 1) / 2;
+                const float head_h = px(38.f);
+                const float body_h = px(40.f) * (float)ImMax(per_col, 1);
+
+                const ImRect card(ImVec2(x, y),
+                                  ImVec2(x + list_w,
+                                         y + head_h + px(sp_2) + body_h + px(sp_3)));
                 panel(dl, card, alpha);
 
-                if (count == 0)
-                    empty_state(dl, card, i18n::tr("Nothing in this category."), alpha);
+                settings_group_header(dl, card, head_h, i18n::tr(title), tab_applied,
+                                      tab_total - tab_unknown, alpha);
 
-                float ry = card.Min.y + px(sp_4);
-                for (int k = 0; k < count; k++)
+                if (count == 0)
                 {
-                    module_row_at(shown[k], card, ry);
-                    ry += px(40.f);
+                    empty_state(dl, ImRect(ImVec2(card.Min.x, card.Min.y + head_h), card.Max),
+                                i18n::tr("Nothing in this category."), alpha);
+                }
+                else
+                {
+                    const float col_w = (list_w - px(1.f)) * 0.5f;
+                    const float top = card.Min.y + head_h + px(sp_2);
+
+                    // A hairline between the columns, so the two are read as two
+                    // columns rather than as one column of oddly spaced pairs.
+                    if (count > 1)
+                        dl->AddRectFilled(ImVec2(card.Min.x + col_w, top + px(4.f)),
+                                          ImVec2(card.Min.x + col_w + px(1.f),
+                                                 top + body_h - px(4.f)),
+                                          mo::with_alpha(c_border, alpha));
+
+                    for (int k = 0; k < count; k++)
+                    {
+                        const int column = k / per_col;
+                        const ImRect cell(
+                            ImVec2(card.Min.x + (col_w + px(1.f)) * (float)column, card.Min.y),
+                            ImVec2(card.Min.x + (col_w + px(1.f)) * (float)column + col_w,
+                                   card.Max.y));
+                        module_row_at(shown[k], cell, top + px(40.f) * (float)(k % per_col));
+                    }
                 }
 
                 y = card.Max.y + px(sp_4);
             }
             else
             {
-                // All tweaks used to be one card of fifty-seven rows: a long
-                // scroll with no landmarks in it, where nothing marked where
-                // Network ended and NVIDIA began, so finding a row meant
-                // reading every row. One card per category gives the scroll
-                // somewhere to stop, and each card can say how much of itself
-                // is already applied.
-                //
-                // Order within a card is still apply order, which is why the
-                // groups are picked out of the already-sorted list rather than
-                // sorted again: Network's rows have a real sequence to them.
-                const float head_h = px(38.f);
-                int drawn = 0;
+                // All tweaks is now an index of the other tabs rather than every
+                // row at once: a card per category with how much of it is
+                // applied, four across, which fits the viewport with no scroll
+                // at all. Pressing one opens that tab.
+                const float gap = px(sp_3);
+                const float card_w = (list_w - gap * 3.f) * 0.25f;
+                const float card_h = px(96.f);
 
+                int tile = 0;
                 for (const settings_group& group : k_settings_groups)
                 {
-                    int members[k_module_count];
-                    int n = 0;
-                    for (int k = 0; k < count; k++)
-                        if (k_modules[shown[k]].category == group.category)
-                            members[n++] = shown[k];
-
-                    if (n == 0)
+                    // The vendor a machine does not have is left out here for
+                    // the same reason its rows were: nothing to do with it.
+                    if (group.category == 4 && !s.has_nvidia_gpu)
+                        continue;
+                    if (group.category == 5 && !s.has_amd_gpu)
                         continue;
 
-                    int readable = 0, applied = 0;
-                    for (int k = 0; k < n; k++)
+                    int total = 0, readable = 0, applied = 0;
+                    for (int i = 0; i < k_module_count; i++)
                     {
-                        if (!k_modules[members[k]].check)
+                        if (k_modules[i].category != group.category)
+                            continue;
+                        total++;
+                        if (!k_modules[i].check)
                             continue;
                         readable++;
-                        if (s.row_applied[members[k]])
+                        if (s.row_applied[i])
                             applied++;
                     }
+                    if (total == 0)
+                        continue;
 
-                    const ImRect card(ImVec2(x, y),
-                                      ImVec2(x + col, y + head_h + px(sp_2) + px(40.f) * (float)n +
-                                                          px(sp_3)));
+                    const int row = tile / 4;
+                    const int column = tile % 4;
+                    tile++;
+
+                    const ImRect card(
+                        ImVec2(x + (card_w + gap) * (float)column,
+                               y + (card_h + gap) * (float)row),
+                        ImVec2(x + (card_w + gap) * (float)column + card_w,
+                               y + (card_h + gap) * (float)row + card_h));
                     panel(dl, card, alpha);
 
-                    ImFont* gf = font_semibold(text_sm);
-                    draw_text(dl, gf, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(12.f)),
-                              mo::with_alpha(c_foreground, alpha), i18n::tr(group.label));
+                    char id[32];
+                    ImFormatString(id, IM_ARRAYSIZE(id), "cat%d", group.category);
+                    if (row_hit(dl, id, card, alpha))
+                        *sub = group.category;
 
-                    // The count only speaks for the rows that can be read back,
-                    // so a card of one-shot actions says so rather than
-                    // reporting 0 of 0 and reading as a failure.
-                    char meta[64];
+                    ImFont* nf = font_semibold(text_sm);
+                    draw_text_ellipsis(dl, nf,
+                                       ImVec2(card.Min.x + px(sp_4), card.Min.y + px(16.f)),
+                                       mo::with_alpha(c_foreground, alpha), i18n::tr(group.label),
+                                       card_w - px(sp_4) * 2.f);
+
+                    char meta[48];
                     if (readable > 0)
                         ImFormatString(meta, IM_ARRAYSIZE(meta), i18n::tr("%d of %d applied"),
                                        applied, readable);
                     else
-                        ImFormatString(meta, IM_ARRAYSIZE(meta), "%s",
-                                       i18n::tr("Nothing here reports its state"));
+                        ImFormatString(meta, IM_ARRAYSIZE(meta), i18n::tr("%d actions"), total);
 
                     ImFont* mf = font_regular(text_xs);
-                    const float mw = text_width(mf, meta);
-                    draw_text(dl, mf, ImVec2(card.Max.x - px(sp_4) - mw, card.Min.y + px(14.f)),
-                              mo::with_alpha(c_muted_foreground, alpha), meta);
+                    draw_text_ellipsis(dl, mf,
+                                       ImVec2(card.Min.x + px(sp_4), card.Min.y + px(40.f)),
+                                       mo::with_alpha(c_muted_foreground, alpha), meta,
+                                       card_w - px(sp_4) * 2.f);
 
-                    hairline(dl, card, card.Min.y + head_h, alpha);
-
-                    float ry = card.Min.y + head_h + px(sp_2);
-                    for (int k = 0; k < n; k++)
+                    // A bar rather than a ring: it is the same shape as the
+                    // fraction above it, and at 4px it reads at a glance without
+                    // competing with the Dashboard's score.
+                    const float track_w = card_w - px(sp_4) * 2.f;
+                    const ImVec2 track(card.Min.x + px(sp_4), card.Min.y + px(66.f));
+                    dl->AddRectFilled(track, ImVec2(track.x + track_w, track.y + px(4.f)),
+                                      mo::with_alpha(c_muted_foreground, 0.18f * alpha), px(2.f));
+                    if (readable > 0 && applied > 0)
                     {
-                        module_row_at(members[k], card, ry);
-                        ry += px(40.f);
+                        const float done = (float)applied / (float)readable;
+                        dl->AddRectFilled(track,
+                                          ImVec2(track.x + track_w * done, track.y + px(4.f)),
+                                          mo::with_alpha(c_accent, alpha), px(2.f));
                     }
-
-                    y = card.Max.y + px(sp_3);
-                    drawn += n;
                 }
 
-                if (drawn == 0)
-                {
-                    const ImRect card(ImVec2(x, y), ImVec2(x + col, y + px(96.f)));
-                    panel(dl, card, alpha);
-                    empty_state(dl, card, i18n::tr("Nothing in this category."), alpha);
-                    y = card.Max.y + px(sp_4);
-                }
-                else
-                {
-                    y += px(sp_4) - px(sp_3);
-                }
+                y += (card_h + gap) * (float)((tile + 3) / 4) - gap + px(sp_4);
             }
 
             {
@@ -1764,11 +1832,15 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         float nip_bottom = 0.f;
         bool nip_shown = false;
 
-        if (*sub == 0 || *sub == 4)
+        // The NVIDIA Profile Inspector card used to appear on All tweaks too,
+        // in the right-hand column. All tweaks is an index of the tabs now and
+        // has no right-hand column, and an NVIDIA tool reads better on the
+        // NVIDIA tab anyway.
+        if (*sub == 4)
         {
-            const bool nip_right_col = two_col;
+            const bool nip_right_col = false;
             const float nip_x = nip_right_col ? aside_x : x;
-            const float nip_w = nip_right_col ? aside_w : col;
+            const float nip_w = nip_right_col ? aside_w : w;
             const float nip_h = nip_right_col ? px(108.f) : px(72.f);
             const float nip_y = nip_right_col ? content_top : y;
 
@@ -1823,9 +1895,9 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             // right-hand column instead of the main column. On the
             // Powerplan tab alone there's nothing to stack under, so it
             // keeps the full-width main-column layout.
-            const bool szk_right_col = two_col && *sub == 0 && nip_shown;
+            const bool szk_right_col = false;
             const float szk_x = szk_right_col ? aside_x : x;
-            const float szk_w = szk_right_col ? aside_w : col;
+            const float szk_w = szk_right_col ? aside_w : w;
             const float szk_y = szk_right_col ? nip_bottom + px(sp_4) : y;
 
             const ImRect szk(ImVec2(szk_x, szk_y), ImVec2(szk_x + szk_w, szk_y + px(164.f)));
@@ -1896,47 +1968,6 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 y = szk.Max.y + px(sp_4);
         }
 
-        // The tool cards above only appear on All tweaks and NVIDIA. On every
-        // other tab the right-hand column had nothing in it and simply read as
-        // dead space, so it gets a summary of the tab actually being looked at:
-        // how many of its settings are applied, and how many cannot be read
-        // back at all. The numbers are the same ones the list just drew.
-        if (two_col && !nip_shown && tab_total > 0)
-        {
-            const int readable = tab_total - tab_unknown;
-            const ImRect sum(ImVec2(aside_x, content_top),
-                             ImVec2(aside_x + aside_w, content_top + px(150.f)));
-            panel(dl, sum, alpha);
-
-            row_label(dl, ImVec2(sum.Min.x + px(sp_4), sum.Min.y + px(16.f)), i18n::tr("This tab"), i18n::tr("What is already applied here"), alpha);
-
-            char headline[48];
-            ImFormatString(headline, IM_ARRAYSIZE(headline), i18n::tr("%d of %d applied"), tab_applied,
-                           ImMax(readable, 0));
-            ImFont* hf = font_semibold(text_xl);
-            draw_text_tabular(dl, hf,
-                              ImVec2(sum.Min.x + px(sp_4),
-                                     sum.Min.y + px(62.f) + line_top(hf, px(leading_xl))),
-                              mo::with_alpha(c_foreground, alpha), headline);
-
-            const ImRect meter_rect(ImVec2(sum.Min.x + px(sp_4), sum.Min.y + px(100.f)),
-                                    ImVec2(sum.Max.x - px(sp_4), sum.Min.y + px(106.f)));
-            const float filled =
-                readable > 0 ? (float)tab_applied / (float)readable : 0.f;
-            meter(dl, meter_rect, filled, filled >= 0.999f ? c_accent : c_amber_500, alpha);
-
-            char note[72];
-            if (tab_unknown > 0)
-                ImFormatString(note, IM_ARRAYSIZE(note), i18n::tr("%d more cannot be read back"),
-                               tab_unknown);
-            else
-                ImFormatString(note, IM_ARRAYSIZE(note), "%s", i18n::tr("Every setting here reports its state"));
-            ImFont* nf2 = font_regular(text_xs);
-            draw_text(dl, nf2, ImVec2(sum.Min.x + px(sp_4), sum.Min.y + px(118.f)),
-                      mo::with_alpha(c_muted_foreground, alpha), note);
-
-            y = ImMax(y, sum.Max.y + px(sp_4));
-        }
         break;
     }
 
