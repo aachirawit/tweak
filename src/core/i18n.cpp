@@ -120,6 +120,11 @@ constexpr entry k_table[] = {
      "เขียนแล้ว เก็บไฟล์เดิมเป็น .numbanine.bak ไว้ข้างๆ เปิด FiveM ใหม่เพื่อให้มีผล"},
     {"Could not be written - see the activity log.", "เขียนไม่สำเร็จ ดูที่ activity log"},
 
+    // ── Settings list ──────────────────────────────────────────────────
+    {"Other", "อื่นๆ"},
+    {"Nothing in this category.", "หมวดนี้ยังไม่มีอะไร"},
+    {"Nothing here reports its state", "หมวดนี้อ่านสถานะกลับไม่ได้"},
+
     // ── Sign in ─────────────────────────────────────────────────────────────
     {"Sign in to numbanine", "เข้าสู่ระบบ numbanine"},
     {"Enter the licence key from your purchase email. It binds to this machine the first time "

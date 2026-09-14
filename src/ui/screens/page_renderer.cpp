@@ -502,7 +502,7 @@ struct module_row
 // Curated from github.com/HickerDicker/SapphireOS's tweak categories
 // (Others/, PostInstall/GPU, PostInstall/Others/Network). Each row is a
 // one-shot "Apply" action, matching the source repo's own apply-scripts.
-const module_row k_modules[] = {
+constexpr module_row k_modules[] = {
     {"Disable Action Center", "Others", 0, backend::check_disable_action_center},
     {"Classic Alt-Tab", "Others", 0, backend::check_classic_alt_tab},
     {"Disable DMA Remapping", "Others", 0},
@@ -578,6 +578,42 @@ const module_row k_modules[] = {
      "Shadows, MSAA and post-processing are still on, and they cost the most frames."},
 };
 static_assert(IM_ARRAYSIZE(k_modules) == k_module_count, "module_rows is per module");
+
+// How All tweaks breaks its list up. The category numbers are the settings tab
+// indices, and the labels are the tab names rather than the rows' own role
+// text, so a card here and the tab that shows the same rows on their own agree
+// on what to call them. Order is the order the tabs are in, with the two GPU
+// vendors after the things every machine has.
+struct settings_group
+{
+    int category;
+    const char* label;
+};
+
+constexpr settings_group k_settings_groups[] = {
+    {1, "Performance"}, {2, "Network"}, {7, "FiveM"},  {4, "NVIDIA"},
+    {5, "AMD"},         {6, "Cleanup"}, {0, "Other"},
+};
+
+// A row whose category has no card here would simply not be drawn on All
+// tweaks - no error, no gap, just a tweak that stops existing. Catch that when
+// the category is added rather than when someone notices it missing.
+constexpr bool every_category_has_a_card()
+{
+    for (const module_row& row : k_modules)
+    {
+        bool found = false;
+        for (const settings_group& group : k_settings_groups)
+            found = found || group.category == row.category;
+        if (!found)
+            return false;
+    }
+    return true;
+}
+
+static_assert(every_category_has_a_card(),
+              "A module category has no card in k_settings_groups, so All tweaks would silently "
+              "drop its rows.");
 
 // The FiveM tab leads with these two as cards rather than list rows. Each names
 // the module it applies by name rather than by index, so inserting a row above
@@ -1519,17 +1555,10 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                     tab_applied++;
             }
 
-            const ImRect card(ImVec2(x, y), ImVec2(x + col, y + px(sp_4) * 2.f +
-                                                                px(40.f) * (float)ImMax(count, 1)));
-            panel(dl, card, alpha);
-
-            if (count == 0)
-                empty_state(dl, card, "Nothing in this category.", alpha);
-
-            float ry = card.Min.y + px(sp_4);
-            for (int k = 0; k < count; k++)
+            // One row, drawn the same way whether it sits in a grouped card on
+            // All tweaks or in the single card a category tab shows.
+            auto module_row_at = [&](int i, const ImRect& card, float ry)
             {
-                const int i = shown[k];
                 const module_row& m = k_modules[i];
 
                 // No leading avatar. This row used to pass the module index as a
@@ -1561,11 +1590,115 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
                 draw_text(dl, rf, ImVec2(role_x, ry + px(3.f)),
                           mo::with_alpha(c_muted_foreground, alpha), m.role);
+            };
 
-                ry += px(40.f);
+            if (*sub != 0)
+            {
+                // A category tab is already one group, and the tab strip has
+                // just named it, so the card carries no header of its own.
+                const ImRect card(
+                    ImVec2(x, y),
+                    ImVec2(x + col, y + px(sp_4) * 2.f + px(40.f) * (float)ImMax(count, 1)));
+                panel(dl, card, alpha);
+
+                if (count == 0)
+                    empty_state(dl, card, i18n::tr("Nothing in this category."), alpha);
+
+                float ry = card.Min.y + px(sp_4);
+                for (int k = 0; k < count; k++)
+                {
+                    module_row_at(shown[k], card, ry);
+                    ry += px(40.f);
+                }
+
+                y = card.Max.y + px(sp_4);
             }
+            else
+            {
+                // All tweaks used to be one card of fifty-seven rows: a long
+                // scroll with no landmarks in it, where nothing marked where
+                // Network ended and NVIDIA began, so finding a row meant
+                // reading every row. One card per category gives the scroll
+                // somewhere to stop, and each card can say how much of itself
+                // is already applied.
+                //
+                // Order within a card is still apply order, which is why the
+                // groups are picked out of the already-sorted list rather than
+                // sorted again: Network's rows have a real sequence to them.
+                const float head_h = px(38.f);
+                int drawn = 0;
 
-            y = card.Max.y + px(sp_4);
+                for (const settings_group& group : k_settings_groups)
+                {
+                    int members[k_module_count];
+                    int n = 0;
+                    for (int k = 0; k < count; k++)
+                        if (k_modules[shown[k]].category == group.category)
+                            members[n++] = shown[k];
+
+                    if (n == 0)
+                        continue;
+
+                    int readable = 0, applied = 0;
+                    for (int k = 0; k < n; k++)
+                    {
+                        if (!k_modules[members[k]].check)
+                            continue;
+                        readable++;
+                        if (s.row_applied[members[k]])
+                            applied++;
+                    }
+
+                    const ImRect card(ImVec2(x, y),
+                                      ImVec2(x + col, y + head_h + px(sp_2) + px(40.f) * (float)n +
+                                                          px(sp_3)));
+                    panel(dl, card, alpha);
+
+                    ImFont* gf = font_semibold(text_sm);
+                    draw_text(dl, gf, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(12.f)),
+                              mo::with_alpha(c_foreground, alpha), i18n::tr(group.label));
+
+                    // The count only speaks for the rows that can be read back,
+                    // so a card of one-shot actions says so rather than
+                    // reporting 0 of 0 and reading as a failure.
+                    char meta[64];
+                    if (readable > 0)
+                        ImFormatString(meta, IM_ARRAYSIZE(meta), i18n::tr("%d of %d applied"),
+                                       applied, readable);
+                    else
+                        ImFormatString(meta, IM_ARRAYSIZE(meta), "%s",
+                                       i18n::tr("Nothing here reports its state"));
+
+                    ImFont* mf = font_regular(text_xs);
+                    const float mw = text_width(mf, meta);
+                    draw_text(dl, mf, ImVec2(card.Max.x - px(sp_4) - mw, card.Min.y + px(14.f)),
+                              mo::with_alpha(c_muted_foreground, alpha), meta);
+
+                    hairline(dl, card, card.Min.y + head_h, alpha);
+
+                    float ry = card.Min.y + head_h + px(sp_2);
+                    for (int k = 0; k < n; k++)
+                    {
+                        module_row_at(members[k], card, ry);
+                        ry += px(40.f);
+                    }
+
+                    y = card.Max.y + px(sp_3);
+                    drawn += n;
+                }
+
+                if (drawn == 0)
+                {
+                    const ImRect card(ImVec2(x, y), ImVec2(x + col, y + px(96.f)));
+                    panel(dl, card, alpha);
+                    empty_state(dl, card, i18n::tr("Nothing in this category."), alpha);
+                    y = card.Max.y + px(sp_4);
+                }
+                else
+                {
+                    y += px(sp_4) - px(sp_3);
+                }
+            }
 
             {
                 const char* apply_label = *sub == 1   ? "Apply Gaming Tweaks"
