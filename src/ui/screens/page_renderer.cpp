@@ -1898,7 +1898,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             std::snprintf(delta_buf[3], sizeof(delta_buf[3]), "%+dms",
                           s.sys_snap.ping_ms - s.sys_prev.ping_ms);
         else
-            std::snprintf(delta_buf[3], sizeof(delta_buf[3]), "live");
+            std::snprintf(delta_buf[3], sizeof(delta_buf[3]), "%s", i18n::tr("live"));
 
         char value_buf[4][16];
         std::snprintf(value_buf[0], sizeof(value_buf[0]), "%.0f%%", s.sys_snap.cpu_percent);
@@ -1990,7 +1990,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                               mo::with_alpha(c_foreground, alpha), score_buf, px(-1.f));
 
             ImFont* cf = font_medium(10.f);
-            const char* score_cap = "SCORE";
+            const char* score_cap = i18n::tr("SCORE");
             draw_text_tracked(
                 dl, cf,
                 ImVec2(ring_c.x - text_width(cf, score_cap) * 0.5f - px(0.7f), ring_c.y + px(9.f)),
@@ -2001,22 +2001,29 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             const float text_x = ring_c.x + ring_r + px(sp_5);
             const float text_w = btn_x - text_x - px(sp_5);
 
-            char headline[96];
+            // Thai has no plural form, so the count sentence is one key with a
+            // single %d and English keeps its own singular. Reusing the plural
+            // string for n == 1 would read "1 tweaks" in English.
+            char headline[128];
             if (s.dash_finding_count == 0)
-                ImFormatString(headline, IM_ARRAYSIZE(headline), "Nothing left to fix here");
+                ImFormatString(headline, IM_ARRAYSIZE(headline), "%s",
+                               i18n::tr("Nothing left to fix here"));
+            else if (s.dash_finding_count == 1 && i18n::language() == i18n::lang::en)
+                ImFormatString(headline, IM_ARRAYSIZE(headline),
+                               "1 tweak would help this machine");
             else
                 ImFormatString(headline, IM_ARRAYSIZE(headline),
-                               "%d tweak%s would help this machine", s.dash_finding_count,
-                               s.dash_finding_count == 1 ? "" : "s");
+                               i18n::tr("%d tweaks would help this machine"),
+                               s.dash_finding_count);
 
             ImFont* tf = font_semibold(18.f);
             draw_text_tracked(dl, tf, ImVec2(text_x, card.Min.y + px(30.f)),
                               mo::with_alpha(c_foreground, alpha), headline, px(-0.4f));
 
-            char rationale[192];
+            char rationale[256];
             ImFormatString(rationale, IM_ARRAYSIZE(rationale),
-                           "%d of the %d settings this app can read back are already applied. The "
-                           "rest are listed below, loudest first.",
+                           i18n::tr("%d of the %d settings this app can read back are already "
+                                    "applied. The rest are listed below, loudest first."),
                            s.dash_ok, s.dash_checkable);
 
             ImFont* bf = font_regular(text_sm);
@@ -2030,12 +2037,12 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             struct sev_pill
             {
                 finding_severity severity;
-                const char* suffix;
+                const char* word;
             };
             static const sev_pill k_sev_pills[] = {
-                {finding_urgent, " urgent"},
-                {finding_advised, " advised"},
-                {finding_note, " optional"},
+                {finding_urgent, "urgent"},
+                {finding_advised, "advised"},
+                {finding_note, "optional"},
             };
 
             for (const sev_pill& entry : k_sev_pills)
@@ -2044,8 +2051,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 if (n <= 0)
                     continue;
 
-                char label[24];
-                ImFormatString(label, IM_ARRAYSIZE(label), "%d%s", n, entry.suffix);
+                char label[40];
+                ImFormatString(label, IM_ARRAYSIZE(label), "%d %s", n, i18n::tr(entry.word));
                 pill_x +=
                     pill(dl, ImVec2(pill_x, pill_y), label, severity_color(entry.severity), alpha) +
                     px(sp_2);
@@ -2077,9 +2084,9 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                         {
                             s.dash_optimize_btn = btn_error;
                             s.dash_optimize_timer = 0.f;
-                            toast("Nothing was changed",
-                                  "Windows would not create a restore point. Turn System "
-                                  "Protection on for C: and try again.",
+                            toast(i18n::tr("Nothing was changed"),
+                                  i18n::tr("Windows would not create a restore point. Turn "
+                                           "System Protection on for C: and try again."),
                                   toast_error);
                         }
                         else
@@ -2100,13 +2107,14 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                                 }
                             }
 
-                            char summary[80];
-                            ImFormatString(summary, IM_ARRAYSIZE(summary),
-                                           "%d applied, %d failed. Restore point taken first.",
-                                           applied, failed);
+                            char summary[160];
+                            ImFormatString(
+                                summary, IM_ARRAYSIZE(summary),
+                                i18n::tr("%d applied, %d failed. Restore point taken first."),
+                                applied, failed);
                             s.dash_optimize_btn = failed == 0 ? btn_success : btn_error;
                             s.dash_optimize_timer = 0.f;
-                            toast("Optimize now", summary,
+                            toast(i18n::tr("Optimize now"), summary,
                                   failed == 0 ? toast_success : toast_error);
 
                             s.dash_scanned = false;    // the score is stale now
@@ -2149,18 +2157,23 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             const float tile_w = (dashboard_width - gap * 3.f) / 4.f;
             const float tile_h = px(118.f);
 
-            char detail_buf[4][24];
+            // Every tile carries its signed change in text. The sparkline is
+            // tinted by the same direction, and colour was the only thing
+            // saying it on the RAM and disk tiles, whose second line is a
+            // capacity - so which way the line was going could not be read at
+            // all without seeing the hue.
+            char detail_buf[4][40];
             if (s.sys_snap.cpu_temp_available)
-                std::snprintf(detail_buf[0], sizeof(detail_buf[0]), "%.0f C",
-                              s.sys_snap.cpu_temp_c);
+                std::snprintf(detail_buf[0], sizeof(detail_buf[0]), "%.0f C  %s",
+                              s.sys_snap.cpu_temp_c, delta_buf[0]);
             else
                 std::snprintf(detail_buf[0], sizeof(detail_buf[0]), "%s", delta_buf[0]);
-            std::snprintf(detail_buf[1], sizeof(detail_buf[1]), "%.1f / %.0f GB",
-                          s.sys_snap.ram_used_gb, s.sys_snap.ram_total_gb);
-            std::snprintf(detail_buf[2], sizeof(detail_buf[2]), "%.0f / %.0f GB",
-                          s.sys_snap.disk_used_gb, s.sys_snap.disk_total_gb);
+            std::snprintf(detail_buf[1], sizeof(detail_buf[1]), "%.1f / %.0f GB  %s",
+                          s.sys_snap.ram_used_gb, s.sys_snap.ram_total_gb, delta_buf[1]);
+            std::snprintf(detail_buf[2], sizeof(detail_buf[2]), "%.0f / %.0f GB  %s",
+                          s.sys_snap.disk_used_gb, s.sys_snap.disk_total_gb, delta_buf[2]);
             std::snprintf(detail_buf[3], sizeof(detail_buf[3]), "%s",
-                          have_ping ? delta_buf[3] : "no route");
+                          have_ping ? delta_buf[3] : i18n::tr("no route"));
 
             for (int i = 0; i < 4; i++)
             {
@@ -2236,7 +2249,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
             if (shown == 0)
                 empty_state(dl, ImRect(ImVec2(card.Min.x, card.Min.y + head_h), card.Max),
-                            "Everything this app can verify is already applied.", alpha);
+                            i18n::tr("Everything this app can verify is already applied."),
+                            alpha);
 
             for (int k = 0; k < shown; k++)
             {
@@ -2308,9 +2322,9 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
             const apply_result res = apply_module(m);
             toast(k_modules[m].name,
-                  res == apply_ok       ? "Applied"
-                  : res == apply_failed ? "Windows refused the change"
-                                        : "Not wired to a backend yet",
+                  res == apply_ok       ? i18n::tr("Applied")
+                  : res == apply_failed ? i18n::tr("Windows refused the change")
+                                        : i18n::tr("Not wired to a backend yet"),
                   res == apply_ok ? toast_success : toast_error);
 
             s.dash_scanned = false;
@@ -2323,10 +2337,10 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             const unsigned long long up_min = mi.uptime_seconds / 60ull;
 
             char stat_value[3][64];
-            ImFormatString(stat_value[0], IM_ARRAYSIZE(stat_value[0]), "%d of %d applied",
-                           s.dash_ok, s.dash_checkable);
+            ImFormatString(stat_value[0], IM_ARRAYSIZE(stat_value[0]),
+                           i18n::tr("%d of %d applied"), s.dash_ok, s.dash_checkable);
             ImFormatString(stat_value[1], IM_ARRAYSIZE(stat_value[1]), "%s",
-                           s.dash_power.available ? s.dash_power.name : "Unknown");
+                           s.dash_power.available ? s.dash_power.name : i18n::tr("Unknown"));
             ImFormatString(stat_value[2], IM_ARRAYSIZE(stat_value[2]), "%lluh %llum",
                            up_min / 60ull, up_min % 60ull);
 

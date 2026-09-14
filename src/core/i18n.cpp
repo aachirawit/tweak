@@ -70,6 +70,29 @@ constexpr entry k_table[] = {
     {"Uptime", "เปิดเครื่องมาแล้ว"},
     {"Unknown", "ไม่ทราบ"},
 
+    // ── Dashboard, continued ─────────────────────────────────────────────
+    // The count sentence carries a single %d: Thai has no plural, and English
+    // keeps its own singular at the call site rather than in the table.
+    {"Nothing left to fix here", "ไม่มีอะไรต้องแก้แล้ว"},
+    {"%d tweaks would help this machine", "มี %d อย่างที่ช่วยเครื่องนี้ได้"},
+    {"%d of the %d settings this app can read back are already applied. The rest are listed "
+     "below, loudest first.",
+     "ใช้งานแล้ว %d จาก %d อย่างที่อ่านสถานะกลับได้ ที่เหลืออยู่ข้างล่าง เรียงตามความสำคัญ"},
+    {"Everything this app can verify is already applied.",
+     "ทุกอย่างที่อ่านสถานะกลับได้ ใช้งานครบแล้ว"},
+    {"%d of %d applied", "ใช้แล้ว %d จาก %d"},
+    {"no route", "ไม่มีเส้นทาง"},
+    {"live", "สด"},
+
+    // ── Results ─────────────────────────────────────────────────────────────────
+    {"%d applied, %d failed. Restore point taken first.",
+     "ใช้สำเร็จ %d ไม่สำเร็จ %d สร้างจุดคืนค่าไว้ก่อนแล้ว"},
+    {"Nothing was changed", "ไม่ได้เปลี่ยนอะไร"},
+    {"Windows would not create a restore point. Turn System Protection on for C: and try again.",
+     "Windows สร้างจุดคืนค่าไม่ได้ เปิด System Protection ของไดรฟ์ C: แล้วลองใหม่"},
+    {"Windows refused the change", "Windows ไม่ยอมให้เปลี่ยน"},
+    {"Not wired to a backend yet", "ยังไม่ได้ต่อ backend"},
+
     // ── Tweak pages ─────────────────────────────────────────────────────────
     {"Everything you can change, and what it is set to.",
      "ทุกอย่างที่ปรับได้ และตอนนี้ตั้งไว้เป็นอะไร"},
