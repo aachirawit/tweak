@@ -387,6 +387,10 @@ struct page_state
     button_state szk_apply_btn = btn_idle;
     float szk_apply_timer = 0.f;
 
+    // One per feature card on the FiveM tab, indexed by k_fivem_features.
+    button_state fivem_btn[2] = {btn_idle, btn_idle};
+    float fivem_timer[2] = {0.f, 0.f};
+
     bool mobo_queried = false;
     backend::motherboard_info mobo;
 
@@ -479,7 +483,9 @@ struct module_row
 {
     const char* name;
     const char* role;
-    int category;              // 0 = other (All Settings only), 1 = gaming, 2 = network
+    int category;              // matches the settings tab index this row shows under:
+                               // 0 = other (All tweaks only), 1 = gaming, 2 = network,
+                               // 4 = NVIDIA, 5 = AMD, 6 = cleanup, 7 = FiveM
     bool (*check)() = nullptr; // live applied/not-applied status for the
                                // green/red dot; null = no cheap way to
                                // check (one-shot action, or applied via
@@ -522,10 +528,10 @@ const module_row k_modules[] = {
     {"Disable ECC", "NVIDIA", 4},
     {"Unrestricted P-State", "NVIDIA", 4, backend::check_nvidia_unrestricted_pstate},
     {"Unrestricted Clock Policy", "NVIDIA", 4},
-    {"FiveM QoS Priority", "Network", 2, backend::check_fivem_qos_priority, finding_advised,
+    {"FiveM QoS Priority", "FiveM", 7, backend::check_fivem_qos_priority, finding_advised,
      "FiveM's packets are unmarked, so QoS-aware routers give them no priority."},
-    {"FiveM Cache Auto-Clear", "Gaming", 1, backend::check_fivem_cache_autoclear},
-    {"FiveM High CPU Priority", "Gaming", 1, backend::check_fivem_high_cpu_priority,
+    {"FiveM Cache Auto-Clear", "FiveM", 7, backend::check_fivem_cache_autoclear},
+    {"FiveM High CPU Priority", "FiveM", 7, backend::check_fivem_high_cpu_priority,
      finding_advised, "FiveM competes with background work for CPU time instead of winning it."},
     {"AMD Software Debloat", "AMD", 5},
     {"Disable AMD Chill", "AMD", 5, backend::check_amd_disable_chill},
@@ -555,23 +561,59 @@ const module_row k_modules[] = {
      "Every file read also writes a timestamp back to the disk."},
     {"Disable Advertising ID", "Others", 0, backend::check_advertising_id},
     {"Disable Tips & Suggested Apps", "Others", 0, backend::check_tips_and_suggestions},
-    {"FiveM GPU: High Performance", "Gaming", 1, backend::check_fivem_gpu_high_performance,
+    {"FiveM GPU: High Performance", "FiveM", 7, backend::check_fivem_gpu_high_performance,
      finding_advised, "On a laptop, FiveM may be running on the integrated GPU."},
-    {"FiveM Defender Exclusion", "Gaming", 1},
+    {"FiveM Defender Exclusion", "FiveM", 7},
     {"Clear Temp Files", "Cleanup", 6},
     {"Clear Prefetch", "Cleanup", 6},
     {"Clear Windows Update Cache", "Cleanup", 6},
     {"Clear Shader Cache", "Cleanup", 6},
     {"Clear Thumbnail Cache", "Cleanup", 6},
     {"Empty Recycle Bin", "Cleanup", 6},
-    {"FiveM Exclusive Fullscreen", "Gaming", 1,
+    {"FiveM Exclusive Fullscreen", "FiveM", 7,
      backend::check_fivem_disable_fullscreen_optimizations},
-    {"FiveM Launcher Config", "Gaming", 1, backend::check_fivem_citizenfx_config, finding_note,
+    {"FiveM Launcher Config", "FiveM", 7, backend::check_fivem_citizenfx_config, finding_note,
      "FiveM still boots through the Rockstar launcher and queues an extra frame."},
-    {"GTA V Graphics Preset", "Gaming", 1, backend::check_gta5_graphics_preset, finding_advised,
+    {"GTA V Graphics Preset", "FiveM", 7, backend::check_gta5_graphics_preset, finding_advised,
      "Shadows, MSAA and post-processing are still on, and they cost the most frames."},
 };
 static_assert(IM_ARRAYSIZE(k_modules) == k_module_count, "module_rows is per module");
+
+// The FiveM tab leads with these two as cards rather than list rows. Each names
+// the module it applies by name rather than by index, so inserting a row above
+// them in k_modules cannot silently point a card at the wrong tweak.
+struct fivem_feature
+{
+    const char* title;
+    const char* description;
+    const char* action;
+    icons::id icon;
+    const char* module_name;
+};
+
+const fivem_feature k_fivem_features[] = {
+    {"GTA 5 / FiveM In-Game Settings",
+     "Writes the low-overhead graphics preset into GTA V's settings.xml: shadows, MSAA, "
+     "post-processing and world density down, texture quality and anisotropic filtering left up. "
+     "Your resolution, refresh rate and graphics card stay exactly as the game wrote them.",
+     "Apply In-Game Settings", icons::id::gamepad, "GTA V Graphics Preset"},
+    {"CitizenFX.ini",
+     "Writes the launcher, renderer and streaming keys into "
+     "%LOCALAPPDATA%\\FiveM\\FiveM.app\\CitizenFX.ini, which is where FiveM keeps this "
+     "file on every machine. Your GTA V path, build number and pool sizes are left alone.",
+     "Apply CitizenFX.ini", icons::id::file_code, "FiveM Launcher Config"},
+};
+
+constexpr int k_fivem_feature_count = IM_ARRAYSIZE(k_fivem_features);
+
+// Resolved once, on first use, rather than written down twice.
+int module_index_of(const char* name)
+{
+    for (int i = 0; i < k_module_count; i++)
+        if (std::strcmp(k_modules[i].name, name) == 0)
+            return i;
+    return -1;
+}
 
 // Applies one k_modules row by index. Split out of the Settings page's
 // "Apply" button so the Dashboard's "Optimize now" runs the same code path
@@ -1310,6 +1352,127 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         // no tool card of their own.
         int tab_total = 0, tab_applied = 0, tab_unknown = 0;
 
+        // Re-reads every row's actual registry/service state once when this
+        // sub-tab is (re)entered, and again after an Apply finishes - not every
+        // frame, since several checks are registry/service reads and a couple
+        // (NVIDIA/AMD) are WMI queries. It runs before anything is drawn
+        // because the FiveM cards below label their button from it.
+        if (*sub != 3 && (s.row_status_dirty || s.row_status_checked_sub != *sub))
+        {
+            for (int i = 0; i < k_module_count; i++)
+                s.row_applied[i] = k_modules[i].check ? k_modules[i].check() : false;
+            s.row_status_dirty = false;
+            s.row_status_checked_sub = *sub;
+        }
+
+        // The two config-file presets lead the FiveM tab as feature cards
+        // rather than as two more rows in the list. They are the only tweaks in
+        // the app that write a file the game owns, they name a path the user
+        // may want to go and look at, and each is a single decision - none of
+        // which fits in a 40px row with a dot on the end.
+        if (*sub == tab_index(settings_tab::fivem))
+        {
+            for (int i = 0; i < k_fivem_feature_count; i++)
+            {
+                const fivem_feature& feat = k_fivem_features[i];
+                const int module = module_index_of(feat.module_name);
+                if (module < 0)
+                    continue;
+
+                ImFont* tf = font_semibold(text_base);
+                ImFont* df = font_regular(text_xs);
+
+                const float inner = col - px(sp_5) * 2.f;
+                const int desc_lines =
+                    ImMax(1, wrapped_line_count(df, i18n::tr(feat.description), inner));
+
+                const float card_h = px(sp_5) + px(48.f) + px(sp_4) + px(leading_base) +
+                                     px(sp_1) + px(leading_xs) * (float)desc_lines + px(sp_5) +
+                                     px(1.f) + px(sp_4) + px(sp_12) + px(sp_5);
+
+                const ImRect card(ImVec2(x, y), ImVec2(x + col, y + card_h));
+                panel(dl, card, alpha);
+
+                float cy = card.Min.y + px(sp_5);
+
+                // Icon tile, centred - the card is read top to bottom, not
+                // left to right like the list rows.
+                const float tile = px(48.f);
+                const ImRect tile_rect(ImVec2(card.GetCenter().x - tile * 0.5f, cy),
+                                       ImVec2(card.GetCenter().x + tile * 0.5f, cy + tile));
+                dl->AddRectFilled(tile_rect.Min, tile_rect.Max,
+                                  mo::with_alpha(c_card_raised, alpha), px(14.f));
+                draw_border(dl, tile_rect, px(14.f), px(1.f),
+                            mo::with_alpha(c_border_strong, alpha), 0);
+                icons::draw(feat.icon, dl,
+                            ImVec2(tile_rect.GetCenter().x - px(12.f),
+                                   tile_rect.GetCenter().y - px(12.f)),
+                            px(24.f), mo::with_alpha(c_foreground, alpha));
+                cy += tile + px(sp_4);
+
+                const char* card_title = i18n::tr(feat.title);
+                const float card_title_w = text_width(tf, card_title);
+                draw_text(dl, tf, ImVec2(card.GetCenter().x - card_title_w * 0.5f, cy),
+                          mo::with_alpha(c_foreground, alpha), card_title);
+                cy += px(leading_base) + px(sp_1);
+
+                draw_text_wrapped(dl, df, ImVec2(card.Min.x + px(sp_5), cy),
+                                  mo::with_alpha(c_muted_foreground, alpha),
+                                  i18n::tr(feat.description), inner, px(leading_xs));
+                cy += px(leading_xs) * (float)desc_lines + px(sp_5);
+
+                hairline(dl, card, cy, alpha);
+                cy += px(1.f) + px(sp_4);
+
+                const bool done = s.row_applied[module];
+                const char* label = s.fivem_btn[i] == btn_loading   ? i18n::tr("Applying")
+                                    : s.fivem_btn[i] == btn_success ? i18n::tr("Applied")
+                                    : s.fivem_btn[i] == btn_error   ? i18n::tr("Failed")
+                                    : done                          ? i18n::tr("Re-apply")
+                                                                    : i18n::tr(feat.action);
+
+                ImGui::PushID(feat.title);
+                if (action("fivem-feature", ImVec2(card.Min.x + px(sp_5), cy),
+                           inner / ui_runtime::scale, s.fivem_btn[i], label) &&
+                    s.fivem_btn[i] == btn_idle)
+                {
+                    s.fivem_btn[i] = btn_loading;
+                    s.fivem_timer[i] = 0.f;
+                }
+                ImGui::PopID();
+
+                // Same one-frame-later pattern the other Apply buttons use, so
+                // the loading state is on screen before the file write blocks
+                // the frame.
+                if (s.fivem_btn[i] == btn_loading)
+                {
+                    s.fivem_timer[i] += dt;
+                    if (s.fivem_timer[i] > 0.4f)
+                    {
+                        const bool ok = apply_module(module) == apply_ok;
+                        s.fivem_btn[i] = ok ? btn_success : btn_error;
+                        s.row_status_dirty = true;
+                        toast(i18n::tr(feat.title),
+                              ok ? i18n::tr("Written. Restart FiveM to pick it up.")
+                                 : i18n::tr("Could not be written - see the activity log."),
+                              ok ? toast_success : toast_error);
+                    }
+                }
+                else if (s.fivem_btn[i] != btn_idle)
+                {
+                    // Settle back to an actionable label. The other Apply
+                    // buttons in the app stay on their result until the page is
+                    // left, which reads as disabled on a card whose whole point
+                    // is the one button.
+                    s.fivem_timer[i] += dt;
+                    if (s.fivem_timer[i] > 2.4f)
+                        s.fivem_btn[i] = btn_idle;
+                }
+
+                y = card.Max.y + px(sp_4);
+            }
+        }
+
         if (*sub != 3)
         {
             if (!s.gpu_vendor_queried)
@@ -1342,13 +1505,6 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             // this sub-tab is (re)entered, and again after an Apply finishes —
             // not every frame, since several checks are registry/service reads
             // and a couple (NVIDIA/AMD) are WMI queries.
-            if (s.row_status_dirty || s.row_status_checked_sub != *sub)
-            {
-                for (int i = 0; i < k_module_count; i++)
-                    s.row_applied[i] = k_modules[i].check ? k_modules[i].check() : false;
-                s.row_status_dirty = false;
-                s.row_status_checked_sub = *sub;
-            }
 
             for (int j = 0; j < count; j++)
             {

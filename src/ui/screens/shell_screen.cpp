@@ -52,7 +52,7 @@ struct nav_item
     const char* label;
     icons::id icon;
     const char* badge;
-    const char* sub[7];
+    const char* sub[8];
     int sub_count;
 };
 
@@ -65,8 +65,8 @@ constexpr nav_item k_items[] = {
     {"Settings",
      icons::id::circle_user_round,
      nullptr,
-     {"All tweaks", "Performance", "Network", "Power plan", "NVIDIA", "AMD", "Cleanup"},
-     7},
+     {"All tweaks", "Performance", "Network", "Power plan", "NVIDIA", "AMD", "Cleanup", "FiveM"},
+     8},
     {"Auto Reshade", icons::id::building_2, nullptr, {nullptr}, 0}, // presets
     {"Drivers", icons::id::workflow, nullptr, {nullptr}, 0},        // automation
     {"Dashboard", icons::id::layout_grid, nullptr, {nullptr}, 0},   // dashboard
@@ -105,6 +105,9 @@ const search_item k_search[] = {
      icons::id::sparkles, route::settings, tab_index(settings_tab::amd)},
     {"Cleanup", "Temp, prefetch, update cache, shader cache, and more", "cleanup clear cache junk",
      icons::id::trash, route::settings, tab_index(settings_tab::cleanup)},
+    {"FiveM", "CitizenFX.ini, the GTA V graphics preset, and FiveM's own tweaks",
+     "fivem gta citizenfx gta5 roleplay", icons::id::gamepad, route::settings,
+     tab_index(settings_tab::fivem)},
     {"Auto ReShade", "Install ReShade and the 2K Road Mod into FiveM", "reshade quantv road mod",
      icons::id::building_2, route::presets, 0},
     {"Drivers", "Look up the installed motherboard online", "drivers lookup board update",
@@ -161,6 +164,7 @@ constexpr rail_row k_rail_rows[] = {
     {"Power plan", icons::id::zap, nullptr, route::settings, tab_index(settings_tab::power_plan),
      1},
     {"Cleanup", icons::id::trash, nullptr, route::settings, tab_index(settings_tab::cleanup), 1},
+    {"FiveM", icons::id::gamepad, nullptr, route::settings, tab_index(settings_tab::fivem), 1},
     {"Auto ReShade", icons::id::building_2, nullptr, route::presets, keep_tab, 0},
     {"All tweaks", icons::id::settings, nullptr, route::settings, tab_index(settings_tab::all), 1},
 
@@ -174,8 +178,8 @@ constexpr int k_rail_count = IM_ARRAYSIZE(k_rail_rows);
 
 constexpr rail_group k_rail_groups[] = {
     {nullptr, 0, 1},
-    {"OPTIMIZE", 1, 7},
-    {"SYSTEM", 8, 3},
+    {"OPTIMIZE", 1, 8},
+    {"SYSTEM", 9, 3},
 };
 
 constexpr int k_rail_group_count = IM_ARRAYSIZE(k_rail_groups);

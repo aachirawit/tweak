@@ -87,6 +87,15 @@ constexpr entry k_table[] = {
     {"Renamed", "เปลี่ยนชื่อแล้ว"},
     {"Failed", "ไม่สำเร็จ"},
 
+    // ── FiveM ───────────────────────────────────────────────────────────
+    {"GTA 5 / FiveM In-Game Settings", "ตั้งค่ากราฟิกในเกม GTA 5 / FiveM"},
+    {"Apply In-Game Settings", "ใช้ค่าในเกม"},
+    {"Apply CitizenFX.ini", "ใช้ CitizenFX.ini"},
+    {"Applying", "กำลังใช้..."},
+    {"Re-apply", "ใช้ซ้ำ"},
+    {"Written. Restart FiveM to pick it up.", "เขียนแล้ว เปิด FiveM ใหม่เพื่อให้มีผล"},
+    {"Could not be written - see the activity log.", "เขียนไม่สำเร็จ ดูที่ activity log"},
+
     // ── Sign in ─────────────────────────────────────────────────────────────
     {"Licence key", "รหัสไลเซนส์"},
     {"Enter your licence key.", "กรอกรหัสไลเซนส์ของคุณ"},

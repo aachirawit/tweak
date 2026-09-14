@@ -45,7 +45,7 @@ inline constexpr int route_count = static_cast<int>(route::count);
 }
 
 // route::settings is the one page with tabs. Naming them keeps the rail, the
-// search index and the page tab strip talking about the same seven things.
+// search index and the page tab strip talking about the same eight things.
 enum class settings_tab : int
 {
     all = 0,
@@ -55,6 +55,7 @@ enum class settings_tab : int
     nvidia,
     amd,
     cleanup,
+    fivem,
     count,
 };
 

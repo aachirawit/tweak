@@ -51,6 +51,8 @@ enum class id
     zap,
     trash,
     score_ring,
+    gamepad,
+    file_code,
 };
 
 void draw(id which, ImDrawList* dl, const ImVec2& top_left, float box, ImU32 col);
