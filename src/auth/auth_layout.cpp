@@ -5,6 +5,7 @@
 #include "ui/controls/morph_slider.h"
 #include "ui/foundation/primitives.h"
 #include "ui/foundation/rounded_panel.h"
+#include "core/i18n.h"
 #include "ui/screens/shell.h"
 
 #include <cmath>
@@ -249,8 +250,10 @@ void auth_stage(ImDrawList* dl, const ImRect& stage, const ImRect& card, float r
         ImFont* hf = font_medium(20.f);
         ImFont* df = font_regular(text_sm);
 
-        const float headline_h = px(28.f) * (float)wrapped_line_count(hf, h.headline, content_w);
-        const float detail_h = px(leading_sm) * (float)wrapped_line_count(df, h.detail, content_w);
+        const char* headline = i18n::tr(h.headline);
+        const char* detail = i18n::tr(h.detail);
+        const float headline_h = px(28.f) * (float)wrapped_line_count(hf, headline, content_w);
+        const float detail_h = px(leading_sm) * (float)wrapped_line_count(df, detail, content_w);
 
         // The block is bottom-aligned so a two-line headline grows upward into
         // the image instead of pushing the detail off the panel.
@@ -262,17 +265,17 @@ void auth_stage(ImDrawList* dl, const ImRect& stage, const ImRect& card, float r
         const float drop = px(2.f);
 
         draw_text_wrapped_blur(dl, hf, ImVec2(stage.Min.x + pad, headline_y + drop),
-                               mo::with_alpha(shade, 0.55f * t), h.headline, content_w, px(28.f),
+                               mo::with_alpha(shade, 0.55f * t), headline, content_w, px(28.f),
                                blur + px(7.f));
         draw_text_wrapped_blur(dl, hf, ImVec2(stage.Min.x + pad, headline_y),
-                               mo::with_alpha(c_foreground, t), h.headline, content_w, px(28.f),
+                               mo::with_alpha(c_foreground, t), headline, content_w, px(28.f),
                                blur);
 
         draw_text_wrapped_blur(dl, df, ImVec2(stage.Min.x + pad, detail_y + drop),
-                               mo::with_alpha(shade, 0.45f * t), h.detail, content_w,
+                               mo::with_alpha(shade, 0.45f * t), detail, content_w,
                                px(leading_sm), blur + px(5.f));
         draw_text_wrapped_blur(dl, df, ImVec2(stage.Min.x + pad, detail_y),
-                               mo::with_alpha(c_muted_foreground, t), h.detail, content_w,
+                               mo::with_alpha(c_muted_foreground, t), detail, content_w,
                                px(leading_sm), blur);
     }
 }

@@ -121,14 +121,59 @@ constexpr entry k_table[] = {
     {"Could not be written - see the activity log.", "เขียนไม่สำเร็จ ดูที่ activity log"},
 
     // ── Sign in ─────────────────────────────────────────────────────────────
+    {"Sign in to numbanine", "เข้าสู่ระบบ numbanine"},
+    {"Enter the licence key from your purchase email. It binds to this machine the first time "
+     "you use it.",
+     "กรอกรหัสไลเซนส์จากอีเมลที่ซื้อ รหัสจะผูกกับเครื่องนี้ตั้งแต่ครั้งแรกที่ใช้"},
     {"Licence key", "รหัสไลเซนส์"},
     {"Enter your licence key.", "กรอกรหัสไลเซนส์ของคุณ"},
+    {"Checking key", "กำลังตรวจสอบรหัส"},
     {"Checking your key...", "กำลังตรวจสอบรหัส..."},
+    {"Unlock numbanine", "ปลดล็อก numbanine"},
     {"Unlocked", "ปลดล็อกแล้ว"},
     {"Try again", "ลองใหม่"},
     {"You accept the ", "คุณยอมรับ"},
+    {" and ", " และ "},
     {"Terms", "ข้อกำหนด"},
     {"Privacy", "ความเป็นส่วนตัว"},
+
+    // ── Sign-in stage ───────────────────────────────────────────────────────
+    {"Read the machine before changing it.", "อ่านค่าเครื่องก่อนแก้"},
+    {"Every tweak on the dashboard is one numbanine can verify against the registry, so the score "
+     "is a measurement rather than a promise.",
+     "ทุกอย่างบนแดชบอร์ดคือสิ่งที่ numbanine อ่านกลับจากรีจิสทรีได้ คะแนนจึงเป็นค่าที่วัดได้จริง ไม่ใช่คำโฆษณา"},
+    {"A restore point before anything moves.", "สร้างจุดคืนค่าก่อนแตะอะไรทั้งนั้น"},
+    {"Optimize now takes one first, and stops without touching a single key if Windows refuses.",
+     "ปุ่มปรับแต่งเลยจะสร้างให้ก่อน ถ้า Windows ไม่ยอม จะหยุดทันทีโดยไม่แก้อะไรสักตัว"},
+    {"Timer resolution, core parking, packet batching.",
+     "Timer resolution, core parking, packet batching"},
+    {"The settings that decide frame pacing, grouped by what they change instead of where they "
+     "live in the registry.",
+     "ค่าที่กำหนดความสม่ำเสมอของเฟรม จัดกลุ่มตามสิ่งที่มันเปลี่ยน ไม่ใช่ตามที่อยู่ในรีจิสทรี"},
+    {"Built for FiveM, useful on any Windows box.", "ทำมาเพื่อ FiveM แต่ใช้กับ Windows เครื่องไหนก็ได้"},
+    {"QoS marking and process priority target the game; the rest is plain Windows tuning.",
+     "QoS marking กับ process priority เจาะจงที่ตัวเกม ที่เหลือคือการปรับ Windows ทั่วไป"},
+
+    // ── Sign-in results ─────────────────────────────────────────────────────
+    // Published in English by the licence worker and translated here when
+    // drawn - see license_form.cpp. Anything the server sends that is not
+    // listed stays in the words the server used.
+    {"Licence valid.", "รหัสถูกต้อง"},
+    {"That key was not recognised. Check for a typo, or paste it again from your purchase email.",
+     "ไม่รู้จักรหัสนี้ ดูว่าพิมพ์ผิดหรือเปล่า หรือคัดลอกจากอีเมลที่ซื้อมาใหม่"},
+    {"This key is locked to a different machine. Send the hardware ID shown below to support for "
+     "a reset.",
+     "รหัสนี้ผูกกับเครื่องอื่นอยู่ ส่ง hardware ID ข้างล่างให้ซัพพอร์ตเพื่อรีเซ็ต"},
+    {"This key has expired. Renew it to sign in again.", "รหัสนี้หมดอายุแล้ว ต่ออายุเพื่อเข้าใช้อีกครั้ง"},
+    {"This key has been banned. Contact support if you think that is a mistake.",
+     "รหัสนี้ถูกแบน ติดต่อซัพพอร์ตถ้าคิดว่าผิดพลาด"},
+    {"This key has been revoked. Contact support if you think that is a mistake.",
+     "รหัสนี้ถูกยกเลิก ติดต่อซัพพอร์ตถ้าคิดว่าผิดพลาด"},
+    {"Too many attempts. Wait a moment, then try again.", "ลองบ่อยเกินไป รอสักครู่แล้วลองใหม่"},
+    {"The app sent a request the server rejected. Update to the latest version.",
+     "แอปส่งคำขอที่เซิร์ฟเวอร์ไม่รับ อัปเดตเป็นเวอร์ชันล่าสุด"},
+    {"The licence server refused the key. Try again in a moment.",
+     "เซิร์ฟเวอร์ไลเซนส์ไม่รับรหัสนี้ รอสักครู่แล้วลองใหม่"},
 };
 
 const std::unordered_map<std::string_view, const char*>& table()

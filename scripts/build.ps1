@@ -14,6 +14,7 @@ $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $solutionPath = Join-Path $repositoryRoot "SZK.sln"
 $applicationPath = Join-Path $repositoryRoot "$Configuration\numbanine.exe"
 $layoutVerifier = Join-Path $PSScriptRoot "verify-source-layout.ps1"
+$translationVerifier = Join-Path $PSScriptRoot "verify-translations.py"
 
 function Find-MSBuild {
     $command = Get-Command "MSBuild.exe" -ErrorAction SilentlyContinue
@@ -52,6 +53,23 @@ $target = if ($Rebuild) { "Rebuild" } else { "Build" }
 
 Write-Host "Verifying source layout..."
 & $layoutVerifier
+
+# Python is not required to build, so a machine without it skips this rather
+# than failing: the check is a lint over the translation table, not a step the
+# compiler depends on.
+$python = @("python", "python3", "py") |
+    ForEach-Object { Get-Command $_ -ErrorAction SilentlyContinue } |
+    Select-Object -First 1
+if ($python) {
+    Write-Host "Verifying translations..."
+    & $python.Source $translationVerifier $repositoryRoot
+    if ($LASTEXITCODE -ne 0) {
+        throw "Translation table has keys nothing looks up."
+    }
+}
+else {
+    Write-Host "Skipping translation check (no Python on PATH)."
+}
 
 Write-Host "Building numbanine ($Configuration|x64)..."
 & $msbuild $solutionPath "/t:$target" "/p:Configuration=$Configuration" "/p:Platform=x64" `

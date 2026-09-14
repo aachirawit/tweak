@@ -2,6 +2,7 @@
 
 #include "application/brand.h"
 #include "backend/keyauth.h"
+#include "core/i18n.h"
 #include "ui/controls/form_controls.h"
 #include "ui/foundation/primitives.h"
 #include "ui/screens/shell.h"
@@ -14,8 +15,8 @@ namespace
 {
 constexpr float k_message_duration = 0.2f;
 
-const char* k_title = "Sign in to numbanine";
-const char* k_description =
+const char* k_title_en = "Sign in to numbanine";
+const char* k_description_en =
     "Enter the licence key from your purchase email. It binds to this machine the first time "
     "you use it.";
 
@@ -82,10 +83,17 @@ auth_action license_screen()
     const bool submitting = (s.status == btn_loading);
 
     const bool key_empty = (s.key[0] == 0);
-    const char* key_error = (s.touched && key_empty) ? "Enter your licence key." : nullptr;
+    // Resolved once per frame, not at static init: the language can change
+    // while this screen is up, and the wrapped heights below are measured from
+    // these same pointers.
+    const char* k_title = i18n::tr(k_title_en);
+    const char* k_description = i18n::tr(k_description_en);
+
+    const char* key_error =
+        (s.touched && key_empty) ? i18n::tr("Enter your licence key.") : nullptr;
 
     input_desc d_key;
-    d_key.label = "Licence key";
+    d_key.label = i18n::tr("Licence key");
     d_key.placeholder = "XXXXX-XXXXX-XXXXX-XXXXX";
     d_key.buf = s.key;
     d_key.buf_size = IM_ARRAYSIZE(s.key);
@@ -93,10 +101,10 @@ auth_action license_screen()
     d_key.error = key_error;
     d_key.disabled = submitting;
 
-    const char* submit_label = s.status == btn_loading   ? "Checking key"
-                               : s.status == btn_success ? "Unlocked"
-                               : s.status == btn_error   ? "Try again"
-                                                         : "Unlock numbanine";
+    const char* submit_label = s.status == btn_loading   ? i18n::tr("Checking key")
+                               : s.status == btn_success ? i18n::tr("Unlocked")
+                               : s.status == btn_error   ? i18n::tr("Try again")
+                                                         : i18n::tr("Unlock numbanine");
 
     input_update(s.in_key, d_key, dt);
     stateful_button_update(s.submit, s.status, submit_label, dt);
@@ -110,10 +118,11 @@ auth_action license_screen()
     const float description_h = px(leading_sm) * (float)description_lines;
 
     // The banner wraps, so its open height depends on what it is saying.
+    const char* banner_text = s.banner_text.empty() ? "" : i18n::tr(s.banner_text.c_str());
     const int banner_lines =
         s.banner_text.empty()
             ? 1
-            : ImMax(1, wrapped_line_count(font_regular(text_xs), s.banner_text.c_str(),
+            : ImMax(1, wrapped_line_count(font_regular(text_xs), banner_text,
                                           content_w - px(sp_3) * 2.f));
     const float k_banner_full =
         px(sp_5) + px(1.f + 10.f) + px(leading_xs) * (float)banner_lines + px(10.f + 1.f);
@@ -193,7 +202,7 @@ auth_action license_screen()
 
             draw_text_wrapped(dl, font_regular(text_xs),
                               ImVec2(bmin.x + px(sp_3), bmin.y + px(1.f + 10.f)),
-                              mo::with_alpha(tone, opacity), s.banner_text.c_str(),
+                              mo::with_alpha(tone, opacity), banner_text,
                               content_w - px(sp_3) * 2.f, px(leading_xs));
 
             dl->PopClipRect();
@@ -240,10 +249,10 @@ auth_action license_screen()
             ImFont* lead_font = font_regular(text_sm);
             ImFont* link_font = font_medium(text_sm);
 
-            const char* lead = "You accept the ";
-            const char* terms = "Terms";
-            const char* mid = " and ";
-            const char* privacy = "Privacy";
+            const char* lead = i18n::tr("You accept the ");
+            const char* terms = i18n::tr("Terms");
+            const char* mid = i18n::tr(" and ");
+            const char* privacy = i18n::tr("Privacy");
 
             const float lead_w = text_width(lead_font, lead);
             const float terms_w = text_width(link_font, terms);
