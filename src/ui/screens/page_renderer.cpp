@@ -595,12 +595,14 @@ const fivem_feature k_fivem_features[] = {
     {"GTA 5 / FiveM In-Game Settings",
      "Writes the low-overhead graphics preset into GTA V's settings.xml: shadows, MSAA, "
      "post-processing and world density down, texture quality and anisotropic filtering left up. "
-     "Your resolution, refresh rate and graphics card stay exactly as the game wrote them.",
+     "Your resolution, refresh rate and graphics card stay exactly as the game wrote them, and "
+     "the file it replaces is kept beside it as settings.xml.numbanine.bak.",
      "Apply In-Game Settings", icons::id::gamepad, "GTA V Graphics Preset"},
     {"CitizenFX.ini",
      "Writes the launcher, renderer and streaming keys into "
      "%LOCALAPPDATA%\\FiveM\\FiveM.app\\CitizenFX.ini, which is where FiveM keeps this "
-     "file on every machine. Your GTA V path, build number and pool sizes are left alone.",
+     "file on every machine. Your GTA V path, build number and pool sizes are left alone, and "
+     "the file it replaces is kept beside it as CitizenFX.ini.numbanine.bak.",
      "Apply CitizenFX.ini", icons::id::file_code, "FiveM Launcher Config"},
 };
 
@@ -1453,7 +1455,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                         s.fivem_btn[i] = ok ? btn_success : btn_error;
                         s.row_status_dirty = true;
                         toast(i18n::tr(feat.title),
-                              ok ? i18n::tr("Written. Restart FiveM to pick it up.")
+                              ok ? i18n::tr("Written, with a .numbanine.bak of the original "
+                                            "beside it. Restart FiveM to pick it up.")
                                  : i18n::tr("Could not be written - see the activity log."),
                               ok ? toast_success : toast_error);
                     }

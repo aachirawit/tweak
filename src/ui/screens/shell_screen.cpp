@@ -291,6 +291,7 @@ struct lang_switch_state
 {
     mo::spring indicator;
     mo::spring hover[2];
+    mo::spring press[2];
     bool seeded = false;
 };
 
@@ -372,6 +373,19 @@ void language_switch(const ImRect& rect, float alpha)
 
         if (hovered && i != active)
             ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+
+        // Held state, acknowledged on the cell itself rather than waiting for
+        // the indicator to arrive. The indicator is a spring, so on the press
+        // that starts it there is otherwise nothing under the finger for the
+        // length of the slide.
+        const float held_t = st->press[i].to(held ? 1.f : 0.f, mo::SPRING_SWAP, dt);
+        if (held_t > 0.004f)
+        {
+            const float pad = px(3.f);
+            dl->AddRectFilled(ImVec2(cell_rect.Min.x + pad, cell_rect.Min.y + pad),
+                              ImVec2(cell_rect.Max.x - pad, cell_rect.Max.y - pad),
+                              mo::with_alpha(c_card_raised, 0.7f * held_t * alpha), px(7.f));
+        }
 
         // The inactive side lifts towards the foreground on hover so it reads
         // as the other half of a control rather than as static text.

@@ -93,7 +93,8 @@ constexpr entry k_table[] = {
     {"Apply CitizenFX.ini", "ใช้ CitizenFX.ini"},
     {"Applying", "กำลังใช้..."},
     {"Re-apply", "ใช้ซ้ำ"},
-    {"Written. Restart FiveM to pick it up.", "เขียนแล้ว เปิด FiveM ใหม่เพื่อให้มีผล"},
+    {"Written, with a .numbanine.bak of the original beside it. Restart FiveM to pick it up.",
+     "เขียนแล้ว เก็บไฟล์เดิมเป็น .numbanine.bak ไว้ข้างๆ เปิด FiveM ใหม่เพื่อให้มีผล"},
     {"Could not be written - see the activity log.", "เขียนไม่สำเร็จ ดูที่ activity log"},
 
     // ── Sign in ─────────────────────────────────────────────────────────────
