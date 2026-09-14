@@ -109,8 +109,8 @@ constexpr entry k_table[] = {
 
     // ── FiveM ───────────────────────────────────────────────────────────
     {"GTA 5 / FiveM In-Game Settings", "ตั้งค่ากราฟิกในเกม GTA 5 / FiveM"},
-    {"Apply In-Game Settings", "ใช้ค่าในเกม"},
-    {"Apply CitizenFX.ini", "ใช้ CitizenFX.ini"},
+    {"settings.xml, with a backup kept", "settings.xml เก็บไฟล์สำรองไว้ให้"},
+    {"FiveM.app, with a backup kept", "FiveM.app เก็บไฟล์สำรองไว้ให้"},
     {"Applying", "กำลังใช้..."},
     {"Re-apply", "ใช้ซ้ำ"},
     {"Written, with a .numbanine.bak of the original beside it. Restart FiveM to pick it up.",

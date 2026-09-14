@@ -649,25 +649,16 @@ static_assert(every_category_has_a_card(),
 struct fivem_feature
 {
     const char* title;
-    const char* description;
-    const char* action;
+    const char* description; // one line: which file this writes
     icons::id icon;
     const char* module_name;
 };
 
 const fivem_feature k_fivem_features[] = {
-    {"GTA 5 / FiveM In-Game Settings",
-     "Writes the low-overhead graphics preset into GTA V's settings.xml: shadows, MSAA, "
-     "post-processing and world density down, texture quality and anisotropic filtering left up. "
-     "Your resolution, refresh rate and graphics card stay exactly as the game wrote them, and "
-     "the file it replaces is kept beside it as settings.xml.numbanine.bak.",
-     "Apply In-Game Settings", icons::id::gamepad, "GTA V Graphics Preset"},
-    {"CitizenFX.ini",
-     "Writes the launcher, renderer and streaming keys into "
-     "%LOCALAPPDATA%\\FiveM\\FiveM.app\\CitizenFX.ini, which is where FiveM keeps this "
-     "file on every machine. Your GTA V path, build number and pool sizes are left alone, and "
-     "the file it replaces is kept beside it as CitizenFX.ini.numbanine.bak.",
-     "Apply CitizenFX.ini", icons::id::file_code, "FiveM Launcher Config"},
+    {"GTA 5 / FiveM In-Game Settings", "settings.xml, with a backup kept", icons::id::gamepad,
+     "GTA V Graphics Preset"},
+    {"CitizenFX.ini", "FiveM.app, with a backup kept", icons::id::file_code,
+     "FiveM Launcher Config"},
 };
 
 constexpr int k_fivem_feature_count = IM_ARRAYSIZE(k_fivem_features);
@@ -1437,23 +1428,19 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         // even started.
         if (*sub == tab_index(settings_tab::fivem))
         {
+            // One row each, side by side. The body gives the list about 310px
+            // and the eight rows below already want 218 of it, so a card that
+            // wraps a paragraph and stacks a full-width button under it - which
+            // is what these were - puts the second half of the tab off the
+            // bottom of the window. What a card has to say is which file it
+            // writes; the rest was already in the log entry it leaves.
             const float gap = px(sp_3);
             const float card_w = (w - gap) * 0.5f;
+            const float card_h = px(76.f);
+            const float button_w = px(116.f);
 
             ImFont* tf = font_semibold(text_sm);
             ImFont* df = font_regular(text_xs);
-            const float inner = card_w - px(sp_4) * 2.f;
-
-            // Both cards take the taller of the two descriptions, so the pair
-            // sits on one baseline instead of stepping.
-            int desc_lines = 1;
-            for (const fivem_feature& feat : k_fivem_features)
-                desc_lines = ImMax(desc_lines,
-                                   wrapped_line_count(df, i18n::tr(feat.description), inner));
-
-            const float card_h = px(sp_4) + px(32.f) + px(sp_3) +
-                                 px(leading_xs) * (float)desc_lines + px(sp_3) + px(sp_10) +
-                                 px(sp_4);
 
             for (int i = 0; i < k_fivem_feature_count; i++)
             {
@@ -1466,11 +1453,10 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                                   ImVec2(x + (card_w + gap) * (float)i + card_w, y + card_h));
                 panel(dl, card, alpha);
 
-                float cy = card.Min.y + px(sp_4);
-
                 const float tile = px(32.f);
-                const ImRect tile_rect(ImVec2(card.Min.x + px(sp_4), cy),
-                                       ImVec2(card.Min.x + px(sp_4) + tile, cy + tile));
+                const ImRect tile_rect(
+                    ImVec2(card.Min.x + px(sp_4), card.GetCenter().y - tile * 0.5f),
+                    ImVec2(card.Min.x + px(sp_4) + tile, card.GetCenter().y + tile * 0.5f));
                 dl->AddRectFilled(tile_rect.Min, tile_rect.Max,
                                   mo::with_alpha(c_card_raised, alpha), px(10.f));
                 draw_border(dl, tile_rect, px(10.f), px(1.f),
@@ -1481,26 +1467,27 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                             px(18.f), mo::with_alpha(c_foreground, alpha));
 
                 const float text_x = tile_rect.Max.x + px(sp_3);
-                draw_text_ellipsis(dl, tf, ImVec2(text_x, cy + px(8.f)),
-                                   mo::with_alpha(c_foreground, alpha), i18n::tr(feat.title),
-                                   card.Max.x - px(sp_4) - text_x);
-                cy += tile + px(sp_3);
+                const float text_w = card.Max.x - px(sp_4) - button_w - px(sp_3) - text_x;
 
-                draw_text_wrapped(dl, df, ImVec2(card.Min.x + px(sp_4), cy),
-                                  mo::with_alpha(c_muted_foreground, alpha),
-                                  i18n::tr(feat.description), inner, px(leading_xs));
-                cy += px(leading_xs) * (float)desc_lines + px(sp_3);
+                draw_text_ellipsis(dl, tf, ImVec2(text_x, card.Min.y + px(18.f)),
+                                   mo::with_alpha(c_foreground, alpha), i18n::tr(feat.title),
+                                   text_w);
+                draw_text_ellipsis(dl, df, ImVec2(text_x, card.Min.y + px(40.f)),
+                                   mo::with_alpha(c_muted_foreground, alpha),
+                                   i18n::tr(feat.description), text_w);
 
                 const bool done = s.row_applied[module];
                 const char* label = s.fivem_btn[i] == btn_loading   ? i18n::tr("Applying")
                                     : s.fivem_btn[i] == btn_success ? i18n::tr("Applied")
                                     : s.fivem_btn[i] == btn_error   ? i18n::tr("Failed")
                                     : done                          ? i18n::tr("Re-apply")
-                                                                    : i18n::tr(feat.action);
+                                                                    : i18n::tr("Apply");
 
                 ImGui::PushID(feat.title);
-                if (action("fivem-feature", ImVec2(card.Min.x + px(sp_4), cy),
-                           inner / ui_runtime::scale, s.fivem_btn[i], label) &&
+                if (action("fivem-feature",
+                           ImVec2(card.Max.x - px(sp_4) - button_w,
+                                  card.GetCenter().y - px(sp_10) * 0.5f),
+                           button_w / ui_runtime::scale, s.fivem_btn[i], label) &&
                     s.fivem_btn[i] == btn_idle)
                 {
                     s.fivem_btn[i] = btn_loading;
@@ -1539,6 +1526,113 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             }
 
             y += card_h + px(sp_4);
+        }
+
+        if (*sub == 3)
+        {
+            const backend::power_plan_info info = backend::power_plan_active();
+            const bool is_szk = info.available && std::strcmp(info.name, "numbanine") == 0;
+            const char* status_label = !info.available ? i18n::tr("Unknown")
+                                       : is_szk        ? i18n::tr("Active")
+                                                       : i18n::tr("Not applied");
+            const badge_status status_kind = !info.available ? badge_neutral
+                                             : is_szk        ? badge_good
+                                                             : badge_bad;
+
+            // The Power plan tab is the only place this appears now. It used
+            // to be stacked in All tweaks' right-hand column under the NVIDIA
+            // card; with that column gone it was landing full width under the
+            // category grid, off the bottom of the body.
+            const ImRect szk(ImVec2(x, y), ImVec2(x + w, y + px(164.f)));
+            panel(dl, szk, alpha);
+
+            const float icon_box = px(40.f);
+            const ImRect icon_rect(
+                ImVec2(szk.Min.x + px(sp_5), szk.Min.y + px(20.f)),
+                ImVec2(szk.Min.x + px(sp_5) + icon_box, szk.Min.y + px(20.f) + icon_box));
+            dl->AddRectFilled(icon_rect.Min, icon_rect.Max, mo::with_alpha(c_background, alpha),
+                              px(10.f));
+            draw_border(dl, icon_rect, px(10.f), px(1.f), mo::with_alpha(c_border_strong, alpha),
+                        0);
+            icons::draw(
+                icons::id::zap, dl,
+                ImVec2(icon_rect.GetCenter().x - px(11.f), icon_rect.GetCenter().y - px(11.f)),
+                px(22.f), mo::with_alpha(c_foreground, alpha));
+
+            const float bw = badge_width(status_label, true);
+            ImFont* tf = font_semibold(text_base);
+            draw_text(dl, tf, ImVec2(icon_rect.Max.x + px(14.f), szk.Min.y + px(22.f)),
+                      mo::with_alpha(c_foreground, alpha), "numbanine Power Plan");
+            ImFont* df = font_regular(text_xs);
+            draw_text_ellipsis(dl, df, ImVec2(icon_rect.Max.x + px(14.f), szk.Min.y + px(44.f)),
+                               mo::with_alpha(c_muted_foreground, alpha),
+                               i18n::tr("Renames the active Windows scheme so it's easy to spot"),
+                               szk.Max.x - (icon_rect.Max.x + px(14.f)) - bw - px(sp_3));
+            badge("szk-status", dl, ImVec2(szk.Max.x - px(sp_5) - bw, szk.Min.y + px(24.f)),
+                  status_label, status_kind, true, alpha);
+
+            hairline(dl, szk, szk.Min.y + px(80.f), alpha);
+
+            ImFont* lf = font_regular(text_xs);
+            draw_text(dl, lf, ImVec2(szk.Min.x + px(sp_5), szk.Min.y + px(96.f)),
+                      mo::with_alpha(c_muted_foreground, alpha), i18n::tr("ACTIVE PLAN"));
+            ImFont* vf = font_semibold(text_base);
+            const char* current = info.available ? info.name : i18n::tr("Unknown");
+            draw_text(dl, vf, ImVec2(szk.Min.x + px(sp_5), szk.Min.y + px(112.f)),
+                      mo::with_alpha(c_foreground, alpha), current);
+
+            ImFont* bf = font_medium(text_base);
+            const float apply_w = text_width(bf, "Apply") + px(40.f);
+            if (action("szk-apply",
+                       ImVec2(szk.Max.x - px(sp_5) - apply_w / ui_runtime::scale,
+                              szk.Min.y + px(100.f)),
+                       apply_w / ui_runtime::scale, s.szk_apply_btn, "Apply") &&
+                s.szk_apply_btn == btn_idle)
+            {
+                s.szk_apply_btn = btn_loading;
+                s.szk_apply_timer = 0.f;
+            }
+            if (s.szk_apply_btn == btn_loading)
+            {
+                s.szk_apply_timer += dt;
+                if (s.szk_apply_timer > 0.6f)
+                {
+                    const bool ok =
+                        backend::power_plan_rename_active(L"numbanine", L"numbanine powerplan");
+                    s.szk_apply_btn = ok ? btn_success : btn_error;
+                    toast(ok ? i18n::tr("Renamed") : i18n::tr("Failed"), "numbanine powerplan",
+                          ok ? toast_success : toast_error);
+                }
+            }
+
+            y = szk.Max.y + px(sp_4);
+        }
+
+        // The NVIDIA Profile Inspector card used to appear on All tweaks too,
+        // in the right-hand column. All tweaks is an index of the tabs now and
+        // has no right-hand column, and an NVIDIA tool reads better on the
+        // NVIDIA tab anyway.
+        if (*sub == 4)
+        {
+            const float nip_x = x;
+            const float nip_w = w;
+            const float nip_h = px(72.f);
+            const float nip_y = y;
+
+            const ImRect nip(ImVec2(nip_x, nip_y), ImVec2(nip_x + nip_w, nip_y + nip_h));
+            panel(dl, nip, alpha);
+
+            // Label left, button right: the card is one row tall now that it
+            // is not sharing a narrow column with anything.
+            row_label(dl, ImVec2(nip.Min.x + px(sp_4), nip.Min.y + px(14.f)),
+                      "NVIDIA Profile Inspector", nullptr, alpha,
+                      nip.GetWidth() - px(sp_4) * 2.f - px(100.f));
+
+            if (action("nip-launch", ImVec2(nip.Max.x - px(sp_4) - px(90.f), nip.Min.y + px(16.f)),
+                       90.f, btn_idle, i18n::tr("Open")))
+                backend::launch_nvidia_profile_inspector();
+
+            y = nip.Max.y + px(sp_4);
         }
 
         if (*sub != 3)
@@ -1773,8 +1867,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 // The list can run to 50+ rows now — pin Apply to the bottom of
                 // the viewport instead of the end of the scrolled content, so
                 // it doesn't take a long scroll to reach.
-                const float bar_h = px(76.f);
-                const ImVec2 apply_pos(x, area.Max.y - bar_h + px(14.f));
+                const float bar_h = px(64.f);
+                const ImVec2 apply_pos(x, area.Max.y - bar_h + px(10.f));
                 dl->AddRectFilled(ImVec2(area.Min.x, area.Max.y - bar_h), area.Max,
                                   mo::with_alpha(c_background, alpha));
                 dl->AddRectFilled(ImVec2(area.Min.x, area.Max.y - bar_h),
@@ -1823,112 +1917,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             }
         }
 
-        // The NVIDIA Profile Inspector card used to appear on All tweaks too,
-        // in the right-hand column. All tweaks is an index of the tabs now and
-        // has no right-hand column, and an NVIDIA tool reads better on the
-        // NVIDIA tab anyway.
-        if (*sub == 4)
-        {
-            const float nip_x = x;
-            const float nip_w = w;
-            const float nip_h = px(72.f);
-            const float nip_y = y;
 
-            const ImRect nip(ImVec2(nip_x, nip_y), ImVec2(nip_x + nip_w, nip_y + nip_h));
-            panel(dl, nip, alpha);
-
-            // Label left, button right: the card is one row tall now that it
-            // is not sharing a narrow column with anything.
-            row_label(dl, ImVec2(nip.Min.x + px(sp_4), nip.Min.y + px(14.f)),
-                      "NVIDIA Profile Inspector", nullptr, alpha,
-                      nip.GetWidth() - px(sp_4) * 2.f - px(100.f));
-
-            if (action("nip-launch", ImVec2(nip.Max.x - px(sp_4) - px(90.f), nip.Min.y + px(16.f)),
-                       90.f, btn_idle, i18n::tr("Open")))
-                backend::launch_nvidia_profile_inspector();
-
-            y = nip.Max.y + px(sp_4);
-        }
-
-        if (*sub == 3)
-        {
-            const backend::power_plan_info info = backend::power_plan_active();
-            const bool is_szk = info.available && std::strcmp(info.name, "numbanine") == 0;
-            const char* status_label = !info.available ? i18n::tr("Unknown")
-                                       : is_szk        ? i18n::tr("Active")
-                                                       : i18n::tr("Not applied");
-            const badge_status status_kind = !info.available ? badge_neutral
-                                             : is_szk        ? badge_good
-                                                             : badge_bad;
-
-            // The Power plan tab is the only place this appears now. It used
-            // to be stacked in All tweaks' right-hand column under the NVIDIA
-            // card; with that column gone it was landing full width under the
-            // category grid, off the bottom of the body.
-            const ImRect szk(ImVec2(x, y), ImVec2(x + w, y + px(164.f)));
-            panel(dl, szk, alpha);
-
-            const float icon_box = px(40.f);
-            const ImRect icon_rect(
-                ImVec2(szk.Min.x + px(sp_5), szk.Min.y + px(20.f)),
-                ImVec2(szk.Min.x + px(sp_5) + icon_box, szk.Min.y + px(20.f) + icon_box));
-            dl->AddRectFilled(icon_rect.Min, icon_rect.Max, mo::with_alpha(c_background, alpha),
-                              px(10.f));
-            draw_border(dl, icon_rect, px(10.f), px(1.f), mo::with_alpha(c_border_strong, alpha),
-                        0);
-            icons::draw(
-                icons::id::zap, dl,
-                ImVec2(icon_rect.GetCenter().x - px(11.f), icon_rect.GetCenter().y - px(11.f)),
-                px(22.f), mo::with_alpha(c_foreground, alpha));
-
-            const float bw = badge_width(status_label, true);
-            ImFont* tf = font_semibold(text_base);
-            draw_text(dl, tf, ImVec2(icon_rect.Max.x + px(14.f), szk.Min.y + px(22.f)),
-                      mo::with_alpha(c_foreground, alpha), "numbanine Power Plan");
-            ImFont* df = font_regular(text_xs);
-            draw_text_ellipsis(dl, df, ImVec2(icon_rect.Max.x + px(14.f), szk.Min.y + px(44.f)),
-                               mo::with_alpha(c_muted_foreground, alpha),
-                               i18n::tr("Renames the active Windows scheme so it's easy to spot"),
-                               szk.Max.x - (icon_rect.Max.x + px(14.f)) - bw - px(sp_3));
-            badge("szk-status", dl, ImVec2(szk.Max.x - px(sp_5) - bw, szk.Min.y + px(24.f)),
-                  status_label, status_kind, true, alpha);
-
-            hairline(dl, szk, szk.Min.y + px(80.f), alpha);
-
-            ImFont* lf = font_regular(text_xs);
-            draw_text(dl, lf, ImVec2(szk.Min.x + px(sp_5), szk.Min.y + px(96.f)),
-                      mo::with_alpha(c_muted_foreground, alpha), i18n::tr("ACTIVE PLAN"));
-            ImFont* vf = font_semibold(text_base);
-            const char* current = info.available ? info.name : i18n::tr("Unknown");
-            draw_text(dl, vf, ImVec2(szk.Min.x + px(sp_5), szk.Min.y + px(112.f)),
-                      mo::with_alpha(c_foreground, alpha), current);
-
-            ImFont* bf = font_medium(text_base);
-            const float apply_w = text_width(bf, "Apply") + px(40.f);
-            if (action("szk-apply",
-                       ImVec2(szk.Max.x - px(sp_5) - apply_w / ui_runtime::scale,
-                              szk.Min.y + px(100.f)),
-                       apply_w / ui_runtime::scale, s.szk_apply_btn, "Apply") &&
-                s.szk_apply_btn == btn_idle)
-            {
-                s.szk_apply_btn = btn_loading;
-                s.szk_apply_timer = 0.f;
-            }
-            if (s.szk_apply_btn == btn_loading)
-            {
-                s.szk_apply_timer += dt;
-                if (s.szk_apply_timer > 0.6f)
-                {
-                    const bool ok =
-                        backend::power_plan_rename_active(L"numbanine", L"numbanine powerplan");
-                    s.szk_apply_btn = ok ? btn_success : btn_error;
-                    toast(ok ? i18n::tr("Renamed") : i18n::tr("Failed"), "numbanine powerplan",
-                          ok ? toast_success : toast_error);
-                }
-            }
-
-            y = szk.Max.y + px(sp_4);
-        }
 
         break;
     }
