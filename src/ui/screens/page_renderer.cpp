@@ -1365,7 +1365,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
     if (sub_count > 0)
     {
-        tabs("page-tabs", ImVec2(x, y), subs, sub_count, sub, tabs_underline);
+        tabs("page-tabs", ImVec2(x, y), subs, sub_count, sub, tabs_underline, w);
         y += tabs_height(tabs_underline) + px(sp_6);
     }
 
@@ -1408,14 +1408,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
     {
     case route_index(route::settings):
     {
-        // aside_y was captured before the "SETTINGS" eyebrow label above —
-        // the list card (and anything stacked in the right-hand column
-        // alongside it) actually starts here, after that label.
-        const float content_top = y;
-
-        // Counted while the list is built and reported in the aside card below,
-        // so the right-hand column has something to say on the tabs that carry
-        // no tool card of their own.
+        // Counted while the list is built, and reported in the header of the
+        // card the rows are in.
         int tab_total = 0, tab_applied = 0, tab_unknown = 0;
 
         // Re-reads every row's actual registry/service state once when this
@@ -1829,78 +1823,49 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             }
         }
 
-        float nip_bottom = 0.f;
-        bool nip_shown = false;
-
         // The NVIDIA Profile Inspector card used to appear on All tweaks too,
         // in the right-hand column. All tweaks is an index of the tabs now and
         // has no right-hand column, and an NVIDIA tool reads better on the
         // NVIDIA tab anyway.
         if (*sub == 4)
         {
-            const bool nip_right_col = false;
-            const float nip_x = nip_right_col ? aside_x : x;
-            const float nip_w = nip_right_col ? aside_w : w;
-            const float nip_h = nip_right_col ? px(108.f) : px(72.f);
-            const float nip_y = nip_right_col ? content_top : y;
+            const float nip_x = x;
+            const float nip_w = w;
+            const float nip_h = px(72.f);
+            const float nip_y = y;
 
             const ImRect nip(ImVec2(nip_x, nip_y), ImVec2(nip_x + nip_w, nip_y + nip_h));
             panel(dl, nip, alpha);
 
-            if (nip_right_col)
-            {
-                row_label(dl, ImVec2(nip.Min.x + px(sp_4), nip.Min.y + px(14.f)),
-                          "NVIDIA Profile Inspector", nullptr, alpha,
-                          nip.GetWidth() - px(sp_4) * 2.f);
+            // Label left, button right: the card is one row tall now that it
+            // is not sharing a narrow column with anything.
+            row_label(dl, ImVec2(nip.Min.x + px(sp_4), nip.Min.y + px(14.f)),
+                      "NVIDIA Profile Inspector", nullptr, alpha,
+                      nip.GetWidth() - px(sp_4) * 2.f - px(100.f));
 
-                const float btn_w = nip.GetWidth() - px(sp_4) * 2.f;
-                if (action("nip-launch", ImVec2(nip.Min.x + px(sp_4), nip.Min.y + px(46.f)),
-                           btn_w / ui_runtime::scale, btn_idle, "Open"))
-                    backend::launch_nvidia_profile_inspector();
-            }
-            else
-            {
-                row_label(dl, ImVec2(nip.Min.x + px(sp_4), nip.Min.y + px(14.f)),
-                          "NVIDIA Profile Inspector", nullptr, alpha,
-                          nip.GetWidth() - px(sp_4) * 2.f - px(100.f));
+            if (action("nip-launch", ImVec2(nip.Max.x - px(sp_4) - px(90.f), nip.Min.y + px(16.f)),
+                       90.f, btn_idle, i18n::tr("Open")))
+                backend::launch_nvidia_profile_inspector();
 
-                if (action("nip-launch",
-                           ImVec2(nip.Max.x - px(sp_4) - px(90.f), nip.Min.y + px(16.f)), 90.f,
-                           btn_idle, "Open"))
-                    backend::launch_nvidia_profile_inspector();
-            }
-
-            nip_bottom = nip.Max.y;
-            nip_shown = true;
-
-            if (nip_right_col)
-                y = ImMax(y, nip.Max.y + px(sp_4));
-            else
-                y = nip.Max.y + px(sp_4);
+            y = nip.Max.y + px(sp_4);
         }
 
-        if (*sub == 0 || *sub == 3)
+        if (*sub == 3)
         {
             const backend::power_plan_info info = backend::power_plan_active();
             const bool is_szk = info.available && std::strcmp(info.name, "numbanine") == 0;
-            const char* status_label = !info.available ? "Unknown"
-                                       : is_szk        ? "Active"
-                                                       : "Not applied";
+            const char* status_label = !info.available ? i18n::tr("Unknown")
+                                       : is_szk        ? i18n::tr("Active")
+                                                       : i18n::tr("Not applied");
             const badge_status status_kind = !info.available ? badge_neutral
                                              : is_szk        ? badge_good
                                                              : badge_bad;
 
-            // On "All Settings" (with the NVIDIA Profile Inspector card
-            // also on screen), stack this right underneath it in the same
-            // right-hand column instead of the main column. On the
-            // Powerplan tab alone there's nothing to stack under, so it
-            // keeps the full-width main-column layout.
-            const bool szk_right_col = false;
-            const float szk_x = szk_right_col ? aside_x : x;
-            const float szk_w = szk_right_col ? aside_w : w;
-            const float szk_y = szk_right_col ? nip_bottom + px(sp_4) : y;
-
-            const ImRect szk(ImVec2(szk_x, szk_y), ImVec2(szk_x + szk_w, szk_y + px(164.f)));
+            // The Power plan tab is the only place this appears now. It used
+            // to be stacked in All tweaks' right-hand column under the NVIDIA
+            // card; with that column gone it was landing full width under the
+            // category grid, off the bottom of the body.
+            const ImRect szk(ImVec2(x, y), ImVec2(x + w, y + px(164.f)));
             panel(dl, szk, alpha);
 
             const float icon_box = px(40.f);
@@ -1923,7 +1888,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             ImFont* df = font_regular(text_xs);
             draw_text_ellipsis(dl, df, ImVec2(icon_rect.Max.x + px(14.f), szk.Min.y + px(44.f)),
                                mo::with_alpha(c_muted_foreground, alpha),
-                               "Renames the active Windows scheme so it's easy to spot",
+                               i18n::tr("Renames the active Windows scheme so it's easy to spot"),
                                szk.Max.x - (icon_rect.Max.x + px(14.f)) - bw - px(sp_3));
             badge("szk-status", dl, ImVec2(szk.Max.x - px(sp_5) - bw, szk.Min.y + px(24.f)),
                   status_label, status_kind, true, alpha);
@@ -1932,9 +1897,9 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
             ImFont* lf = font_regular(text_xs);
             draw_text(dl, lf, ImVec2(szk.Min.x + px(sp_5), szk.Min.y + px(96.f)),
-                      mo::with_alpha(c_muted_foreground, alpha), "ACTIVE PLAN");
+                      mo::with_alpha(c_muted_foreground, alpha), i18n::tr("ACTIVE PLAN"));
             ImFont* vf = font_semibold(text_base);
-            const char* current = info.available ? info.name : "Unknown";
+            const char* current = info.available ? info.name : i18n::tr("Unknown");
             draw_text(dl, vf, ImVec2(szk.Min.x + px(sp_5), szk.Min.y + px(112.f)),
                       mo::with_alpha(c_foreground, alpha), current);
 
@@ -1957,15 +1922,12 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                     const bool ok =
                         backend::power_plan_rename_active(L"numbanine", L"numbanine powerplan");
                     s.szk_apply_btn = ok ? btn_success : btn_error;
-                    toast(ok ? "Renamed" : "Failed", "numbanine powerplan",
+                    toast(ok ? i18n::tr("Renamed") : i18n::tr("Failed"), "numbanine powerplan",
                           ok ? toast_success : toast_error);
                 }
             }
 
-            if (szk_right_col)
-                y = ImMax(y, szk.Max.y + px(sp_4));
-            else
-                y = szk.Max.y + px(sp_4);
+            y = szk.Max.y + px(sp_4);
         }
 
         break;

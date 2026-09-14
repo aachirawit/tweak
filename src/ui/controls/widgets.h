@@ -25,8 +25,12 @@ enum tabs_variant
 float tabs_height(tabs_variant variant);
 float tabs_width(const char* const* labels, int count, tabs_variant variant);
 
+// max_width caps the strip: past it the padding is squeezed first and the
+// labels are then ellipsised into what is left, so a strip that has grown a tab
+// too many - or been translated into a wider language - stays inside the page
+// instead of running off the edge of it. 0 means no cap.
 bool tabs(const char* id, const ImVec2& pos, const char* const* labels, int count, int* active,
-          tabs_variant variant = tabs_pill);
+          tabs_variant variant = tabs_pill, float max_width = 0.f);
 
 inline constexpr float select_h = 38.f;
 

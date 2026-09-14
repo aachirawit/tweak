@@ -591,31 +591,81 @@ float tabs_height(tabs_variant variant)
 
 namespace
 {
+constexpr int k_max_tabs = 16;
+
+float tab_pad(tabs_variant variant)
+{
+    return (variant == tabs_underline) ? px(sp_3) * 2.f : px(14.f) * 2.f;
+}
+
+// Everything in the strip that is not a tab: the edges the background needs and
+// the gaps between tabs.
+float tab_chrome(int count, tabs_variant variant)
+{
+    if (variant == tabs_pill)
+        return px(4.f) * 2.f + px(4.f) * (float)ImMax(count - 1, 0);
+    if (variant == tabs_segment)
+        return px(2.f) * 2.f;
+    return px(4.f) * (float)ImMax(count - 1, 0);
+}
+
 float tab_label_width(const char* label, tabs_variant variant)
 {
-    ImFont* f = font_medium(text_sm);
-    const float pad = (variant == tabs_underline) ? px(sp_3) * 2.f : px(14.f) * 2.f;
-    return text_width(f, label) + pad;
+    return text_width(font_medium(text_sm), label) + tab_pad(variant);
+}
+
+// Width of each tab, shrunk to fit `max_width` when there is one.
+//
+// Padding goes first, down to a floor that still keeps the labels from
+// touching: it is the part of a tab that carries nothing. Only when that is
+// spent do the labels themselves get scaled, and they are ellipsised rather
+// than overlapped - a clipped label is at least still a label.
+float measure_tabs(const char* const* labels, int count, tabs_variant variant, float max_width,
+                   float* out)
+{
+    const float chrome = tab_chrome(count, variant);
+    float labels_w = 0.f;
+    for (int i = 0; i < count; i++)
+        labels_w += text_width(font_medium(text_sm), i18n::tr(labels[i]));
+
+    float pad = tab_pad(variant);
+    if (max_width > 0.f && labels_w + pad * (float)count + chrome > max_width)
+    {
+        const float room = max_width - chrome - labels_w;
+        pad = ImClamp(room / (float)ImMax(count, 1), px(8.f), pad);
+    }
+
+    float total = chrome;
+    for (int i = 0; i < count; i++)
+    {
+        out[i] = text_width(font_medium(text_sm), i18n::tr(labels[i])) + pad;
+        total += out[i];
+    }
+
+    if (max_width > 0.f && total > max_width && total > chrome)
+    {
+        const float scale = (max_width - chrome) / (total - chrome);
+        total = chrome;
+        for (int i = 0; i < count; i++)
+        {
+            out[i] *= scale;
+            total += out[i];
+        }
+    }
+
+    return total;
 }
 } // namespace
 
 float tabs_width(const char* const* labels, int count, tabs_variant variant)
 {
-    float w = 0.f;
-    for (int i = 0; i < count; i++)
-        w += tab_label_width(i18n::tr(labels[i]), variant);
-
-    if (variant == tabs_pill)
-        w += px(4.f) * 2.f + px(4.f) * (float)ImMax(count - 1, 0);
-    if (variant == tabs_segment)
-        w += px(2.f) * 2.f;
-    if (variant == tabs_underline)
-        w += px(4.f) * (float)ImMax(count - 1, 0);
-    return w;
+    float widths[k_max_tabs];
+    count = ImMin(count, k_max_tabs);
+    return measure_tabs(labels, count, variant, 0.f, widths);
 }
 
 bool tabs(const char* id, const ImVec2& pos, const char* const* labels, int count, int* active,
-          tabs_variant variant)
+          tabs_variant variant, float max_width)
 {
     ImGuiWindow* window = ImGui::GetCurrentWindow();
     ImDrawList* dl = window->DrawList;
@@ -627,7 +677,9 @@ bool tabs(const char* id, const ImVec2& pos, const char* const* labels, int coun
         st->text.assign(count, color_tween());
 
     const float h = tabs_height(variant);
-    const float total = tabs_width(labels, count, variant);
+    count = ImMin(count, k_max_tabs);
+    float widths[k_max_tabs];
+    const float total = measure_tabs(labels, count, variant, max_width, widths);
     const ImRect list(pos, ImVec2(pos.x + total, pos.y + h));
 
     if (variant == tabs_pill)
@@ -646,7 +698,7 @@ bool tabs(const char* id, const ImVec2& pos, const char* const* labels, int coun
 
     for (int i = 0; i < count; i++)
     {
-        const float w = tab_label_width(i18n::tr(labels[i]), variant);
+        const float w = widths[i];
         const ImRect bb(ImVec2(x, list.Min.y + pad), ImVec2(x + w, list.Max.y - pad));
 
         ImGui::PushID(i);
@@ -692,16 +744,24 @@ bool tabs(const char* id, const ImVec2& pos, const char* const* labels, int coun
     ImFont* f = font_medium(text_sm);
     for (int i = 0; i < count; i++)
     {
-        const float w = tab_label_width(i18n::tr(labels[i]), variant);
+        const float w = widths[i];
         const bool is_active = (*active == i);
         const ImU32 target = (variant == tabs_underline)
                                  ? (is_active ? c_foreground : c_muted_foreground)
                                  : (is_active ? c_primary_foreground : c_muted_foreground);
 
         const ImU32 col = st->text[i].update(target, dt, 0.15f);
-        const float lw = text_width(f, i18n::tr(labels[i]));
-        draw_text(dl, f, ImVec2(x + (w - lw) * 0.5f, list.GetCenter().y - f->LegacySize * 0.5f),
-                  col, i18n::tr(labels[i]));
+        const char* label = i18n::tr(labels[i]);
+        const float lw = text_width(f, label);
+        const float ty = list.GetCenter().y - f->LegacySize * 0.5f;
+
+        // Centred while it fits, left-aligned inside its own tab once it does
+        // not: an ellipsis on a centred label eats the end of the word and
+        // leaves it looking off-centre as well as cut.
+        if (lw <= w - px(8.f))
+            draw_text(dl, f, ImVec2(x + (w - lw) * 0.5f, ty), col, label);
+        else
+            draw_text_ellipsis(dl, f, ImVec2(x + px(4.f), ty), col, label, w - px(8.f));
 
         x += w + gap;
     }
