@@ -5,6 +5,7 @@
 #include "assets/avatars.h"
 #include "assets/images.h"
 #include "backend/keyauth.h"
+#include "backend/task.h"
 #include "backend/updater.h"
 #include "core/diagnostics.h"
 #include "core/environment.h"
@@ -257,6 +258,8 @@ class ui_services final
         // about to tear down, so let it finish before anything else goes.
         backend::auth_shutdown();
         backend::update_shutdown();
+        // A tweak halfway through a registry write should finish it.
+        backend::task_shutdown();
 
         images::shutdown();
         glass::cursor_shutdown();

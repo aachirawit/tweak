@@ -85,6 +85,9 @@ constexpr entry k_table[] = {
     {"live", "สด"},
 
     // ── Results ─────────────────────────────────────────────────────────────────
+    {"%d applied, %d failed, %d not wired yet",
+     "ใช้สำเร็จ %d ไม่สำเร็จ %d ยังไม่ได้ต่อ backend %d"},
+    {"Open Windows Recovery Settings", "เปิดการตั้งค่ากู้คืน Windows"},
     {"%d applied, %d failed. Restore point taken first.",
      "ใช้สำเร็จ %d ไม่สำเร็จ %d สร้างจุดคืนค่าไว้ก่อนแล้ว"},
     {"Nothing was changed", "ไม่ได้เปลี่ยนอะไร"},

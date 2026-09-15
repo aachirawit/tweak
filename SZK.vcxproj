@@ -40,6 +40,7 @@
     <ClCompile Include="src\backend\power_plan.cpp" />
     <ClCompile Include="src\backend\reshade_manager.cpp" />
     <ClCompile Include="src\backend\system_monitor.cpp" />
+    <ClCompile Include="src\backend\task.cpp" />
     <ClCompile Include="src\auth\auth_layout.cpp" />
     <ClCompile Include="src\auth\legal.cpp" />
     <ClCompile Include="src\auth\license_form.cpp" />
@@ -141,6 +142,7 @@
     <ClInclude Include="src\backend\power_plan.h" />
     <ClInclude Include="src\backend\reshade_manager.h" />
     <ClInclude Include="src\backend\system_monitor.h" />
+    <ClInclude Include="src\backend\task.h" />
     <ClInclude Include="src\auth\auth.h" />
     <ClInclude Include="src\core\diagnostics.h" />
     <ClInclude Include="src\core\environment.h" />

@@ -14,6 +14,7 @@
 #include "backend/reshade_manager.h"
 #include "core/i18n.h"
 #include "backend/system_monitor.h"
+#include "backend/task.h"
 #include "backend/updater.h"
 #include "core/product_info.h"
 #include "ui/controls/form_controls.h"
@@ -21,6 +22,7 @@
 #include "ui/controls/widgets.h"
 #include "ui/screens/shell.h"
 #include <algorithm>
+#include <atomic>
 #include <cstdio>
 #include <cstring>
 
@@ -455,6 +457,7 @@ struct page_state
     float dash_rescan_timer = 0.f;
     backend::power_plan_info dash_power;
     int dash_fix_request = -1; // module index a row's Fix button asked for
+    int dash_fix_module = 0;   // the one the running job is applying
 
     int last_nav = -1;
     float entered = 0.f;
@@ -926,6 +929,127 @@ apply_result apply_module(int index)
     if (!wired)
         return apply_unwired;
     return ok ? apply_ok : apply_failed;
+}
+
+// ── Applying off the UI thread ───────────────────────────────────────────────
+//
+// apply_module() is slow: a restore point is seconds, and two dozen of the
+// tweaks shell out and wait up to ten for the command to return. Running that
+// inside the draw call stopped the window redrawing for as long as it took, so
+// the spinner on the button froze and Windows offered to close the app.
+//
+// The work now goes to backend::task_begin. Everything the job writes is an
+// atomic, and the UI picks the result up on the first frame after the task
+// stops running - see take_apply_result().
+enum apply_owner
+{
+    apply_owner_none = -1,
+    apply_owner_dashboard = 0, // Optimize now
+    apply_owner_category,      // the settings tab's Apply
+    apply_owner_row,           // one row, from the Dashboard's Fix
+    apply_owner_feature,       // a FiveM card; the index rides in feature_index
+};
+
+struct apply_job
+{
+    // Written before the job starts and not touched again until it ends, so
+    // the job can read them without synchronising.
+    int modules[k_module_count] = {};
+    int count = 0;
+    bool take_restore_point = false;
+    int feature_index = 0;
+
+    std::atomic<int> owner{apply_owner_none};
+    std::atomic<bool> result_ready{false};
+    std::atomic<int> applied{0};
+    std::atomic<int> failed{0};
+    std::atomic<int> unwired{0};
+    std::atomic<bool> restore_point_ok{true};
+};
+
+apply_job& job()
+{
+    static apply_job j;
+    return j;
+}
+
+// Hands the listed modules to the background task. Returns false when one is
+// already running, which is also what stops two buttons starting at once.
+bool begin_apply(apply_owner owner, const int* modules, int count, bool take_restore_point,
+                 int feature_index = 0)
+{
+    apply_job& j = job();
+    if (j.owner.load() != apply_owner_none || backend::task_running())
+        return false;
+
+    j.count = ImClamp(count, 0, k_module_count);
+    for (int i = 0; i < j.count; i++)
+        j.modules[i] = modules[i];
+    j.take_restore_point = take_restore_point;
+    j.feature_index = feature_index;
+
+    j.applied.store(0);
+    j.failed.store(0);
+    j.unwired.store(0);
+    j.restore_point_ok.store(true);
+    j.result_ready.store(false);
+    j.owner.store(owner);
+
+    if (!backend::task_begin(
+            []
+            {
+                apply_job& work = job();
+
+                // The button promises a restore point, so failing to take one
+                // stops the run instead of quietly skipping it. That promise is
+                // the whole reason one click is reasonable at all.
+                if (work.take_restore_point && !backend::create_system_restore_point())
+                {
+                    work.restore_point_ok.store(false);
+                    work.result_ready.store(true);
+                    return;
+                }
+
+                int applied = 0, failed = 0, unwired = 0;
+                for (int i = 0; i < work.count; i++)
+                {
+                    switch (apply_module(work.modules[i]))
+                    {
+                    case apply_ok:
+                        applied++;
+                        break;
+                    case apply_failed:
+                        failed++;
+                        break;
+                    default:
+                        unwired++;
+                        break;
+                    }
+                }
+
+                work.applied.store(applied);
+                work.failed.store(failed);
+                work.unwired.store(unwired);
+                work.result_ready.store(true);
+            }))
+    {
+        j.owner.store(apply_owner_none);
+        return false;
+    }
+
+    return true;
+}
+
+// True once, on the frame the job for `owner` has finished. Clears the slot, so
+// the next press can start another.
+bool take_apply_result(apply_owner owner)
+{
+    apply_job& j = job();
+    if (j.owner.load() != owner || !j.result_ready.load() || backend::task_running())
+        return false;
+
+    j.owner.store(apply_owner_none);
+    return true;
 }
 
 // Network Optimization's rows aren't independent — a couple of them are
@@ -1501,9 +1625,17 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 if (s.fivem_btn[i] == btn_loading)
                 {
                     s.fivem_timer[i] += dt;
-                    if (s.fivem_timer[i] > 0.4f)
+
+                    if (s.fivem_timer[i] > 0.15f && job().owner.load() == apply_owner_none &&
+                        !backend::task_running())
                     {
-                        const bool ok = apply_module(module) == apply_ok;
+                        if (!begin_apply(apply_owner_feature, &module, 1, false, i))
+                            s.fivem_btn[i] = btn_idle;
+                    }
+
+                    if (job().feature_index == i && take_apply_result(apply_owner_feature))
+                    {
+                        const bool ok = job().applied.load() > 0;
                         s.fivem_btn[i] = ok ? btn_success : btn_error;
                         s.row_status_dirty = true;
                         toast(i18n::tr(feat.title),
@@ -1875,7 +2007,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                                   ImVec2(area.Max.x, area.Max.y - bar_h + px(1.f)),
                                   mo::with_alpha(c_border, alpha));
 
-                if (action("apply-category", apply_pos, col, s.settings_apply_btn, apply_label) &&
+                if (action("apply-category", apply_pos, col / ui_runtime::scale,
+                           s.settings_apply_btn, apply_label) &&
                     s.settings_apply_btn == btn_idle && count > 0)
                 {
                     s.settings_apply_btn = btn_loading;
@@ -1884,30 +2017,27 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 if (s.settings_apply_btn == btn_loading)
                 {
                     s.settings_apply_timer += dt;
-                    if (s.settings_apply_timer > 0.6f)
-                    {
-                        int applied = 0, failed = 0, unwired = 0;
-                        for (int k = 0; k < count; k++)
-                        {
-                            const int i = shown[k];
-                            switch (apply_module(i))
-                            {
-                            case apply_unwired:
-                                unwired++;
-                                break;
-                            case apply_ok:
-                                applied++;
-                                break;
-                            default:
-                                failed++;
-                                break;
-                            }
-                        }
 
-                        char summary[96];
+                    // Handed over one frame late so the spinner is on screen
+                    // before the work starts, and only once.
+                    if (s.settings_apply_timer > 0.15f &&
+                        job().owner.load() == apply_owner_none && !backend::task_running())
+                    {
+                        if (!begin_apply(apply_owner_category, shown, count, false))
+                            s.settings_apply_btn = btn_idle;
+                    }
+
+                    if (take_apply_result(apply_owner_category))
+                    {
+                        const apply_job& j = job();
+                        const int applied = j.applied.load();
+                        const int failed = j.failed.load();
+                        const int unwired = j.unwired.load();
+
+                        char summary[128];
                         ImFormatString(summary, IM_ARRAYSIZE(summary),
-                                       "%d applied, %d failed, %d not wired yet", applied, failed,
-                                       unwired);
+                                       i18n::tr("%d applied, %d failed, %d not wired yet"), applied,
+                                       failed, unwired);
                         s.settings_apply_btn = (failed == 0) ? btn_success : btn_error;
                         toast(apply_label, summary, (failed == 0) ? toast_success : toast_error);
                         s.row_status_dirty = true;
@@ -1954,7 +2084,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                   i18n::tr("Read straight from the board sensor."));
 
         if (action("mobo-search", ImVec2(card.Min.x + px(sp_4), card.Min.y + px(140.f)),
-                   col - px(sp_4) * 2.f, btn_idle, i18n::tr("Find Drivers")) &&
+                   (col - px(sp_4) * 2.f) / ui_runtime::scale, btn_idle,
+                   i18n::tr("Find Drivers")) &&
             s.mobo.available)
         {
             backend::open_google_search(s.mobo.product);
@@ -2190,16 +2321,25 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 if (s.dash_optimize_btn == btn_loading)
                 {
                     s.dash_optimize_timer += dt;
-                    if (s.dash_optimize_timer > 0.6f)
+
+                    // Handed over one frame late so the spinner is on screen
+                    // before the work starts, and only once.
+                    if (s.dash_optimize_timer > 0.15f &&
+                        job().owner.load() == apply_owner_none && !backend::task_running())
                     {
-                        // The button promises a restore point, so failing to
-                        // take one stops the run instead of quietly skipping
-                        // it. That promise is the whole reason one click here
-                        // is reasonable at all.
-                        if (!backend::create_system_restore_point())
+                        if (!begin_apply(apply_owner_dashboard, s.dash_findings,
+                                         s.dash_finding_count, true))
+                            s.dash_optimize_btn = btn_idle;
+                    }
+
+                    if (take_apply_result(apply_owner_dashboard))
+                    {
+                        const apply_job& j = job();
+                        s.dash_optimize_timer = 0.f;
+
+                        if (!j.restore_point_ok.load())
                         {
                             s.dash_optimize_btn = btn_error;
-                            s.dash_optimize_timer = 0.f;
                             toast(i18n::tr("Nothing was changed"),
                                   i18n::tr("Windows would not create a restore point. Turn "
                                            "System Protection on for C: and try again."),
@@ -2207,21 +2347,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                         }
                         else
                         {
-                            int applied = 0, failed = 0;
-                            for (int k = 0; k < s.dash_finding_count; k++)
-                            {
-                                switch (apply_module(s.dash_findings[k]))
-                                {
-                                case apply_ok:
-                                    applied++;
-                                    break;
-                                case apply_failed:
-                                    failed++;
-                                    break;
-                                default:
-                                    break;
-                                }
-                            }
+                            const int applied = j.applied.load();
+                            const int failed = j.failed.load();
 
                             char summary[160];
                             ImFormatString(
@@ -2229,7 +2356,6 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                                 i18n::tr("%d applied, %d failed. Restore point taken first."),
                                 applied, failed);
                             s.dash_optimize_btn = failed == 0 ? btn_success : btn_error;
-                            s.dash_optimize_timer = 0.f;
                             toast(i18n::tr("Optimize now"), summary,
                                   failed == 0 ? toast_success : toast_error);
 
@@ -2434,14 +2560,30 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         if (s.dash_fix_request >= 0)
         {
             const int m = s.dash_fix_request;
-            s.dash_fix_request = -1;
+            if (begin_apply(apply_owner_row, &m, 1, false))
+            {
+                s.dash_fix_module = m;
+                s.dash_fix_request = -1;
+            }
+            else if (!backend::task_running())
+            {
+                // Nothing is running and it still would not start, so the press
+                // has nowhere to go; drop it rather than retrying every frame.
+                s.dash_fix_request = -1;
+            }
+        }
 
-            const apply_result res = apply_module(m);
-            toast(k_modules[m].name,
-                  res == apply_ok       ? i18n::tr("Applied")
-                  : res == apply_failed ? i18n::tr("Windows refused the change")
-                                        : i18n::tr("Not wired to a backend yet"),
-                  res == apply_ok ? toast_success : toast_error);
+        if (take_apply_result(apply_owner_row))
+        {
+            const apply_job& j = job();
+            const bool ok = j.applied.load() > 0;
+            const bool wired = j.unwired.load() == 0;
+
+            toast(k_modules[s.dash_fix_module].name,
+                  ok      ? i18n::tr("Applied")
+                  : wired ? i18n::tr("Windows refused the change")
+                          : i18n::tr("Not wired to a backend yet"),
+                  ok ? toast_success : toast_error);
 
             s.dash_scanned = false;
             s.row_status_dirty = true;
@@ -2652,7 +2794,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 y = recovery.Max.y + px(sp_4);
         }
 
-        if (action("open-recovery", ImVec2(x, y), col, btn_idle, "Open Windows Recovery Settings"))
+        if (action("open-recovery", ImVec2(x, y), col / ui_runtime::scale, btn_idle,
+                   i18n::tr("Open Windows Recovery Settings")))
             backend::open_windows_recovery_settings();
         y += px(44.f);
         break;

@@ -140,6 +140,9 @@
     <ClCompile Include="src\backend\system_monitor.cpp">
       <Filter>Backend</Filter>
     </ClCompile>
+    <ClCompile Include="src\backend\task.cpp">
+      <Filter>Backend</Filter>
+    </ClCompile>
     <ClCompile Include="src\backend\activity_log.cpp">
       <Filter>Backend</Filter>
     </ClCompile>
@@ -353,6 +356,9 @@
       <Filter>Assets</Filter>
     </ClInclude>
     <ClInclude Include="src\backend\system_monitor.h">
+      <Filter>Backend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\backend\task.h">
       <Filter>Backend</Filter>
     </ClInclude>
     <ClInclude Include="src\backend\activity_log.h">
