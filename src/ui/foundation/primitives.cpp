@@ -109,7 +109,35 @@ void for_each_wrapped_line(ImFont* f, const char* s, float wrap_width, F&& callb
             const float advance = f->CalcTextSizeA(size, FLT_MAX, 0.f, p, p + consumed).x;
             if (x + advance > wrap_width && p != line)
             {
-                fit_end = last_break ? last_break : p;
+                if (last_break)
+                {
+                    fit_end = last_break;
+                    break;
+                }
+
+                // Nothing to break at. Thai writes without spaces, so this is
+                // the normal case for it rather than a pathological one, and
+                // the break falls between two characters. It must not fall
+                // between a character and a mark that sits on it, though, or
+                // the vowel starts the next line on its own.
+                fit_end = p;
+                while (fit_end > line)
+                {
+                    unsigned int at = 0;
+                    const int n = decode(fit_end, text_end, &at);
+                    if (n <= 0 || !is_combining_mark(at))
+                        break;
+
+                    const char* back = fit_end - 1;
+                    while (back > line && (*back & 0xC0) == 0x80)
+                        back--;
+                    fit_end = back;
+                }
+
+                // A whole line of marks should not happen, but taking nothing
+                // would loop on the same line for ever.
+                if (fit_end == line)
+                    fit_end = p;
                 break;
             }
 

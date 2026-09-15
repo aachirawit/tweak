@@ -674,13 +674,22 @@ bool stateful_button_draw(const char* id, stateful_button_state& st, button_stat
 
     ImFont* f = font_medium(text_base);
 
+    // Measured the way the cascade below draws it: one unit at a time, over the
+    // same byte ranges. Stepping a byte at a time here measured every byte of a
+    // Thai character as its own glyph - three fallback glyphs where the button
+    // draws one - so the label came out around three times too wide, and since
+    // the content is centred on this number the text started far enough left of
+    // the button for the page to clip the front of the word off.
     float text_target = 0.f;
-    if (st.layers[0].live)
-        for (size_t i = 0; i < st.layers[0].text.size(); i++)
-            text_target +=
-                f->CalcTextSizeA(f->LegacySize, FLT_MAX, 0.f, st.layers[0].text.c_str() + i,
-                                 st.layers[0].text.c_str() + i + 1)
-                    .x;
+    if (st.layers[0].live && st.layers[0].unit.size() > 1)
+    {
+        const char* base = st.layers[0].text.c_str();
+        for (size_t i = 0; i + 1 < st.layers[0].unit.size(); i++)
+            text_target += f->CalcTextSizeA(f->LegacySize, FLT_MAX, 0.f,
+                                            base + st.layers[0].unit[i],
+                                            base + st.layers[0].unit[i + 1])
+                               .x;
+    }
 
     const float text_w = st.text_width.to(text_target, mo::SPRING_SWAP, dt);
 
