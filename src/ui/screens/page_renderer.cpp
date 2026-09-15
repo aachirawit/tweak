@@ -1562,7 +1562,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             const float bw = badge_width(status_label, true);
             ImFont* tf = font_semibold(text_base);
             draw_text(dl, tf, ImVec2(icon_rect.Max.x + px(14.f), szk.Min.y + px(22.f)),
-                      mo::with_alpha(c_foreground, alpha), "numbanine Power Plan");
+                      mo::with_alpha(c_foreground, alpha), i18n::tr("numbanine Power Plan"));
             ImFont* df = font_regular(text_xs);
             draw_text_ellipsis(dl, df, ImVec2(icon_rect.Max.x + px(14.f), szk.Min.y + px(44.f)),
                                mo::with_alpha(c_muted_foreground, alpha),
@@ -1932,13 +1932,14 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
         const ImRect card(ImVec2(x, y), ImVec2(x + col, y + px(196.f)));
         panel(dl, card, alpha);
-        row_label(dl, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(16.f)), "Board Lookup",
-                  "Find the right drivers for this machine", alpha);
+        row_label(dl, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(16.f)),
+                  i18n::tr("Board Lookup"), i18n::tr("Find the right drivers for this machine"),
+                  alpha);
 
-        const char* product = s.mobo.available ? s.mobo.product : "Not detected";
+        const char* product = s.mobo.available ? s.mobo.product : i18n::tr("Not detected");
         ImFont* lf = font_medium(text_sm);
         draw_text(dl, lf, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(62.f)),
-                  mo::with_alpha(c_muted_foreground, alpha), "Detected board");
+                  mo::with_alpha(c_muted_foreground, alpha), i18n::tr("Detected board"));
 
         ImFont* vf = font_semibold(text_sm);
         const float vw = text_width(vf, product);
@@ -1950,10 +1951,10 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         ImFont* nf = font_regular(text_xs);
         draw_text(dl, nf, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(104.f)),
                   mo::with_alpha(c_muted_foreground, alpha),
-                  "Read straight from the board sensor.");
+                  i18n::tr("Read straight from the board sensor."));
 
         if (action("mobo-search", ImVec2(card.Min.x + px(sp_4), card.Min.y + px(140.f)),
-                   col - px(sp_4) * 2.f, btn_idle, "Find Drivers") &&
+                   col - px(sp_4) * 2.f, btn_idle, i18n::tr("Find Drivers")) &&
             s.mobo.available)
         {
             backend::open_google_search(s.mobo.product);
@@ -2495,12 +2496,12 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         const ImRect card(ImVec2(x, y), ImVec2(x + col, y + px(94.f)));
         panel(dl, card, alpha);
         row_label(dl, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(16.f)), "numbanine",
-                  "Build information", alpha);
+                  i18n::tr("Build information"), alpha);
 
         {
             ImFont* lf = font_medium(text_sm);
             draw_text(dl, lf, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(58.f)),
-                      mo::with_alpha(c_muted_foreground, alpha), "Version");
+                      mo::with_alpha(c_muted_foreground, alpha), i18n::tr("Version"));
             ImFont* vf = font_semibold(text_sm);
             char version_line[64];
             ImFormatString(version_line, IM_ARRAYSIZE(version_line), "%s", product_info::version);
@@ -2528,7 +2529,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 px(16.f), mo::with_alpha(c_foreground, alpha));
 
             row_label(dl, ImVec2(icon_rect.Max.x + px(10.f), community.Min.y + px(14.f)),
-                      "Community", "Support, updates, and the rest of the numbanine crew", alpha,
+                      i18n::tr("Community"),
+                      i18n::tr("Support, updates, and the rest of the numbanine crew"), alpha,
                       community.Max.x - (icon_rect.Max.x + px(10.f)) - px(sp_4));
 
             hairline(dl, community, community.Min.y + px(56.f), alpha);
@@ -2568,7 +2570,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 px(16.f), mo::with_alpha(c_foreground, alpha));
 
             row_label(dl, ImVec2(icon_rect.Max.x + px(10.f), recovery.Min.y + px(14.f)),
-                      "System Recovery", "A safety net before you change anything risky", alpha,
+                      i18n::tr("System Recovery"),
+                      i18n::tr("A safety net before you change anything risky"), alpha,
                       recovery.Max.x - (icon_rect.Max.x + px(10.f)) - px(sp_4));
 
             if (recovery_right_col)
@@ -2580,7 +2583,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 const float btn_x = recovery.Min.x + px(sp_4);
 
                 if (action("create-restore-point", ImVec2(btn_x, row1_y), btn_w_logical,
-                           s.restore_point_btn, "Create Restore Point") &&
+                           s.restore_point_btn, i18n::tr("Create Restore Point")) &&
                     s.restore_point_btn == btn_idle)
                 {
                     s.restore_point_btn = btn_loading;
@@ -2593,7 +2596,9 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                     {
                         const bool ok = backend::create_system_restore_point();
                         s.restore_point_btn = ok ? btn_success : btn_error;
-                        toast("System Restore", ok ? "Checkpoint created" : "Failed to create one",
+                        toast(i18n::tr("System Restore"),
+                              ok ? i18n::tr("Checkpoint created")
+                                 : i18n::tr("Failed to create one"),
                               ok ? toast_success : toast_error);
                     }
                 }
@@ -2616,7 +2621,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 const float w2_logical = w2 / ui_runtime::scale;
 
                 if (action("create-restore-point", ImVec2(x1, button_y), w1_logical,
-                           s.restore_point_btn, "Create Restore Point") &&
+                           s.restore_point_btn, i18n::tr("Create Restore Point")) &&
                     s.restore_point_btn == btn_idle)
                 {
                     s.restore_point_btn = btn_loading;
@@ -2629,7 +2634,9 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                     {
                         const bool ok = backend::create_system_restore_point();
                         s.restore_point_btn = ok ? btn_success : btn_error;
-                        toast("System Restore", ok ? "Checkpoint created" : "Failed to create one",
+                        toast(i18n::tr("System Restore"),
+                              ok ? i18n::tr("Checkpoint created")
+                                 : i18n::tr("Failed to create one"),
                               ok ? toast_success : toast_error);
                     }
                 }
@@ -2655,8 +2662,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
     {
         const ImRect card(ImVec2(x, y), ImVec2(x + col, y + px(216.f)));
         panel(dl, card, alpha);
-        row_label(dl, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(16.f)), "System",
-                  "This machine", alpha);
+        row_label(dl, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(16.f)), i18n::tr("System"),
+                  i18n::tr("This machine"), alpha);
 
         const backend::machine_info info = backend::system_monitor_machine_info();
 
@@ -2795,11 +2802,14 @@ route draw_page(route destination, const char* title, const char* const* subs, i
     case route_index(route::presets):
     {
         const backend::reshade_status status = backend::reshade_check();
-        const char* status_label = !status.game_found          ? "FiveM not found"
-                                   : !status.installed         ? "Not installed"
-                                   : !status.crash_ack_present ? "Needs Citizen.ini fix"
-                                   : status.road_mod_present   ? "Installed + Road Mod"
-                                                               : "Installed";
+        // Translated here rather than at each use: badge_width() measures this
+        // same pointer, so the badge cannot be sized from one language and
+        // drawn in another.
+        const char* status_label = !status.game_found  ? i18n::tr("FiveM not found")
+                                   : !status.installed ? i18n::tr("Not installed")
+                                   : !status.crash_ack_present ? i18n::tr("Needs Citizen.ini fix")
+                                   : status.road_mod_present ? i18n::tr("Installed + Road Mod")
+                                                             : i18n::tr("Installed");
         const badge_status status_kind = !status.game_found          ? badge_neutral
                                          : !status.installed         ? badge_bad
                                          : !status.crash_ack_present ? badge_warn
@@ -2820,16 +2830,18 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                     px(16.f), mo::with_alpha(c_foreground, alpha));
 
         const float bw = badge_width(status_label);
-        row_label(dl, ImVec2(icon_rect.Max.x + px(10.f), card.Min.y + px(14.f)), "Auto ReShade",
-                  "Drops ReShade + the 2K Road Mod into FiveM's plugin folder", alpha,
+        row_label(dl, ImVec2(icon_rect.Max.x + px(10.f), card.Min.y + px(14.f)),
+                  i18n::tr("Auto ReShade"),
+                  i18n::tr("Drops ReShade + the 2K Road Mod into FiveM's plugin folder"), alpha,
                   card.Max.x - (icon_rect.Max.x + px(10.f)) - bw - px(sp_3));
         badge("reshade-status", dl, ImVec2(card.Max.x - px(sp_4) - bw, card.Min.y + px(16.f)),
               status_label, status_kind);
 
         hairline(dl, card, card.Min.y + px(56.f), alpha);
 
-        row_label(dl, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(68.f)), "Include 2K Road Mod",
-                  "QuantV add-on for higher-resolution road textures", alpha,
+        row_label(dl, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(68.f)),
+                  i18n::tr("Include 2K Road Mod"),
+                  i18n::tr("QuantV add-on for higher-resolution road textures"), alpha,
                   col - px(sp_4) * 2.f - px(switch_w) - px(sp_3));
         switch_toggle("reshade-road-mod",
                       ImVec2(card.Max.x - px(sp_4) - px(switch_w), card.Min.y + px(78.5f)),
@@ -2839,8 +2851,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
         ImFont* bf = font_medium(text_base);
         const float pad_x = px(32.f);
-        const float w1 = text_width(bf, "Install") + pad_x;
-        const float w2 = text_width(bf, "Uninstall") + pad_x;
+        const float w1 = text_width(bf, i18n::tr("Install")) + pad_x;
+        const float w2 = text_width(bf, i18n::tr("Uninstall")) + pad_x;
         const float w3 = text_width(bf, "Open Folder") + pad_x;
         const float row_right = x + col;
         const float x3 = row_right - w3;
@@ -2852,7 +2864,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         const float button_y = y;
 
         if (action("reshade-install", ImVec2(x1, button_y), w1_logical, s.reshade_install_btn,
-                   "Install") &&
+                   i18n::tr("Install")) &&
             s.reshade_install_btn == btn_idle)
         {
             s.reshade_install_btn = btn_loading;
@@ -2867,8 +2879,9 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 s.reshade_install_btn = ok ? btn_success : btn_error;
                 s.reshade_install_timer = 0.f;
                 toast("ReShade",
-                      ok ? (s.reshade_road_mod ? "Installed with the 2K Road Mod" : "Installed")
-                         : "Some files failed to copy",
+                      ok ? (s.reshade_road_mod ? i18n::tr("Installed with the 2K Road Mod")
+                                               : i18n::tr("Installed"))
+                         : i18n::tr("Some files failed to copy"),
                       ok ? toast_success : toast_error);
             }
         }
@@ -2880,7 +2893,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         }
 
         if (action("reshade-uninstall", ImVec2(x2, button_y), w2_logical, s.reshade_uninstall_btn,
-                   "Uninstall") &&
+                   i18n::tr("Uninstall")) &&
             s.reshade_uninstall_btn == btn_idle)
         {
             s.reshade_uninstall_btn = btn_loading;
@@ -2894,7 +2907,9 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 const bool ok = backend::reshade_uninstall();
                 s.reshade_uninstall_btn = ok ? btn_success : btn_error;
                 s.reshade_uninstall_timer = 0.f;
-                toast("ReShade", ok ? "Removed from the plugins folder" : "Nothing to remove",
+                toast("ReShade",
+                      ok ? i18n::tr("Removed from the plugins folder")
+                         : i18n::tr("Nothing to remove"),
                       ok ? toast_success : toast_error);
             }
         }
@@ -2962,7 +2977,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
         ImFont* sf = font_regular(10.f);
         draw_text_tracked(dl, sf, ImVec2(x, y + line_top(sf, px(15.f))),
-                          mo::with_alpha(c_muted_foreground, alpha), "NOTIFICATIONS", px(1.6f));
+                          mo::with_alpha(c_muted_foreground, alpha), i18n::tr("NOTIFICATIONS"), px(1.6f));
         y += px(24.f);
 
         const ImRect prefs(
@@ -2999,14 +3014,14 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             if (s.profile_timer > 1.1f)
             {
                 s.profile_save = btn_success;
-                toast("Profile saved", brand::user_name, toast_success);
+                toast(i18n::tr("Profile saved"), brand::user_name, toast_success);
             }
         }
         y += px(44.f);
 
         ImFont* cl = font_regular(10.f);
         draw_text_tracked(dl, cl, ImVec2(x, y + line_top(cl, px(15.f))),
-                          mo::with_alpha(c_muted_foreground, alpha), "CREDITS", px(1.6f));
+                          mo::with_alpha(c_muted_foreground, alpha), i18n::tr("CREDITS"), px(1.6f));
         y += px(24.f);
 
         {
@@ -3054,7 +3069,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             if (s.reset_cascade > 1.4f)
             {
                 s.reset_cascade = 1e6f;
-                toast("Preferences reset", "Back to how they shipped", toast_info);
+                toast(i18n::tr("Preferences reset"), i18n::tr("Back to how they shipped"), toast_info);
             }
         }
 
@@ -3197,8 +3212,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         draw_text_wrapped(
             dl, f, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(sp_4)),
             mo::with_alpha(c_muted_foreground, alpha),
-            "Nothing needs your attention here right now. Pick another view from the rail, "
-            "or fold it away with Ctrl+B.",
+            i18n::tr("Nothing needs your attention here right now. Pick another view from "
+                     "the rail, or fold it away with Ctrl+B."),
             col - px(sp_4) * 2.f, px(22.f));
         y = card.Max.y;
         break;

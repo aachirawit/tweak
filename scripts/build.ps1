@@ -15,6 +15,7 @@ $solutionPath = Join-Path $repositoryRoot "SZK.sln"
 $applicationPath = Join-Path $repositoryRoot "$Configuration\numbanine.exe"
 $layoutVerifier = Join-Path $PSScriptRoot "verify-source-layout.ps1"
 $translationVerifier = Join-Path $PSScriptRoot "verify-translations.py"
+$uiStringVerifier = Join-Path $PSScriptRoot "verify-ui-strings.py"
 
 function Find-MSBuild {
     $command = Get-Command "MSBuild.exe" -ErrorAction SilentlyContinue
@@ -65,6 +66,11 @@ if ($python) {
     & $python.Source $translationVerifier $repositoryRoot
     if ($LASTEXITCODE -ne 0) {
         throw "Translation table has keys nothing looks up."
+    }
+
+    & $python.Source $uiStringVerifier $repositoryRoot
+    if ($LASTEXITCODE -ne 0) {
+        throw "Text is drawn to screen without a translation."
     }
 }
 else {

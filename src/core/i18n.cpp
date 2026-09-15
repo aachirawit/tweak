@@ -175,7 +175,61 @@ constexpr entry k_table[] = {
     {"The app sent a request the server rejected. Update to the latest version.",
      "แอปส่งคำขอที่เซิร์ฟเวอร์ไม่รับ อัปเดตเป็นเวอร์ชันล่าสุด"},
     {"The licence server refused the key. Try again in a moment.",
-     "เซิร์ฟเวอร์ไลเซนส์ไม่รับรหัสนี้ รอสักครู่แล้วลองใหม่"},
+     "เซิร์ฟเวอร์ไลเซนส์ไม่รับรหัสนี้ รอสักครู่แล้วลองใหม่"},
+    // ── Drivers ───────────────────────────────────────────────────────────────
+    {"Board Lookup", "ค้นหาเมนบอร์ด"},
+    {"Find the right drivers for this machine", "หาไดรเวอร์ที่ตรงกับเครื่องนี้"},
+    {"Detected board", "เมนบอร์ดที่ตรวจพบ"},
+    {"Not detected", "ตรวจไม่พบ"},
+    {"Read straight from the board sensor.", "อ่านจากเซ็นเซอร์บนบอร์ดโดยตรง"},
+    {"Find Drivers", "หาไดรเวอร์"},
+
+    // ── About ─────────────────────────────────────────────────────────────────
+    {"Build information", "ข้อมูลบิลด์"},
+    {"Version", "เวอร์ชัน"},
+    {"Community", "ชุมชน"},
+    {"Support, updates, and the rest of the numbanine crew",
+     "ซัพพอร์ต อัปเดต และคนอื่นๆ ของ numbanine"},
+    {"System Recovery", "กู้คืนระบบ"},
+    {"A safety net before you change anything risky", "ตาข่ายกันพลาดก่อนแก้อะไรที่เสี่ยง"},
+    {"Create Restore Point", "สร้างจุดคืนค่า"},
+    {"System Restore", "คืนค่าระบบ"},
+    {"Checkpoint created", "สร้างจุดคืนค่าแล้ว"},
+    {"Failed to create one", "สร้างไม่สำเร็จ"},
+
+    // ── This machine ─────────────────────────────────────────────────────
+    {"System", "ระบบ"},
+    {"numbanine Power Plan", "แผนพลังงาน numbanine"},
+
+    // ── Auto ReShade ─────────────────────────────────────────────────────
+    {"Drops ReShade + the 2K Road Mod into FiveM's plugin folder",
+     "ติดตั้ง ReShade + 2K Road Mod ลงโฟลเดอร์ปลั๊กอินของ FiveM"},
+    {"Include 2K Road Mod", "รวม 2K Road Mod ด้วย"},
+    {"QuantV add-on for higher-resolution road textures",
+     "ส่วนเสริมของ QuantV ให้พื้นถนนคมชัดขึ้น"},
+    {"FiveM not found", "ไม่พบ FiveM"},
+    {"Not installed", "ยังไม่ได้ติดตั้ง"},
+    {"Needs Citizen.ini fix", "ต้องแก้ Citizen.ini"},
+    {"Installed + Road Mod", "ติดตั้งแล้ว + Road Mod"},
+    {"Installed", "ติดตั้งแล้ว"},
+    {"Install", "ติดตั้ง"},
+    {"Uninstall", "ถอนติดตั้ง"},
+    {"Installed with the 2K Road Mod", "ติดตั้งแล้วพร้อม 2K Road Mod"},
+    {"Some files failed to copy", "คัดลอกบางไฟล์ไม่สำเร็จ"},
+    {"Removed from the plugins folder", "ลบออกจากโฟลเดอร์ปลั๊กอินแล้ว"},
+    {"Nothing to remove", "ไม่มีอะไรให้ลบ"},
+
+    // ── Preferences ───────────────────────────────────────────────────────
+    {"NOTIFICATIONS", "การแจ้งเตือน"},
+    {"CREDITS", "เครดิต"},
+    {"Profile saved", "บันทึกโปรไฟล์แล้ว"},
+    {"Preferences reset", "รีเซ็ตการตั้งค่าแล้ว"},
+    {"Back to how they shipped", "กลับไปเป็นค่าที่มากับโปรแกรม"},
+
+    // ── Empty view ────────────────────────────────────────────────────────
+    {"Nothing needs your attention here right now. Pick another view from the rail, or fold it "
+     "away with Ctrl+B.",
+     "ตอนนี้ยังไม่มีอะไรต้องดูตรงนี้ เลือกหน้าอื่นจากเมนูซ้าย หรือย่อเมนูด้วย Ctrl+B"},
 };
 
 const std::unordered_map<std::string_view, const char*>& table()
