@@ -1,6 +1,7 @@
 #include "assets/asset_io.h"
 
 #include "core/environment.h"
+#include "core/product_info.h"
 
 #include <windows.h>
 
@@ -61,14 +62,26 @@ std::filesystem::path asset_directory(const wchar_t* name, const wchar_t* enviro
         !configured.empty())
         return configured;
 
+    // assets/brands/<brand>/<name> first, assets/<name> second. Two products
+    // ship from this tree and most of what they load is the same file - the
+    // fonts, the ReShade payload - so only what actually differs needs a folder
+    // under brands/, and anything a brand does not override keeps working
+    // without being copied.
     const std::filesystem::path executable = executable_directory();
     std::filesystem::path base = executable;
     for (int depth = 0; depth < 3; ++depth)
     {
-        const std::filesystem::path candidate = base / L"assets" / name;
         std::error_code error;
-        if (std::filesystem::is_directory(candidate, error))
-            return candidate;
+
+        const std::filesystem::path branded =
+            base / L"assets" / L"brands" / product_info::asset_brand / name;
+        if (std::filesystem::is_directory(branded, error))
+            return branded;
+
+        const std::filesystem::path shared = base / L"assets" / name;
+        if (std::filesystem::is_directory(shared, error))
+            return shared;
+
         base = base.parent_path();
     }
 

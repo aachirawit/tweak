@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -15,6 +15,7 @@
     <ClInclude Include="src\resources\resource.h" />
     <Manifest Include="src\resources\app.manifest" />
     <Image Include="src\resources\numbanine.ico" />
+    <Image Include="src\resources\less.ico" />
     <None Include="src\resources\embedded\nvidiaProfileInspector.exe" />
     <None Include="src\resources\embedded\Reference.xml" />
     <None Include="src\resources\embedded\Settings.nip" />
@@ -181,7 +182,14 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7D4A1C55-2B93-4A0E-9C41-6F5E1D2A88B1}</ProjectGuid>
     <RootNamespace>numbanine</RootNamespace>
-    <TargetName>numbanine</TargetName>
+    <!-- Which product this build produces. Pass /p:Brand=less to build the
+         other one; scripts\build.ps1 -Brand less does the same. Defaulted here
+         so opening the solution in Visual Studio still builds something. -->
+    <Brand Condition="'$(Brand)' == ''">numbanine</Brand>
+    <BrandIndex Condition="'$(Brand)' == 'less'">1</BrandIndex>
+    <BrandIndex Condition="'$(BrandIndex)' == ''">0</BrandIndex>
+    <TargetName Condition="'$(Brand)' == 'less'">Less</TargetName>
+    <TargetName Condition="'$(TargetName)' == ''">numbanine</TargetName>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <VcpkgEnabled>false</VcpkgEnabled>
   </PropertyGroup>
@@ -210,11 +218,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(ProjectDir)$(Configuration)\</OutDir>
-    <IntDir>$(ProjectDir)$(Configuration)\obj\SZK\</IntDir>
+    <IntDir>$(ProjectDir)$(Configuration)\obj\$(Brand)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(ProjectDir)$(Configuration)\</OutDir>
-    <IntDir>$(ProjectDir)$(Configuration)\obj\SZK\</IntDir>
+    <IntDir>$(ProjectDir)$(Configuration)\obj\$(Brand)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -223,13 +231,16 @@
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)thirdparty\imgui;$(ProjectDir)thirdparty\imgui\backends;$(ProjectDir)thirdparty\imgui\misc\freetype;$(ProjectDir)thirdparty\freetype\include;$(ProjectDir)thirdparty\tweetnacl;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE_FREETYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE_FREETYPE;PRODUCT_BRAND=$(BrandIndex);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ConformanceMode>true</ConformanceMode>
       <SDLCheck>true</SDLCheck>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>PRODUCT_BRAND=$(BrandIndex);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxgi.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -257,13 +268,16 @@
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <ControlFlowGuard>Guard</ControlFlowGuard>
       <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)thirdparty\imgui;$(ProjectDir)thirdparty\imgui\backends;$(ProjectDir)thirdparty\imgui\misc\freetype;$(ProjectDir)thirdparty\freetype\include;$(ProjectDir)thirdparty\tweetnacl;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE_FREETYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>IMGUI_DEFINE_MATH_OPERATORS;IMGUI_ENABLE_FREETYPE;PRODUCT_BRAND=$(BrandIndex);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/utf-8 /experimental:deterministic &quot;/pathmap:$(ProjectDir)=SZK/&quot; %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ConformanceMode>true</ConformanceMode>
       <SDLCheck>true</SDLCheck>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>PRODUCT_BRAND=$(BrandIndex);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

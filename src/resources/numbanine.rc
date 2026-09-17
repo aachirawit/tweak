@@ -2,7 +2,18 @@
 
 #include "resource.h"
 
-IDI_NUMBANINE ICON "numbanine.ico"
+// One resource script for both products. The build sets PRODUCT_BRAND for the
+// resource compiler as well as for the compiler, so the icon and the version
+// block follow whichever exe is being produced.
+#ifndef PRODUCT_BRAND
+#define PRODUCT_BRAND 0
+#endif
+
+#if PRODUCT_BRAND == 1
+IDI_APP ICON "less.ico"
+#else
+IDI_APP ICON "numbanine.ico"
+#endif
 
 // NVIDIA Profile Inspector by Orbmu2k (open source), bundled so the app is
 // a single self-contained exe. Extracted to a temp folder and launched on
@@ -30,6 +41,15 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
+#if PRODUCT_BRAND == 1
+            VALUE "CompanyName", "Less\0"
+            VALUE "FileDescription", "Less Interface\0"
+            VALUE "FileVersion", "0.1.0.0\0"
+            VALUE "InternalName", "Less\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Less\0"
+            VALUE "OriginalFilename", "Less.exe\0"
+            VALUE "ProductName", "Less\0"
+#else
             VALUE "CompanyName", "numbanine\0"
             VALUE "FileDescription", "numbanine Interface\0"
             VALUE "FileVersion", "0.1.0.0\0"
@@ -37,6 +57,7 @@ BEGIN
             VALUE "LegalCopyright", "Copyright (C) 2026 numbanine\0"
             VALUE "OriginalFilename", "numbanine.exe\0"
             VALUE "ProductName", "numbanine\0"
+#endif
             VALUE "ProductVersion", "0.1.0\0"
         END
     END

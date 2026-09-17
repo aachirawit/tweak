@@ -3,6 +3,11 @@ param(
     [ValidateSet("Debug", "Release")]
     [string] $Configuration = "Release",
 
+    # Which product to build. Both come from this one tree; see the Brand
+    # property in SZK.vcxproj.
+    [ValidateSet("numbanine", "less")]
+    [string] $Brand = "numbanine",
+
     [switch] $Rebuild,
     [switch] $Run,
     [switch] $StopRunning
@@ -12,7 +17,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $solutionPath = Join-Path $repositoryRoot "SZK.sln"
-$applicationPath = Join-Path $repositoryRoot "$Configuration\numbanine.exe"
+$targetName = if ($Brand -eq "less") { "Less" } else { "numbanine" }
+$applicationPath = Join-Path $repositoryRoot "$Configuration\$targetName.exe"
 $layoutVerifier = Join-Path $PSScriptRoot "verify-source-layout.ps1"
 $translationVerifier = Join-Path $PSScriptRoot "verify-translations.py"
 $uiStringVerifier = Join-Path $PSScriptRoot "verify-ui-strings.py"
@@ -77,9 +83,9 @@ else {
     Write-Host "Skipping translation check (no Python on PATH)."
 }
 
-Write-Host "Building numbanine ($Configuration|x64)..."
+Write-Host "Building $targetName ($Configuration|x64)..."
 & $msbuild $solutionPath "/t:$target" "/p:Configuration=$Configuration" "/p:Platform=x64" `
-    "/m" "/nologo" "/v:minimal"
+    "/p:Brand=$Brand" "/m" "/nologo" "/v:minimal"
 if ($LASTEXITCODE -ne 0) {
     throw "MSBuild failed with exit code $LASTEXITCODE."
 }

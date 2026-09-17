@@ -40,10 +40,10 @@ bool win32_window::create(const window_config& config, UINT initial_dpi, message
     // filled from the same resource so the shell picks the right size out of
     // the icon group rather than downscaling the large one.
     window_class.hIcon = static_cast<HICON>(
-        ::LoadImageW(instance_, MAKEINTRESOURCEW(IDI_NUMBANINE), IMAGE_ICON,
+        ::LoadImageW(instance_, MAKEINTRESOURCEW(IDI_APP), IMAGE_ICON,
                      ::GetSystemMetrics(SM_CXICON), ::GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR));
     window_class.hIconSm = static_cast<HICON>(::LoadImageW(
-        instance_, MAKEINTRESOURCEW(IDI_NUMBANINE), IMAGE_ICON, ::GetSystemMetrics(SM_CXSMICON),
+        instance_, MAKEINTRESOURCEW(IDI_APP), IMAGE_ICON, ::GetSystemMetrics(SM_CXSMICON),
         ::GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR));
 
     class_atom_ = ::RegisterClassExW(&window_class);
