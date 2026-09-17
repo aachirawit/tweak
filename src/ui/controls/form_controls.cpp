@@ -183,7 +183,7 @@ bool input_draw(const char* id, input_state& st, const input_desc& d, const ImVe
     const float field_top = pos.y + px(leading_sm + sp_1_5);
     const ImRect field(ImVec2(pos.x + px(shake), field_top),
                        ImVec2(pos.x + px(shake) + width, field_top + px(sp_11)));
-    const float rounding = field.GetHeight() * 0.5f;
+    const float rounding = round_dev(field.GetHeight() * 0.5f);
 
     ImU32 border_target = c_border;
     ImU32 ring_target = IM_COL32(0, 0, 0, 0);
@@ -670,7 +670,7 @@ bool stateful_button_draw(const char* id, stateful_button_state& st, button_stat
                          ImVec2(centre.x + half.x, centre.y + half.y));
 
     dl->AddRectFilled(surface.Min, surface.Max, mo::with_alpha(bg, alpha),
-                      surface.GetHeight() * 0.5f);
+                      round_dev(surface.GetHeight() * 0.5f));
 
     ImFont* f = font_medium(text_base);
 

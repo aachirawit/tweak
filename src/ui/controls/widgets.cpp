@@ -563,7 +563,8 @@ bool switch_toggle(const char* id, const ImVec2& pos, bool* checked, const char*
         st->track.update(*checked ? c_accent : mo::with_alpha(c_muted_foreground, 0.6f), dt, 0.2f);
 
     const ImRect rail(pos, ImVec2(pos.x + px(switch_w), pos.y + px(switch_h)));
-    dl->AddRectFilled(rail.Min, rail.Max, mo::with_alpha(track, alpha), rail.GetHeight() * 0.5f);
+    dl->AddRectFilled(rail.Min, rail.Max, mo::with_alpha(track, alpha),
+                      round_dev(rail.GetHeight() * 0.5f));
 
     const float travel = px(switch_w - k_switch_pad * 2.f - k_thumb_size);
     const float thumb = px(k_thumb_size) * squish;
@@ -737,7 +738,8 @@ bool tabs(const char* id, const ImVec2& pos, const char* const* labels, int coun
         else
             dl->AddRectFilled(ImVec2(ix, active_rect.Min.y), ImVec2(ix + iw, active_rect.Max.y),
                               c_primary,
-                              variant == tabs_pill ? active_rect.GetHeight() * 0.5f : px(8.f));
+                              variant == tabs_pill ? round_dev(active_rect.GetHeight() * 0.5f)
+                                                   : round_px(8.f));
     }
 
     x = list.Min.x + pad;

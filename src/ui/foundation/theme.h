@@ -1,6 +1,7 @@
 #pragma once
 #include "imgui.h"
 
+#include "core/product_info.h"
 #include "ui/foundation/runtime.h"
 
 namespace szk
@@ -79,6 +80,39 @@ inline constexpr float sp_12 = 48.f;
 inline constexpr float max_w_sm = 384.f;
 inline constexpr float rounded_3xl = 24.f;
 inline constexpr float rounded_md = 6.f;
+
+// Corner radius, as this product draws it.
+//
+// The two brands have opposite shape languages: numbanine is soft and raised,
+// Less is cut and drawn in line work. Rather than every surface carrying two
+// numbers, each asks for the radius it would have in the soft language and this
+// returns what the current brand does with it - so one call site still says
+// "this is a card, that is a chip", and the whole app changes shape here.
+//
+// Returns device pixels, like px(), because that is what the draw list wants.
+inline float round_px(float radius)
+{
+#if PRODUCT_BRAND == PRODUCT_BRAND_LESS
+    // Cut, not square: a hairline of radius keeps the corner from aliasing into
+    // a step, and holds at 1px rather than scaling away on a small chip.
+    const float cut = radius * 0.12f;
+    return radius <= 0.f ? 0.f : (cut < 1.f ? 1.f : cut) * ui_runtime::scale;
+#else
+    return radius * ui_runtime::scale;
+#endif
+}
+
+// Same rule as round_px, for a radius that is already in device pixels - half
+// a control's own height, which is how the soft language builds a pill.
+inline float round_dev(float radius)
+{
+#if PRODUCT_BRAND == PRODUCT_BRAND_LESS
+    const float cut = radius * 0.12f;
+    return radius <= 0.f ? 0.f : (cut < 1.f ? 1.f : cut);
+#else
+    return radius;
+#endif
+}
 
 inline float px(float v)
 {

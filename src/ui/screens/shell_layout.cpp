@@ -55,7 +55,7 @@ ImRect plate()
     ImDrawList* dl = window->DrawList;
     const ImRect rect(window->Pos, window->Pos + window->Size);
 
-    rounded_panel::draw(dl, rect.Min, rect.Max, c_background, px(rounding));
+    rounded_panel::draw(dl, rect.Min, rect.Max, c_background, round_px(rounding));
 
     // Optional background image: cover-fit, rounded to the plate, then scrimmed
     // back to the ground colour so every surface above it keeps its contrast.
@@ -64,9 +64,10 @@ ImRect plate()
     {
         ImVec2 uv0, uv1;
         background_uv(rect, uv0, uv1);
-        dl->AddImageRounded(bg->id, rect.Min, rect.Max, uv0, uv1, IM_COL32_WHITE, px(rounding));
+        dl->AddImageRounded(bg->id, rect.Min, rect.Max, uv0, uv1, IM_COL32_WHITE,
+                            round_px(rounding));
         dl->AddRectFilled(rect.Min, rect.Max,
-                          mo::with_alpha(c_background, k_background_scrim), px(rounding));
+                          mo::with_alpha(c_background, k_background_scrim), round_px(rounding));
     }
 
     return rect;
@@ -120,7 +121,7 @@ bool background_uv(const ImRect& area, ImVec2& uv0, ImVec2& uv1)
 void brand_avatar(ImDrawList* dl, const ImVec2& top_left, float size, float alpha)
 {
     const ImVec2 bottom_right(top_left.x + size, top_left.y + size);
-    const float radius = size * 0.28f;
+    const float radius = round_dev(size * 0.28f);
 
     dl->AddRectFilled(top_left, bottom_right, mo::with_alpha(c_card_raised, alpha), radius);
     dl->AddRect(ImVec2(top_left.x + px(0.5f), top_left.y + px(0.5f)),

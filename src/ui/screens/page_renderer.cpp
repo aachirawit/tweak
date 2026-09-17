@@ -83,14 +83,14 @@ void panel(ImDrawList* dl, const ImRect& r, float alpha)
     if (ImVec2 uv0, uv1; shell::background_uv(r, uv0, uv1))
     {
         dl->AddImageRounded(images::background()->id, r.Min, r.Max, uv0, uv1,
-                            mo::with_alpha(IM_COL32_WHITE, alpha), px(16.f));
+                            mo::with_alpha(IM_COL32_WHITE, alpha), round_px(16.f));
         dl->AddRectFilled(r.Min, r.Max,
-                          mo::with_alpha(c_background, shell::card_scrim * alpha), px(16.f));
-        dl->AddRectFilled(r.Min, r.Max, mo::with_alpha(c_card, 0.55f * alpha), px(16.f));
+                          mo::with_alpha(c_background, shell::card_scrim * alpha), round_px(16.f));
+        dl->AddRectFilled(r.Min, r.Max, mo::with_alpha(c_card, 0.55f * alpha), round_px(16.f));
     }
     else
     {
-        dl->AddRectFilled(r.Min, r.Max, mo::with_alpha(c_card, alpha), px(16.f));
+        dl->AddRectFilled(r.Min, r.Max, mo::with_alpha(c_card, alpha), round_px(16.f));
     }
     dl->AddRect(ImVec2(r.Min.x + px(0.5f), r.Min.y + px(0.5f)),
                 ImVec2(r.Max.x - px(0.5f), r.Max.y - px(0.5f)), mo::with_alpha(c_border, alpha),
@@ -255,7 +255,7 @@ bool row_hit(ImDrawList* dl, const char* id, const ImRect& r, float alpha, bool 
 
     if (draw_hover && (hovered || held))
         dl->AddRectFilled(r.Min, r.Max,
-                          mo::with_alpha(c_foreground, (held ? 0.06f : 0.035f) * alpha), px(10.f));
+                          mo::with_alpha(c_foreground, (held ? 0.06f : 0.035f) * alpha), round_px(10.f));
 
     return pressed;
 }
