@@ -1,4 +1,6 @@
 #include "auth/auth.h"
+
+#include "core/product_info.h"
 #include "ui/controls/scroll.h"
 #include "ui/foundation/draw.h"
 #include "ui/foundation/primitives.h"
@@ -23,7 +25,7 @@ struct section
 
 const section k_terms[] = {
     {"Demo status",
-     "numbanine is an offline interface demonstration. It does not create accounts, connect to an "
+     "%s is an offline interface demonstration. It does not create accounts, connect to an "
      "online service, or grant access to a product."},
     {"Local input",
      "Text entered in the demonstration remains in the running process for the current session. "
@@ -35,7 +37,7 @@ const section k_terms[] = {
      "The source code is available under the repository's MIT license. Bundled media and provider "
      "marks remain subject to the notices shipped with the project."},
     {"No billing",
-     "numbanine has no plans, subscriptions, purchases, or payment processing. Any product or account "
+     "%s has no plans, subscriptions, purchases, or payment processing. Any product or account "
      "language shown elsewhere is sample interface content."},
     {"Availability",
      "The project is provided as a demonstration without a hosted service or availability "
@@ -47,7 +49,7 @@ const section k_terms[] = {
 
 const section k_privacy[] = {
     {"No collection",
-     "numbanine does not contact a server, create an account, use analytics, or transmit the contents "
+     "%s does not contact a server, create an account, use analytics, or transmit the contents "
      "of its demonstration fields."},
     {"Input fields",
      "Email and password values exist only in the application's memory while it is running. They "
@@ -56,7 +58,7 @@ const section k_privacy[] = {
      "Local diagnostic logs record startup, shutdown, and rendering failures. They do not record "
      "the contents of email, password, or other form fields."},
     {"Local assets",
-     "Images and interface data are loaded from the packaged assets directory. numbanine does not "
+     "Images and interface data are loaded from the packaged assets directory. %s does not "
      "upload those files or inspect unrelated files on the computer."},
     {"No cookies",
      "This native Windows demonstration does not use browser cookies, advertising identifiers, or "
@@ -217,9 +219,17 @@ bool legal_screen(legal_document document)
                       c_foreground, d.sections[i].heading);
             by += px(leading_sm) + px(k_heading_gap);
 
-            const int lines = wrapped_line_count(para_font, d.sections[i].body, content_w);
-            draw_text_wrapped(dl, para_font, ImVec2(x, by), c_muted_foreground, d.sections[i].body,
-                              content_w, px(k_para_leading));
+            // Some paragraphs name the product, which is a runtime value now
+            // that two build from this tree. Formatted once here so the
+            // measurement and the draw see the same text; a paragraph without a
+            // %s comes through unchanged.
+            char paragraph[512];
+            ImFormatString(paragraph, IM_ARRAYSIZE(paragraph), d.sections[i].body,
+                           product_info::name);
+
+            const int lines = wrapped_line_count(para_font, paragraph, content_w);
+            draw_text_wrapped(dl, para_font, ImVec2(x, by), c_muted_foreground, paragraph, content_w,
+                              px(k_para_leading));
             by += px(k_para_leading) * (float)lines;
 
             if (i + 1 < d.count)

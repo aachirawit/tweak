@@ -1,5 +1,7 @@
 #include "core/diagnostics.h"
 
+#include "core/product_info.h"
+
 #include <windows.h>
 
 #include <cstdint>
@@ -37,7 +39,7 @@ std::filesystem::path log_path()
 {
     static const std::filesystem::path path = []
     {
-        std::filesystem::path directory = local_app_data() / L"numbanine" / L"logs";
+        std::filesystem::path directory = local_app_data() / product_info::name_wide / L"logs";
         std::error_code error;
         std::filesystem::create_directories(directory, error);
 
@@ -82,7 +84,9 @@ void write(const char* level, std::string_view subsystem, std::string_view messa
     }
     catch (...)
     {
-        ::OutputDebugStringA("[numbanine] diagnostics write failed.\n");
+        const std::string note = std::string("[") + product_info::name + "] diagnostics write "
+                                                                         "failed.\n";
+        ::OutputDebugStringA(note.c_str());
     }
 }
 } // namespace

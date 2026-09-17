@@ -15,8 +15,10 @@ struct credit_profile
 
 namespace profiles
 {
+// The visible creator profile. Both products are the same app under a
+// different name, so everything here that is the name comes from one place.
 constexpr credit_profile szk{
-    "numbanine", "numbanine", "N", "numbanine", "numbanine",
+    product_info::name, product_info::name, "N", product_info::name, product_info::name,
 };
 } // namespace profiles
 
@@ -32,5 +34,6 @@ constexpr const char* user_initials = active.user_initials;
 constexpr const char* author = active.author;
 constexpr const char* repo = active.repo;
 
-constexpr const char* game = "numbanine";
+// The name the power plan tweak writes into Windows.
+constexpr const char* game = product_info::name;
 } // namespace szk::brand

@@ -356,7 +356,7 @@ int run_desktop_app()
 
     ui_services services;
     services.initialize(renderer);
-    diagnostics::info("runtime", "numbanine started.");
+    diagnostics::info("runtime", std::string(product_info::name) + " started.");
 
     diagnostics::exit_code exit_code = diagnostics::exit_code::success;
     while (window.pump_messages())
@@ -414,7 +414,7 @@ int run_desktop_app()
         }
     }
 
-    diagnostics::info("runtime", "numbanine stopped.");
+    diagnostics::info("runtime", std::string(product_info::name) + " stopped.");
     return diagnostics::to_process_exit_code(exit_code);
 }
 } // namespace szk::runtime

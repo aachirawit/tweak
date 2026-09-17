@@ -116,8 +116,8 @@ constexpr entry k_table[] = {
     {"FiveM.app, with a backup kept", "FiveM.app เก็บไฟล์สำรองไว้ให้"},
     {"Applying", "กำลังใช้..."},
     {"Re-apply", "ใช้ซ้ำ"},
-    {"Written, with a .numbanine.bak of the original beside it. Restart FiveM to pick it up.",
-     "เขียนแล้ว เก็บไฟล์เดิมเป็น .numbanine.bak ไว้ข้างๆ เปิด FiveM ใหม่เพื่อให้มีผล"},
+    {"Written, with a .%s.bak of the original beside it. Restart FiveM to pick it up.",
+     "เขียนแล้ว เก็บไฟล์เดิมเป็น .%s.bak ไว้ข้างๆ เปิด FiveM ใหม่เพื่อให้มีผล"},
     {"Could not be written - see the activity log.", "เขียนไม่สำเร็จ ดูที่ activity log"},
 
     // ── Settings list ──────────────────────────────────────────────────
@@ -126,7 +126,7 @@ constexpr entry k_table[] = {
     {"Nothing here reports its state", "หมวดนี้อ่านสถานะกลับไม่ได้"},
 
     // ── Sign in ─────────────────────────────────────────────────────────────
-    {"Sign in to numbanine", "เข้าสู่ระบบ numbanine"},
+    {"Sign in to %s", "เข้าสู่ระบบ %s"},
     {"Enter the licence key from your purchase email. It binds to this machine the first time "
      "you use it.",
      "กรอกรหัสไลเซนส์จากอีเมลที่ซื้อ รหัสจะผูกกับเครื่องนี้ตั้งแต่ครั้งแรกที่ใช้"},
@@ -134,7 +134,7 @@ constexpr entry k_table[] = {
     {"Enter your licence key.", "กรอกรหัสไลเซนส์ของคุณ"},
     {"Checking key", "กำลังตรวจสอบรหัส"},
     {"Checking your key...", "กำลังตรวจสอบรหัส..."},
-    {"Unlock numbanine", "ปลดล็อก numbanine"},
+    {"Unlock %s", "ปลดล็อก %s"},
     {"Unlocked", "ปลดล็อกแล้ว"},
     {"Try again", "ลองใหม่"},
     {"You accept the ", "คุณยอมรับ"},
@@ -144,9 +144,9 @@ constexpr entry k_table[] = {
 
     // ── Sign-in stage ───────────────────────────────────────────────────────
     {"Read the machine before changing it.", "อ่านค่าเครื่องก่อนแก้"},
-    {"Every tweak on the dashboard is one numbanine can verify against the registry, so the score "
+    {"Every tweak on the dashboard is one %s can verify against the registry, so the score "
      "is a measurement rather than a promise.",
-     "ทุกอย่างบนแดชบอร์ดคือสิ่งที่ numbanine อ่านกลับจากรีจิสทรีได้ คะแนนจึงเป็นค่าที่วัดได้จริง ไม่ใช่คำโฆษณา"},
+     "ทุกอย่างบนแดชบอร์ดคือสิ่งที่ %s อ่านกลับจากรีจิสทรีได้ คะแนนจึงเป็นค่าที่วัดได้จริง ไม่ใช่คำโฆษณา"},
     {"A restore point before anything moves.", "สร้างจุดคืนค่าก่อนแตะอะไรทั้งนั้น"},
     {"Optimize now takes one first, and stops without touching a single key if Windows refuses.",
      "ปุ่มปรับแต่งเลยจะสร้างให้ก่อน ถ้า Windows ไม่ยอม จะหยุดทันทีโดยไม่แก้อะไรสักตัว"},
@@ -192,8 +192,8 @@ constexpr entry k_table[] = {
     {"Version", "เวอร์ชัน"},
     {"Community", "ชุมชน"},
     {"Join Discord", "เข้า Discord"},
-    {"Support, updates, and the rest of the numbanine crew",
-     "ซัพพอร์ต อัปเดต และคนอื่นๆ ของ numbanine"},
+    {"Support, updates, and the rest of the %s crew",
+     "ซัพพอร์ต อัปเดต และคนอื่นๆ ของ %s"},
     {"System Recovery", "กู้คืนระบบ"},
     {"A safety net before you change anything risky", "ตาข่ายกันพลาดก่อนแก้อะไรที่เสี่ยง"},
     {"Create Restore Point", "สร้างจุดคืนค่า"},
@@ -204,7 +204,7 @@ constexpr entry k_table[] = {
 
     // ── This machine ─────────────────────────────────────────────────────
     {"System", "ระบบ"},
-    {"numbanine Power Plan", "แผนพลังงาน numbanine"},
+    {"%s Power Plan", "แผนพลังงาน %s"},
 
     // ── Auto ReShade ─────────────────────────────────────────────────────
     {"Drops ReShade + the 2K Road Mod into FiveM's plugin folder",

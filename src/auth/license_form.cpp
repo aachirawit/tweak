@@ -15,7 +15,14 @@ namespace
 {
 constexpr float k_message_duration = 0.2f;
 
-const char* k_title_en = "Sign in to numbanine";
+const char* k_title_en = "Sign in to %s";
+
+const char* unlock_label()
+{
+    static char text[64];
+    ImFormatString(text, IM_ARRAYSIZE(text), i18n::tr("Unlock %s"), product_info::name);
+    return text;
+}
 const char* k_description_en =
     "Enter the licence key from your purchase email. It binds to this machine the first time "
     "you use it.";
@@ -86,7 +93,11 @@ auth_action license_screen()
     // Resolved once per frame, not at static init: the language can change
     // while this screen is up, and the wrapped heights below are measured from
     // these same pointers.
-    const char* k_title = i18n::tr(k_title_en);
+    // The product name is a runtime value now that two products build from
+    // this tree, so the translated string is a format rather than a sentence.
+    static char title[96];
+    ImFormatString(title, IM_ARRAYSIZE(title), i18n::tr(k_title_en), product_info::name);
+    const char* k_title = title;
     const char* k_description = i18n::tr(k_description_en);
 
     const char* key_error =
@@ -104,7 +115,7 @@ auth_action license_screen()
     const char* submit_label = s.status == btn_loading   ? i18n::tr("Checking key")
                                : s.status == btn_success ? i18n::tr("Unlocked")
                                : s.status == btn_error   ? i18n::tr("Try again")
-                                                         : i18n::tr("Unlock numbanine");
+                                                         : unlock_label();
 
     input_update(s.in_key, d_key, dt);
     stateful_button_update(s.submit, s.status, submit_label, dt);

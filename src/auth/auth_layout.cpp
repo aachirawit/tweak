@@ -26,7 +26,7 @@ struct highlight
 
 const highlight k_highlights[] = {
     {"Read the machine before changing it.",
-     "Every tweak on the dashboard is one numbanine can verify against the registry, so the score is a "
+     "Every tweak on the dashboard is one %s can verify against the registry, so the score is a "
      "measurement rather than a promise."},
 
     {"A restore point before anything moves.",
@@ -251,7 +251,11 @@ void auth_stage(ImDrawList* dl, const ImRect& stage, const ImRect& card, float r
         ImFont* df = font_regular(text_sm);
 
         const char* headline = i18n::tr(h.headline);
-        const char* detail = i18n::tr(h.detail);
+        // Carries the product name, so it is formatted rather than drawn.
+        char detail_text[320];
+        ImFormatString(detail_text, IM_ARRAYSIZE(detail_text), i18n::tr(h.detail),
+                       product_info::name);
+        const char* detail = detail_text;
         const float headline_h = px(28.f) * (float)wrapped_line_count(hf, headline, content_w);
         const float detail_h = px(leading_sm) * (float)wrapped_line_count(df, detail, content_w);
 

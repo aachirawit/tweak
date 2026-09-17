@@ -81,37 +81,25 @@ inline constexpr float max_w_sm = 384.f;
 inline constexpr float rounded_3xl = 24.f;
 inline constexpr float rounded_md = 6.f;
 
-// Corner radius, as this product draws it.
+// Corner radius, kept as a call rather than a literal.
 //
-// The two brands have opposite shape languages: numbanine is soft and raised,
-// Less is cut and drawn in line work. Rather than every surface carrying two
-// numbers, each asks for the radius it would have in the soft language and this
-// returns what the current brand does with it - so one call site still says
-// "this is a card, that is a chip", and the whole app changes shape here.
+// Both products round the same way today - Less asked for numbanine's soft
+// shape, not a cut one - so these return what they are given. They stay because
+// they are the seam: a brand that wants a different shape language changes it
+// here and the whole app follows, instead of 157 hardcoded radii being found
+// and edited one at a time.
 //
-// Returns device pixels, like px(), because that is what the draw list wants.
+// round_px takes a logical radius and returns device pixels, like px().
 inline float round_px(float radius)
 {
-#if PRODUCT_BRAND == PRODUCT_BRAND_LESS
-    // Cut, not square: a hairline of radius keeps the corner from aliasing into
-    // a step, and holds at 1px rather than scaling away on a small chip.
-    const float cut = radius * 0.12f;
-    return radius <= 0.f ? 0.f : (cut < 1.f ? 1.f : cut) * ui_runtime::scale;
-#else
     return radius * ui_runtime::scale;
-#endif
 }
 
-// Same rule as round_px, for a radius that is already in device pixels - half
-// a control's own height, which is how the soft language builds a pill.
+// round_dev takes a radius already in device pixels - half a control's own
+// height, which is how a pill is built.
 inline float round_dev(float radius)
 {
-#if PRODUCT_BRAND == PRODUCT_BRAND_LESS
-    const float cut = radius * 0.12f;
-    return radius <= 0.f ? 0.f : (cut < 1.f ? 1.f : cut);
-#else
     return radius;
-#endif
 }
 
 inline float px(float v)

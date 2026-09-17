@@ -1,5 +1,7 @@
 #include "backend/gpu_tweaks.h"
 
+#include "core/product_info.h"
+
 #include "backend/activity_log.h"
 
 #include <windows.h>
@@ -347,7 +349,8 @@ bool launch_nvidia_profile_inspector()
 {
     wchar_t temp_path[MAX_PATH] = {};
     ::GetTempPathW(MAX_PATH, temp_path);
-    const std::wstring dir = std::wstring(temp_path) + L"numbanineNvidiaTools\\";
+    const std::wstring dir =
+        std::wstring(temp_path) + product_info::name_wide + L"NvidiaTools\\";
     ::CreateDirectoryW(dir.c_str(), nullptr);
 
     const std::wstring exe_path = dir + L"nvidiaProfileInspector.exe";

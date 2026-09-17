@@ -547,7 +547,7 @@ constexpr module_row k_modules[] = {
     {"Disable USB Selective Suspend", "Gaming", 1, backend::check_usb_selective_suspend_disabled,
      finding_advised, "Windows may power down the mouse or keyboard mid-session."},
     {"BCD Timer Tweaks", "Gaming", 1},
-    {"numbanine Network Tweaks", "Network", 2},
+    {"Curated Network Tweaks", "Network", 2},
     {"Network Driver Tweaks", "Network", 2},
     {"Process Priority Tweaks", "Gaming", 1},
     {"Network Hardening", "Network", 2},
@@ -737,6 +737,44 @@ ImU32 severity_color(finding_severity s)
     return s == finding_urgent    ? c_destructive
            : s == finding_advised ? c_amber_500
                                   : c_muted_foreground;
+}
+
+// ── Strings that carry the product's name ────────────────────────────────────
+//
+// Two products build from this tree, so the name is a runtime value and these
+// are formats rather than sentences. Each keeps its own buffer: they are drawn
+// once a frame at most, and a shared one would have two callers overwriting
+// each other inside the same draw.
+const char* power_plan_title()
+{
+    static char text[64];
+    ImFormatString(text, IM_ARRAYSIZE(text), i18n::tr("%s Power Plan"), product_info::name);
+    return text;
+}
+
+const char* power_plan_name()
+{
+    static char text[64];
+    ImFormatString(text, IM_ARRAYSIZE(text), "%s powerplan", product_info::name);
+    return text;
+}
+
+const char* community_blurb()
+{
+    static char text[128];
+    ImFormatString(text, IM_ARRAYSIZE(text),
+                   i18n::tr("Support, updates, and the rest of the %s crew"), product_info::name);
+    return text;
+}
+
+const char* written_note()
+{
+    static char text[256];
+    ImFormatString(text, IM_ARRAYSIZE(text),
+                   i18n::tr("Written, with a .%s.bak of the original beside it. Restart FiveM to "
+                            "pick it up."),
+                   product_info::name);
+    return text;
 }
 
 const char* severity_label(finding_severity s)
@@ -1080,7 +1118,7 @@ int apply_priority(int index)
     case 7:
         return 80; // Low Latency TCP
     case 10:
-        return 90; // numbanine Network Tweaks
+        return 90; // Curated Network Tweaks
     case 13:
         return 100; // Network Hardening
     case 22:
@@ -1459,7 +1497,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
     // preferences, which sit together at the end of the enum.
     static const char* const k_account_blurbs[] = {
         "Your licence and account details.",
-        "How numbanine behaves, and how loudly.",
+        "How this app behaves, and how loudly.",
     };
 
     static const char* const k_blurbs[] = {
@@ -1639,8 +1677,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                         s.fivem_btn[i] = ok ? btn_success : btn_error;
                         s.row_status_dirty = true;
                         toast(i18n::tr(feat.title),
-                              ok ? i18n::tr("Written, with a .numbanine.bak of the original "
-                                            "beside it. Restart FiveM to pick it up.")
+                              ok ? written_note()
                                  : i18n::tr("Could not be written - see the activity log."),
                               ok ? toast_success : toast_error);
                     }
@@ -1663,7 +1700,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         if (*sub == 3)
         {
             const backend::power_plan_info info = backend::power_plan_active();
-            const bool is_szk = info.available && std::strcmp(info.name, "numbanine") == 0;
+            const bool is_szk = info.available && std::strcmp(info.name, brand::game) == 0;
             const char* status_label = !info.available ? i18n::tr("Unknown")
                                        : is_szk        ? i18n::tr("Active")
                                                        : i18n::tr("Not applied");
@@ -1694,7 +1731,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             const float bw = badge_width(status_label, true);
             ImFont* tf = font_semibold(text_base);
             draw_text(dl, tf, ImVec2(icon_rect.Max.x + px(14.f), szk.Min.y + px(22.f)),
-                      mo::with_alpha(c_foreground, alpha), i18n::tr("numbanine Power Plan"));
+                      mo::with_alpha(c_foreground, alpha), power_plan_title());
             ImFont* df = font_regular(text_xs);
             draw_text_ellipsis(dl, df, ImVec2(icon_rect.Max.x + px(14.f), szk.Min.y + px(44.f)),
                                mo::with_alpha(c_muted_foreground, alpha),
@@ -1733,9 +1770,11 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 if (s.szk_apply_timer > 0.6f)
                 {
                     const bool ok =
-                        backend::power_plan_rename_active(L"numbanine", L"numbanine powerplan");
+                        backend::power_plan_rename_active(
+                            product_info::name_wide,
+                            (std::wstring(product_info::name_wide) + L" powerplan").c_str());
                     s.szk_apply_btn = ok ? btn_success : btn_error;
-                    toast(ok ? i18n::tr("Renamed") : i18n::tr("Failed"), "numbanine powerplan",
+                    toast(ok ? i18n::tr("Renamed") : i18n::tr("Failed"), power_plan_name(),
                           ok ? toast_success : toast_error);
                 }
             }
@@ -2640,7 +2679,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
     {
         const ImRect card(ImVec2(x, y), ImVec2(x + col, y + px(94.f)));
         panel(dl, card, alpha);
-        row_label(dl, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(16.f)), "numbanine",
+        row_label(dl, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(16.f)), product_info::name,
                   i18n::tr("Build information"), alpha);
 
         {
@@ -2675,7 +2714,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
             row_label(dl, ImVec2(icon_rect.Max.x + px(10.f), community.Min.y + px(14.f)),
                       i18n::tr("Community"),
-                      i18n::tr("Support, updates, and the rest of the numbanine crew"), alpha,
+                      community_blurb(), alpha,
                       community.Max.x - (icon_rect.Max.x + px(10.f)) - px(sp_4));
 
             hairline(dl, community, community.Min.y + px(56.f), alpha);

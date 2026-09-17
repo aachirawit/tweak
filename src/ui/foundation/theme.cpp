@@ -69,54 +69,15 @@ constexpr palette k_dark{
     IM_COL32(0x05, 0x96, 0x69, 0xFF),
 };
 
-// ── Less ────────────────────────────────────────────────────────────────────
+// Which palette this build uses.
 //
-// The other product this tree builds. Its wordmark is polished metal on black,
-// so the palette is the same idea: a ground closer to true black than
-// numbanine's, cool greys rather than warm, and an accent that is light rather
-// than coloured - silver reads as the brand where emerald would read as a
-// different product wearing this logo.
-//
-// Same rule as the light set below: the pill and toast patterns draw a label in
-// its own colour on a 13% wash OF THAT COLOUR, which pulls the ground towards
-// the text and costs about a contrast point. Every value here clears 4.5:1
-// inside that wash, which is the tightest place each one appears.
-constexpr palette k_less_dark{
-    IM_COL32(0x04, 0x04, 0x05, 0xFF), IM_COL32(0xF4, 0xF5, 0xF7, 0xFF),
-    IM_COL32(0x0B, 0x0C, 0x0E, 0xFF), IM_COL32(0x15, 0x17, 0x1A, 0xFF),
-    IM_COL32(0x8E, 0x92, 0x98, 0xFF),
-    IM_COL32(0xFF, 0xFF, 0xFF, 0x14), IM_COL32(0xFF, 0xFF, 0xFF, 0x2B),
-
-    IM_COL32(0xC8, 0xCD, 0xD4, 0xFF), IM_COL32(0xE8, 0xEC, 0xF1, 0xFF),
-    IM_COL32(0xF0, 0x56, 0x5C, 0xFF), IM_COL32(0x5F, 0xD3, 0xA3, 0xFF),
-    IM_COL32(0xF2, 0xA9, 0x3B, 0xFF), IM_COL32(0xF7, 0xC0, 0x62, 0xFF),
-    IM_COL32(0xE8, 0xEC, 0xF1, 0xFF), IM_COL32(0xC8, 0xCD, 0xD4, 0xFF),
-    IM_COL32(0x9A, 0xA1, 0xAA, 0xFF),
-};
-
-constexpr palette k_less_light{
-    IM_COL32(0xFC, 0xFC, 0xFD, 0xFF), IM_COL32(0x0A, 0x0B, 0x0D, 0xFF),
-    IM_COL32(0xF0, 0xF1, 0xF3, 0xFF), IM_COL32(0xE2, 0xE4, 0xE8, 0xFF),
-    IM_COL32(0x5E, 0x62, 0x6A, 0xFF),
-    IM_COL32(0x0A, 0x0B, 0x0D, 0x16), IM_COL32(0x0A, 0x0B, 0x0D, 0x2E),
-
-    IM_COL32(0x3A, 0x3F, 0x47, 0xFF), IM_COL32(0x1C, 0x1F, 0x24, 0xFF),
-    IM_COL32(0xBA, 0x1D, 0x26, 0xFF), IM_COL32(0x04, 0x6F, 0x53, 0xFF),
-    IM_COL32(0x98, 0x4D, 0x07, 0xFF), IM_COL32(0x8E, 0x48, 0x07, 0xFF),
-    IM_COL32(0x4A, 0x50, 0x59, 0xFF), IM_COL32(0x3A, 0x3F, 0x47, 0xFF),
-    IM_COL32(0x1C, 0x1F, 0x24, 0xFF),
-};
-
-// Which pair this build uses. Selected at compile time rather than at runtime:
-// one exe is one product, and a switch would only be a way for the wrong
-// palette to reach the screen.
-#if PRODUCT_BRAND == PRODUCT_BRAND_LESS
-constexpr const palette& k_brand_dark = k_less_dark;
-constexpr const palette& k_brand_light = k_less_light;
-#else
+// Both products are green today: Less asked for numbanine's theme rather than a
+// metal one. The indirection stays because it is the seam - a brand that wants
+// its own colours adds a pair here and nothing else in the tree changes - and
+// because it is resolved at compile time, so one exe is one product and there
+// is no switch for the wrong palette to reach the screen through.
 constexpr const palette& k_brand_dark = k_dark;
 constexpr const palette& k_brand_light = k_light;
-#endif
 
 bool g_dark = true;
 } // namespace

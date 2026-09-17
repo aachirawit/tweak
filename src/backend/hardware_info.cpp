@@ -1,5 +1,7 @@
 #include "backend/hardware_info.h"
 
+#include "core/product_info.h"
+
 #include "backend/activity_log.h"
 
 #include <windows.h>
@@ -128,7 +130,8 @@ bool create_system_restore_point()
     RESTOREPOINTINFOW info{};
     info.dwEventType = BEGIN_SYSTEM_CHANGE;
     info.dwRestorePtType = APPLICATION_INSTALL;
-    wcsncpy_s(info.szDescription, L"numbanine checkpoint", _TRUNCATE);
+    wcsncpy_s(info.szDescription, (std::wstring(product_info::name_wide) + L" checkpoint").c_str(),
+              _TRUNCATE);
 
     STATEMGRSTATUS status{};
     const bool ok = ::SRSetRestorePointW(&info, &status) != FALSE;

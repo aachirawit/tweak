@@ -150,7 +150,8 @@ bool https_get(const wchar_t* host, const wchar_t* path, std::string& body,
                const std::function<void(int)>& on_progress = {})
 {
     body.clear();
-    HINTERNET session = ::WinHttpOpen(L"numbanine-Updater", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
+    const std::wstring agent = std::wstring(product_info::name_wide) + L"-Updater";
+    HINTERNET session = ::WinHttpOpen(agent.c_str(), WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
                                       WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
     if (!session)
         return false;
@@ -314,7 +315,7 @@ void run_check()
 
     if (compare_versions(latest, product_info::version) <= 0)
     {
-        publish(update_status::up_to_date, "numbanine is up to date.");
+        publish(update_status::up_to_date, std::string(product_info::name) + " is up to date.");
         g_running.store(false);
         return;
     }
@@ -502,7 +503,8 @@ bool update_install_and_restart()
     ::CloseHandle(pi.hThread);
     ::CloseHandle(pi.hProcess);
 
-    publish(update_status::installing, "Installing update. numbanine will restart.");
+    publish(update_status::installing,
+            "Installing update. " + std::string(product_info::name) + " will restart.");
     return true; // caller should now exit so the script can swap the file
 }
 

@@ -1,6 +1,7 @@
 #include "backend/game_config.h"
 
 #include "backend/activity_log.h"
+#include "core/product_info.h"
 
 #include <windows.h>
 
@@ -49,7 +50,7 @@ bool write_file(const std::filesystem::path& path, const std::string& text)
 void backup_once(const std::filesystem::path& path)
 {
     std::filesystem::path backup = path;
-    backup += L".numbanine.bak";
+    backup += std::wstring(L".") + product_info::name_wide + L".bak";
 
     std::error_code ec;
     if (std::filesystem::exists(backup, ec))

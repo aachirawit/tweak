@@ -1,5 +1,7 @@
 #include "backend/keyauth.h"
 
+#include "core/product_info.h"
+
 #include "backend/ed25519_verify.h"
 #include "backend/keyauth_config.h"
 #include "security/anti_debug.h"
@@ -271,7 +273,7 @@ http_response http_post(const wchar_t* host, const wchar_t* path, const wchar_t*
 {
     http_response out;
 
-    HINTERNET session = ::WinHttpOpen(L"numbanine", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
+    HINTERNET session = ::WinHttpOpen(product_info::name_wide, WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
                                       WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
     if (!session)
         return out;

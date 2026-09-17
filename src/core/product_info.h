@@ -30,6 +30,7 @@ inline constexpr brand brand_id = static_cast<brand>(PRODUCT_BRAND);
 
 #if PRODUCT_BRAND == PRODUCT_BRAND_LESS
 inline constexpr char name[] = "Less";
+inline constexpr wchar_t name_wide[] = L"Less";
 inline constexpr wchar_t window_title[] = L"Less";
 
 // The folder under assets/brands this build takes its logo and background
@@ -38,6 +39,7 @@ inline constexpr wchar_t window_title[] = L"Less";
 inline constexpr wchar_t asset_brand[] = L"less";
 #else
 inline constexpr char name[] = "numbanine";
+inline constexpr wchar_t name_wide[] = L"numbanine";
 inline constexpr wchar_t window_title[] = L"numbanine";
 inline constexpr wchar_t asset_brand[] = L"numbanine";
 #endif

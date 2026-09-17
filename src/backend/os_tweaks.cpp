@@ -2,6 +2,8 @@
 
 #include "backend/activity_log.h"
 
+#include "core/product_info.h"
+
 #include <windows.h>
 
 #include <powrprof.h>
@@ -463,7 +465,7 @@ bool apply_sapphire_network_defaults()
     //   "SapphireOS Default Network Settings.bat"
     const int failed = run_default_netsh_bundle();
     const bool ok = failed == 0;
-    log("numbanine network defaults",
+    log(std::string(product_info::name) + " network defaults",
         ok ? "All netsh commands applied" : std::to_string(failed) + " netsh command(s) failed");
     return ok;
 }
