@@ -13,6 +13,7 @@
 
 #include <cstdio>
 #include <string>
+#include <vector>
 
 #pragma comment(lib, "wbemuuid.lib")
 #pragma comment(lib, "shell32.lib")
@@ -125,8 +126,49 @@ void open_windows_recovery_settings()
     ::ShellExecuteW(nullptr, L"open", L"ms-settings:recovery", nullptr, nullptr, SW_SHOWNORMAL);
 }
 
-bool create_system_restore_point()
+bool system_restore_available()
 {
+    SC_HANDLE scm = ::OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
+    if (!scm)
+        return true; // Cannot tell; let the attempt speak for itself.
+
+    SC_HANDLE service = ::OpenServiceW(scm, L"VSS", SERVICE_QUERY_CONFIG);
+    if (!service)
+    {
+        ::CloseServiceHandle(scm);
+        return true;
+    }
+
+    DWORD needed = 0;
+    ::QueryServiceConfigW(service, nullptr, 0, &needed);
+
+    bool available = true;
+    if (needed > 0)
+    {
+        std::vector<unsigned char> buffer(needed);
+        auto* config = reinterpret_cast<QUERY_SERVICE_CONFIGW*>(buffer.data());
+        if (::QueryServiceConfigW(service, config, needed, &needed))
+            available = config->dwStartType != SERVICE_DISABLED;
+    }
+
+    ::CloseServiceHandle(service);
+    ::CloseServiceHandle(scm);
+    return available;
+}
+
+restore_point create_restore_point()
+{
+    // Asked first so a machine with System Restore switched off answers
+    // immediately, rather than after SRSetRestorePointW has spent seconds
+    // failing - which reads as the button doing nothing.
+    if (!system_restore_available())
+    {
+        log("System Restore",
+            "Turned off on this machine - the Volume Shadow Copy service is disabled, so Windows "
+            "cannot take one. Turn System Protection on for C: to use this.");
+        return restore_point::unavailable;
+    }
+
     RESTOREPOINTINFOW info{};
     info.dwEventType = BEGIN_SYSTEM_CHANGE;
     info.dwRestorePtType = APPLICATION_INSTALL;
@@ -134,10 +176,19 @@ bool create_system_restore_point()
               _TRUNCATE);
 
     STATEMGRSTATUS status{};
-    const bool ok = ::SRSetRestorePointW(&info, &status) != FALSE;
-    log("System Restore",
-        ok ? "Restore point created" : "Failed (System Restore may be turned off for this drive)");
-    return ok;
+    if (::SRSetRestorePointW(&info, &status) != FALSE)
+    {
+        log("System Restore", "Restore point created");
+        return restore_point::created;
+    }
+
+    log("System Restore", "Windows refused to create a restore point");
+    return restore_point::failed;
+}
+
+bool create_system_restore_point()
+{
+    return create_restore_point() == restore_point::created;
 }
 
 void open_system_restore_wizard()

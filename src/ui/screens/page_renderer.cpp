@@ -1038,15 +1038,15 @@ bool begin_apply(apply_owner owner, const int* modules, int count, bool take_res
             {
                 apply_job& work = job();
 
-                // The button promises a restore point, so failing to take one
-                // stops the run instead of quietly skipping it. That promise is
-                // the whole reason one click is reasonable at all.
-                if (work.take_restore_point && !backend::create_system_restore_point())
-                {
-                    work.restore_point_ok.store(false);
-                    work.result_ready.store(true);
-                    return;
-                }
+                // A restore point is taken when Windows will give one, and the
+                // run goes ahead either way. It used to stop here instead: on a
+                // machine with System Restore switched off - which several PC
+                // "optimiser" tools do, and which this app cannot undo - that
+                // made the button look broken, since nothing was ever applied
+                // and the reason was a line in a log with no window.
+                if (work.take_restore_point)
+                    work.restore_point_ok.store(backend::create_restore_point() ==
+                                                backend::restore_point::created);
 
                 int applied = 0, failed = 0, unwired = 0;
                 for (int i = 0; i < work.count; i++)
@@ -2379,31 +2379,26 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                         const apply_job& j = job();
                         s.dash_optimize_timer = 0.f;
 
-                        if (!j.restore_point_ok.load())
-                        {
-                            s.dash_optimize_btn = btn_error;
-                            toast(i18n::tr("Nothing was changed"),
-                                  i18n::tr("Windows would not create a restore point. Turn "
-                                           "System Protection on for C: and try again."),
-                                  toast_error);
-                        }
-                        else
-                        {
-                            const int applied = j.applied.load();
-                            const int failed = j.failed.load();
+                        const int applied = j.applied.load();
+                        const int failed = j.failed.load();
 
-                            char summary[160];
-                            ImFormatString(
-                                summary, IM_ARRAYSIZE(summary),
-                                i18n::tr("%d applied, %d failed. Restore point taken first."),
-                                applied, failed);
-                            s.dash_optimize_btn = failed == 0 ? btn_success : btn_error;
-                            toast(i18n::tr("Optimize now"), summary,
-                                  failed == 0 ? toast_success : toast_error);
+                        // The summary says which of the two happened rather
+                        // than claiming a checkpoint that may not exist.
+                        char summary[192];
+                        ImFormatString(
+                            summary, IM_ARRAYSIZE(summary),
+                            j.restore_point_ok.load()
+                                ? i18n::tr("%d applied, %d failed. Restore point taken first.")
+                                : i18n::tr("%d applied, %d failed. No restore point - System "
+                                           "Restore is off for this drive."),
+                            applied, failed);
 
-                            s.dash_scanned = false;    // the score is stale now
-                            s.row_status_dirty = true; // so are Settings' dots
-                        }
+                        s.dash_optimize_btn = failed == 0 ? btn_success : btn_error;
+                        toast(i18n::tr("Optimize now"), summary,
+                              failed == 0 ? toast_success : toast_error);
+
+                        s.dash_scanned = false;    // the score is stale now
+                        s.row_status_dirty = true; // so are Settings' dots
                     }
                 }
                 else if (s.dash_optimize_btn != btn_idle)
@@ -2429,7 +2424,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             ImFont* trf = font_regular(text_xs);
             draw_text(dl, trf, ImVec2(btn_x + px(18.f), trust_y + px(1.f)),
                       mo::with_alpha(c_muted_foreground, alpha),
-                      s.dash_finding_count > 0 ? i18n::tr("Restore point created first")
+                      s.dash_finding_count > 0 ? i18n::tr("Takes a restore point when Windows "
+                                                          "allows")
                                                : i18n::tr("Reads the registry, changes nothing"));
 
             y = card.Max.y + px(sp_3);
@@ -2778,11 +2774,15 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                     s.restore_point_timer += dt;
                     if (s.restore_point_timer > 1.5f)
                     {
-                        const bool ok = backend::create_system_restore_point();
+                        const backend::restore_point result = backend::create_restore_point();
+                        const bool ok = result == backend::restore_point::created;
                         s.restore_point_btn = ok ? btn_success : btn_error;
                         toast(i18n::tr("System Restore"),
                               ok ? i18n::tr("Checkpoint created")
-                                 : i18n::tr("Failed to create one"),
+                              : result == backend::restore_point::unavailable
+                                  ? i18n::tr("System Restore is off for this drive. Turn System "
+                                             "Protection on for C: to use this.")
+                                  : i18n::tr("Windows refused to create one"),
                               ok ? toast_success : toast_error);
                     }
                 }
@@ -2816,11 +2816,15 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                     s.restore_point_timer += dt;
                     if (s.restore_point_timer > 1.5f)
                     {
-                        const bool ok = backend::create_system_restore_point();
+                        const backend::restore_point result = backend::create_restore_point();
+                        const bool ok = result == backend::restore_point::created;
                         s.restore_point_btn = ok ? btn_success : btn_error;
                         toast(i18n::tr("System Restore"),
                               ok ? i18n::tr("Checkpoint created")
-                                 : i18n::tr("Failed to create one"),
+                              : result == backend::restore_point::unavailable
+                                  ? i18n::tr("System Restore is off for this drive. Turn System "
+                                             "Protection on for C: to use this.")
+                                  : i18n::tr("Windows refused to create one"),
                               ok ? toast_success : toast_error);
                     }
                 }

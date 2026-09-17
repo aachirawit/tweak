@@ -21,6 +21,25 @@ void open_windows_recovery_settings();
 
 // Creates a real Windows System Restore point right now (SRSetRestorePointW).
 // Purely additive — doesn't change or roll back anything.
+// What happened when a restore point was asked for. "unavailable" is the
+// common case and is not a fault in the app: System Restore is off for the
+// drive, or the Volume Shadow Copy service is disabled, which several PC
+// "optimiser" tools do. Worth telling apart from a real failure, because the
+// user can fix one and not the other.
+enum class restore_point
+{
+    created,
+    unavailable,
+    failed,
+};
+
+restore_point create_restore_point();
+
+// True when System Restore could work at all: VSS is not disabled. Cheap
+// enough to ask before offering the button.
+[[nodiscard]] bool system_restore_available();
+
+// Kept for callers that only need to know whether it worked.
 bool create_system_restore_point();
 
 // Launches Windows' own System Restore wizard (rstrui.exe) so the user picks
