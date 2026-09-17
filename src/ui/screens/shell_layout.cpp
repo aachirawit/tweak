@@ -40,20 +40,14 @@ ImVec2 animate_size(const ImVec2& target)
 
 // How much of c_background is laid back over a background image.
 //
-// The surfaces that carry text - content cards and the sidebar - are opaque, so
-// they keep their own ground and the image cannot reach the text inside them.
-// That is what allows a scrim this light: the only text it still has to protect
-// is what is drawn straight onto the plate, the header row and the footer strip.
-//
-// 0.50 is matched to the artwork in assets/background, which is near-black
-// except for display type in the middle of the frame - the cards cover that
-// band, and the header and footer sit over the dark edges. It is not a value
-// that is safe for any image: c_muted_foreground needs a ground no brighter
-// than 0.019 relative luminance to hold WCAG AA 4.5:1, and a white area only
-// falls to that at 0.92 (0.90 measures 4.23:1, 0.88 measures 3.96:1). Swap the
-// image for a bright one and this has to come up with it - see
-// assets/background/README.md for the value per image type.
-constexpr float k_background_scrim = 0.50f;
+// What is left over the picture where nothing is written on it: the margins,
+// the gaps between cards, the area below the last one. Every surface that does
+// carry text lays its own ground over this first - cards and the sidebar at
+// shell::card_scrim, the top chrome under the band drawn in shell_screen - so
+// this value is free to be light. At 0.50 it was not: the page heading is
+// written straight onto the plate, and over a pale part of a picture it
+// measured 3.09:1 in dark mode, with its subtitle at 1.03:1.
+constexpr float k_background_scrim = 0.28f;
 
 ImRect plate()
 {

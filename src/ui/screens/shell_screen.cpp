@@ -710,6 +710,25 @@ bool menu_screen(float alpha)
             const float ix = origin.x + bar_w + px(1.f);
             ImFont* f14 = font_medium(text_sm);
 
+            // The top chrome - breadcrumb, search, the two switches - and the
+            // page heading and tab strip under it are written straight onto the
+            // plate, with no card between them and the picture. They get a
+            // ground of their own here rather than the whole window getting one:
+            // a band at the measured card floor that fades out below the tabs,
+            // so the picture stays strong everywhere it is not being read over.
+            {
+                const float top = origin.y;
+                const float solid_to = origin.y + px(216.f);
+                const float fade_to = origin.y + px(276.f);
+                const ImU32 ground = mo::with_alpha(c_background, shell::card_scrim * alpha);
+
+                dl->AddRectFilled(ImVec2(ix, top), ImVec2(plate.Max.x - px(1.f), solid_to), ground);
+                dl->AddRectFilledMultiColor(ImVec2(ix, solid_to),
+                                            ImVec2(plate.Max.x - px(1.f), fade_to), ground, ground,
+                                            mo::with_alpha(c_background, 0.f),
+                                            mo::with_alpha(c_background, 0.f));
+            }
+
             const ImRect trig(ImVec2(ix + px(16.f), origin.y + px(13.f)),
                               ImVec2(ix + px(56.f), origin.y + px(53.f)));
 

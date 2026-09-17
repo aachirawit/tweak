@@ -133,6 +133,58 @@ std::string read_file(const fs::path& path)
     return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
 }
 
+// ReShade reads exactly one preset, named by PresetPath in ReShade.ini, and
+// enables only the techniques that preset lists. Point it at a file that is not
+// there and ReShade still loads, still compiles all 900-odd shaders, and renders
+// nothing - which is indistinguishable from "it didn't install" from inside the
+// game.
+//
+// The bundled ReShade.ini carried an absolute path into a folder on the machine
+// it was captured from, so that is what every install did. Rewriting the line
+// after the copy means the shipped ini cannot get this wrong again, whatever it
+// happens to say.
+bool set_preset_path(const fs::path& ini, const char* preset)
+{
+    std::string text = read_file(ini);
+    if (text.empty())
+        return false;
+
+    const std::string line = std::string("PresetPath=") + preset;
+
+    const size_t at = text.find("PresetPath=");
+    if (at == std::string::npos)
+    {
+        // No line to replace: add one under [GENERAL], which is where ReShade
+        // writes it itself.
+        const size_t general = text.find("[GENERAL]");
+        if (general == std::string::npos)
+            return false;
+
+        const size_t eol = text.find('\n', general);
+        if (eol == std::string::npos)
+            return false;
+
+        text.insert(eol + 1, line + "\n");
+    }
+    else
+    {
+        size_t end = text.find('\n', at);
+        if (end == std::string::npos)
+            end = text.size();
+        else if (end > at && text[end - 1] == '\r')
+            end--;
+
+        text.replace(at, end - at, line);
+    }
+
+    std::ofstream out(ini, std::ios::binary | std::ios::trunc);
+    if (!out)
+        return false;
+
+    out.write(text.data(), (std::streamsize)text.size());
+    return out.good();
+}
+
 bool citizenfx_ack_present()
 {
     const fs::path ini_path = citizenfx_ini_path();
@@ -233,6 +285,12 @@ bool reshade_install(bool include_road_mod)
         fs::remove(target / L"QuantV.addon", remove_ec);
         fs::remove(target / L"QuantV.preset.ini", remove_ec);
     }
+
+    // Relative to the folder the DLL is in, so it survives being installed
+    // anywhere. With the road mod that is QuantV's own preset, which is the
+    // only preset this app ships with anything enabled in it.
+    ok &= set_preset_path(target / L"ReShade.ini",
+                          include_road_mod ? ".\\QuantV.preset.ini" : ".\\ReShadePreset.ini");
 
     const bool ack_ok = ensure_citizenfx_ack();
     const char* ack_note = ack_ok ? ""
