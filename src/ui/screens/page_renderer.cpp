@@ -1713,12 +1713,15 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             draw_text(dl, vf, ImVec2(szk.Min.x + px(sp_5), szk.Min.y + px(112.f)),
                       mo::with_alpha(c_foreground, alpha), current);
 
+            // One lookup for both the measurement and the label, so the button
+            // cannot be sized in one language and drawn in another.
             ImFont* bf = font_medium(text_base);
-            const float apply_w = text_width(bf, "Apply") + px(40.f);
+            const char* apply_label = i18n::tr("Apply");
+            const float apply_w = text_width(bf, apply_label) + px(40.f);
             if (action("szk-apply",
                        ImVec2(szk.Max.x - px(sp_5) - apply_w / ui_runtime::scale,
                               szk.Min.y + px(100.f)),
-                       apply_w / ui_runtime::scale, s.szk_apply_btn, "Apply") &&
+                       apply_w / ui_runtime::scale, s.szk_apply_btn, apply_label) &&
                 s.szk_apply_btn == btn_idle)
             {
                 s.szk_apply_btn = btn_loading;
@@ -2678,11 +2681,11 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             hairline(dl, community, community.Min.y + px(56.f), alpha);
 
             ImFont* jbf = font_medium(text_base);
-            const float join_w = text_width(jbf, "Join Discord") + px(32.f);
+            const float join_w = text_width(jbf, i18n::tr("Join Discord")) + px(32.f);
             if (action("community-join",
                        ImVec2(community.Max.x - px(sp_4) - join_w / ui_runtime::scale,
                               community.Min.y + px(68.f)),
-                       join_w / ui_runtime::scale, btn_idle, "Join Discord"))
+                       join_w / ui_runtime::scale, btn_idle, i18n::tr("Join Discord")))
                 backend::open_discord();
 
             y = community.Max.y + px(sp_4);
@@ -2746,7 +2749,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 }
 
                 if (action("open-restore-wizard", ImVec2(btn_x, row2_y), btn_w_logical, btn_idle,
-                           "Open System Restore"))
+                           i18n::tr("Open System Restore")))
                     backend::open_system_restore_wizard();
             }
             else
@@ -2755,7 +2758,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 ImFont* bf = font_medium(text_base);
                 const float pad_x = px(32.f);
                 const float w1 = text_width(bf, "Create Restore Point") + pad_x;
-                const float w2 = text_width(bf, "Open System Restore") + pad_x;
+                const float w2 = text_width(bf, i18n::tr("Open System Restore")) + pad_x;
                 const float row_right = recovery.Max.x - px(sp_4);
                 const float x2 = row_right - w2;
                 const float x1 = x2 - px(sp_3) - w1;
@@ -2784,7 +2787,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 }
 
                 if (action("open-restore-wizard", ImVec2(x2, button_y), w2_logical, btn_idle,
-                           "Open System Restore"))
+                           i18n::tr("Open System Restore")))
                     backend::open_system_restore_wizard();
             }
 
@@ -2996,7 +2999,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         const float pad_x = px(32.f);
         const float w1 = text_width(bf, i18n::tr("Install")) + pad_x;
         const float w2 = text_width(bf, i18n::tr("Uninstall")) + pad_x;
-        const float w3 = text_width(bf, "Open Folder") + pad_x;
+        const float w3 = text_width(bf, i18n::tr("Open Folder")) + pad_x;
         const float row_right = x + col;
         const float x3 = row_right - w3;
         const float x2 = x3 - px(sp_3) - w2;
@@ -3063,7 +3066,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 s.reshade_uninstall_btn = btn_idle;
         }
 
-        if (action("reshade-plugins", ImVec2(x3, button_y), w3_logical, btn_idle, "Open Folder"))
+        if (action("reshade-plugins", ImVec2(x3, button_y), w3_logical, btn_idle, i18n::tr("Open Folder")))
             backend::reshade_open_plugins_folder();
 
         y = button_y + px(sp_12) + px(sp_4);
@@ -3145,7 +3148,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         }
         y = prefs.Max.y + px(sp_5);
 
-        if (action("profile-save", ImVec2(x, y), 200.f, s.profile_save, "Save changes") &&
+        if (action("profile-save", ImVec2(x, y), 200.f, s.profile_save, i18n::tr("Save changes")) &&
             s.profile_save == btn_idle)
         {
             s.profile_save = btn_loading;
@@ -3340,7 +3343,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         y -= px(sp_3);
         y += px(sp_2);
 
-        if (action("reset-prefs", ImVec2(x, y), 170.f, btn_idle, "Reset to defaults"))
+        if (action("reset-prefs", ImVec2(x, y), 170.f, btn_idle, i18n::tr("Reset to defaults")))
             s.reset_cascade = 0.f;
         y += px(44.f);
         break;

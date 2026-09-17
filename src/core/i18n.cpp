@@ -191,11 +191,13 @@ constexpr entry k_table[] = {
     {"Build information", "ข้อมูลบิลด์"},
     {"Version", "เวอร์ชัน"},
     {"Community", "ชุมชน"},
+    {"Join Discord", "เข้า Discord"},
     {"Support, updates, and the rest of the numbanine crew",
      "ซัพพอร์ต อัปเดต และคนอื่นๆ ของ numbanine"},
     {"System Recovery", "กู้คืนระบบ"},
     {"A safety net before you change anything risky", "ตาข่ายกันพลาดก่อนแก้อะไรที่เสี่ยง"},
     {"Create Restore Point", "สร้างจุดคืนค่า"},
+    {"Open System Restore", "เปิด System Restore"},
     {"System Restore", "คืนค่าระบบ"},
     {"Checkpoint created", "สร้างจุดคืนค่าแล้ว"},
     {"Failed to create one", "สร้างไม่สำเร็จ"},
@@ -221,11 +223,14 @@ constexpr entry k_table[] = {
     {"Some files failed to copy", "คัดลอกบางไฟล์ไม่สำเร็จ"},
     {"Removed from the plugins folder", "ลบออกจากโฟลเดอร์ปลั๊กอินแล้ว"},
     {"Nothing to remove", "ไม่มีอะไรให้ลบ"},
+    {"Open Folder", "เปิดโฟลเดอร์"},
 
     // ── Preferences ───────────────────────────────────────────────────────
     {"NOTIFICATIONS", "การแจ้งเตือน"},
     {"CREDITS", "เครดิต"},
     {"Profile saved", "บันทึกโปรไฟล์แล้ว"},
+    {"Save changes", "บันทึกการเปลี่ยนแปลง"},
+    {"Reset to defaults", "รีเซ็ตเป็นค่าเริ่มต้น"},
     {"Preferences reset", "รีเซ็ตการตั้งค่าแล้ว"},
     {"Back to how they shipped", "กลับไปเป็นค่าที่มากับโปรแกรม"},
 

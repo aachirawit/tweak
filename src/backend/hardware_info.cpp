@@ -144,7 +144,7 @@ void open_system_restore_wizard()
 
 void open_discord()
 {
-    ::ShellExecuteW(nullptr, L"open", L"https://discord.gg/d9store", nullptr, nullptr,
+    ::ShellExecuteW(nullptr, L"open", L"https://discord.gg/nhb6v5pRtE", nullptr, nullptr,
                     SW_SHOWNORMAL);
 }
 } // namespace szk::backend

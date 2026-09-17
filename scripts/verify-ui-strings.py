@@ -23,11 +23,11 @@ import sys
 DRAWING_CALLS = (
     'draw_text', 'draw_text_wrapped', 'draw_text_ellipsis', 'draw_text_tracked',
     'draw_text_tabular', 'draw_text_blur', 'row_label', 'empty_state', 'toast',
-    'badge', 'pill', 'aside_head', 'heading',
+    'badge', 'pill', 'aside_head', 'heading', 'action', 'stateful_button_update',
 )
 
 # Calls that take an ImGui id first: that argument is never read by anyone.
-ID_FIRST = {'badge', 'pill'}
+ID_FIRST = {'badge', 'pill', 'action'}
 
 # Names that stay in English on purpose - see the module comment.
 PRODUCT_NOUNS = {
