@@ -156,6 +156,97 @@ bool system_restore_available()
     return available;
 }
 
+namespace
+{
+// Start type for one service, when it is allowed to change it. Kept local: the
+// only service this file has any business touching is the one System Restore
+// runs on.
+bool set_service_manual(const wchar_t* service_name)
+{
+    SC_HANDLE scm = ::OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
+    if (!scm)
+        return false;
+
+    SC_HANDLE service = ::OpenServiceW(scm, service_name, SERVICE_CHANGE_CONFIG);
+    if (!service)
+    {
+        ::CloseServiceHandle(scm);
+        return false;
+    }
+
+    const bool ok = ::ChangeServiceConfigW(service, SERVICE_NO_CHANGE, SERVICE_DEMAND_START,
+                                           SERVICE_NO_CHANGE, nullptr, nullptr, nullptr, nullptr,
+                                           nullptr, nullptr, nullptr) != 0;
+    ::CloseServiceHandle(service);
+    ::CloseServiceHandle(scm);
+    return ok;
+}
+
+// Runs a command and waits. Long timeout: Enable-ComputerRestore is not quick,
+// and returning before it finishes would report a result that has not happened.
+bool run_and_wait(const std::wstring& command_line, DWORD timeout_ms)
+{
+    STARTUPINFOW si{};
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE;
+    PROCESS_INFORMATION pi{};
+
+    std::wstring mutable_command = command_line;
+    if (!::CreateProcessW(nullptr, mutable_command.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW,
+                          nullptr, nullptr, &si, &pi))
+        return false;
+
+    ::WaitForSingleObject(pi.hProcess, timeout_ms);
+    DWORD exit_code = 1;
+    ::GetExitCodeProcess(pi.hProcess, &exit_code);
+    ::CloseHandle(pi.hProcess);
+    ::CloseHandle(pi.hThread);
+    return exit_code == 0;
+}
+} // namespace
+
+bool enable_system_protection()
+{
+    // The service first: with VSS disabled the rest cannot work, and it is the
+    // part this can set directly rather than through a command.
+    const bool service_ok = set_service_manual(L"VSS");
+    const bool provider_ok = set_service_manual(L"swprv");
+
+    // CreateProcess does not expand %SystemDrive%, so the drive is resolved
+    // here and pasted into both commands.
+    wchar_t drive[8] = {};
+    if (::GetEnvironmentVariableW(L"SystemDrive", drive, 8) == 0)
+        wcscpy_s(drive, L"C:");
+
+    // Enable-ComputerRestore is the documented way to switch protection on for
+    // a drive; there is no Win32 entry point for it. The drive is built inside
+    // PowerShell rather than written as C:\ here, because a trailing backslash
+    // in front of the closing quote is the one thing command-line quoting gets
+    // wrong.
+    const std::wstring enable =
+        std::wstring(L"powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "
+                     L"\"Enable-ComputerRestore -Drive ('") +
+        drive + L"' + [char]92)\"";
+    const bool enabled = run_and_wait(enable, 120000);
+
+    // Protection that is on but has no disk allowance keeps no restore points,
+    // so a checkpoint would succeed and then quietly vanish. 5% is what Windows
+    // offers itself on a modern disk. Failing here is not fatal - the machine
+    // may already have an allowance.
+    const std::wstring resize = std::wstring(L"vssadmin resize shadowstorage /For=") + drive +
+                                L" /On=" + drive + L" /MaxSize=5%";
+    run_and_wait(resize, 60000);
+
+    const bool ok = enabled && system_restore_available();
+    log("System Restore",
+        ok ? "System Protection turned on for the system drive"
+           : (service_ok && provider_ok
+                  ? "Could not turn System Protection on - Windows refused the change"
+                  : "Could not re-enable the Volume Shadow Copy service; run as administrator"));
+    return ok;
+}
+
 restore_point create_restore_point()
 {
     // Asked first so a machine with System Restore switched off answers

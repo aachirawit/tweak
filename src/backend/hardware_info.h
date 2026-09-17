@@ -35,6 +35,16 @@ enum class restore_point
 
 restore_point create_restore_point();
 
+// Turns System Protection back on for the system drive: re-enables the Volume
+// Shadow Copy service, switches restore points on, and gives them somewhere to
+// live. Several PC "optimiser" tools switch all three off, which is why a
+// machine can arrive with no way to take a checkpoint at all.
+//
+// This changes a Windows setting rather than applying a tweak, so it is its own
+// button and never runs as a side effect of anything else. It only ever turns
+// the protection on.
+bool enable_system_protection();
+
 // True when System Restore could work at all: VSS is not disabled. Cheap
 // enough to ask before offering the button.
 [[nodiscard]] bool system_restore_available();

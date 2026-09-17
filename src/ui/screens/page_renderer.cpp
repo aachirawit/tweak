@@ -777,6 +777,74 @@ const char* written_note()
     return text;
 }
 
+// The System Recovery card's first button. It is "Create Restore Point" on a
+// machine that can take one, and "Turn on System Protection" on one that
+// cannot - a checkpoint button that only ever reports being switched off is not
+// worth a click, and the thing the user actually needs is one step further
+// back.
+//
+// Availability is cached rather than asked every frame: it opens the service
+// manager, and it can only change when this button changes it.
+struct recovery_state
+{
+    bool queried = false;
+    bool available = true;
+};
+
+recovery_state& recovery()
+{
+    static recovery_state state;
+    return state;
+}
+
+bool restore_available()
+{
+    recovery_state& r = recovery();
+    if (!r.queried)
+    {
+        r.available = backend::system_restore_available();
+        r.queried = true;
+    }
+    return r.available;
+}
+
+const char* recovery_action_label()
+{
+    return restore_available() ? i18n::tr("Create Restore Point")
+                               : i18n::tr("Turn on System Protection");
+}
+
+// Runs whichever of the two the button currently is. Returns whether it did
+// what it said, which is what the button then shows.
+bool run_recovery_action()
+{
+    if (!restore_available())
+    {
+        const bool ok = backend::enable_system_protection();
+        recovery().queried = false; // ask again; this is what changes it
+        toast(i18n::tr("System Restore"),
+              ok ? i18n::tr("System Protection is on. Restore points can be taken now.")
+                 : i18n::tr("Windows would not turn it on. Check that the app is running as "
+                            "administrator."),
+              ok ? toast_success : toast_error);
+        return ok;
+    }
+
+    const backend::restore_point result = backend::create_restore_point();
+    const bool ok = result == backend::restore_point::created;
+    if (!ok)
+        recovery().queried = false;
+
+    toast(i18n::tr("System Restore"),
+          ok ? i18n::tr("Checkpoint created")
+          : result == backend::restore_point::unavailable
+              ? i18n::tr("System Restore is off for this drive. Turn System Protection on for C: "
+                         "to use this.")
+              : i18n::tr("Windows refused to create one"),
+          ok ? toast_success : toast_error);
+    return ok;
+}
+
 const char* severity_label(finding_severity s)
 {
     return s == finding_urgent   ? i18n::tr("Urgent")
@@ -2763,7 +2831,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 const float btn_x = recovery.Min.x + px(sp_4);
 
                 if (action("create-restore-point", ImVec2(btn_x, row1_y), btn_w_logical,
-                           s.restore_point_btn, i18n::tr("Create Restore Point")) &&
+                           s.restore_point_btn, recovery_action_label()) &&
                     s.restore_point_btn == btn_idle)
                 {
                     s.restore_point_btn = btn_loading;
@@ -2772,18 +2840,9 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 if (s.restore_point_btn == btn_loading)
                 {
                     s.restore_point_timer += dt;
-                    if (s.restore_point_timer > 1.5f)
+                    if (s.restore_point_timer > 0.2f)
                     {
-                        const backend::restore_point result = backend::create_restore_point();
-                        const bool ok = result == backend::restore_point::created;
-                        s.restore_point_btn = ok ? btn_success : btn_error;
-                        toast(i18n::tr("System Restore"),
-                              ok ? i18n::tr("Checkpoint created")
-                              : result == backend::restore_point::unavailable
-                                  ? i18n::tr("System Restore is off for this drive. Turn System "
-                                             "Protection on for C: to use this.")
-                                  : i18n::tr("Windows refused to create one"),
-                              ok ? toast_success : toast_error);
+                        s.restore_point_btn = run_recovery_action() ? btn_success : btn_error;
                     }
                 }
 
@@ -2796,7 +2855,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 const float button_y = recovery.Min.y + px(60.f);
                 ImFont* bf = font_medium(text_base);
                 const float pad_x = px(32.f);
-                const float w1 = text_width(bf, "Create Restore Point") + pad_x;
+                const float w1 = text_width(bf, recovery_action_label()) + pad_x;
                 const float w2 = text_width(bf, i18n::tr("Open System Restore")) + pad_x;
                 const float row_right = recovery.Max.x - px(sp_4);
                 const float x2 = row_right - w2;
@@ -2805,7 +2864,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 const float w2_logical = w2 / ui_runtime::scale;
 
                 if (action("create-restore-point", ImVec2(x1, button_y), w1_logical,
-                           s.restore_point_btn, i18n::tr("Create Restore Point")) &&
+                           s.restore_point_btn, recovery_action_label()) &&
                     s.restore_point_btn == btn_idle)
                 {
                     s.restore_point_btn = btn_loading;
@@ -2814,18 +2873,9 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 if (s.restore_point_btn == btn_loading)
                 {
                     s.restore_point_timer += dt;
-                    if (s.restore_point_timer > 1.5f)
+                    if (s.restore_point_timer > 0.2f)
                     {
-                        const backend::restore_point result = backend::create_restore_point();
-                        const bool ok = result == backend::restore_point::created;
-                        s.restore_point_btn = ok ? btn_success : btn_error;
-                        toast(i18n::tr("System Restore"),
-                              ok ? i18n::tr("Checkpoint created")
-                              : result == backend::restore_point::unavailable
-                                  ? i18n::tr("System Restore is off for this drive. Turn System "
-                                             "Protection on for C: to use this.")
-                                  : i18n::tr("Windows refused to create one"),
-                              ok ? toast_success : toast_error);
+                        s.restore_point_btn = run_recovery_action() ? btn_success : btn_error;
                     }
                 }
 
