@@ -5,6 +5,11 @@ param(
 
     [string] $OutputDirectory = "artifacts\releases",
 
+    # Which product to package. Both build from this one tree; see the
+    # Brand property in SZK.vcxproj.
+    [ValidateSet("numbanine", "less")]
+    [string] $Brand = "numbanine",
+
     [switch] $SkipBuild,
 
     [switch] $ValidateStartup
@@ -27,7 +32,8 @@ if ($Version -cne $sourceVersion) {
     throw "Package version '$Version' does not match source version '$sourceVersion'."
 }
 
-$packageName = "numbanine-$Version-win64"
+$targetName = if ($Brand -eq "less") { "Less" } else { "numbanine" }
+$packageName = "$targetName-$Version-win64"
 $outputRoot = if ([IO.Path]::IsPathRooted($OutputDirectory)) {
     [IO.Path]::GetFullPath($OutputDirectory)
 }
@@ -39,10 +45,10 @@ $hashPath = "$archivePath.sha256"
 $temporaryArchive = Join-Path $outputRoot (".{0}.{1}.tmp" -f $packageName, [Guid]::NewGuid())
 
 if (-not $SkipBuild) {
-    & (Join-Path $PSScriptRoot "build.ps1") -Configuration Release -Rebuild -StopRunning
+    & (Join-Path $PSScriptRoot "build.ps1") -Configuration Release -Brand $Brand -Rebuild -StopRunning
 }
 
-$applicationPath = Join-Path $repositoryRoot "Release\numbanine.exe"
+$applicationPath = Join-Path $repositoryRoot "Release\$targetName.exe"
 $assetsRoot = Join-Path $repositoryRoot "assets"
 $entries = [System.Collections.Generic.List[object]]::new()
 
@@ -74,18 +80,15 @@ function Add-PackageEntry {
     })
 }
 
-Add-PackageEntry $applicationPath "numbanine.exe"
+Add-PackageEntry $applicationPath "$targetName.exe"
 Add-PackageEntry (Join-Path $repositoryRoot "LICENSE") "LICENSE"
 Add-PackageEntry (Join-Path $repositoryRoot "README.md") "README.md"
 Add-PackageEntry (Join-Path $repositoryRoot "THIRD_PARTY_NOTICES.md") "THIRD_PARTY_NOTICES.md"
 Add-PackageEntry (Join-Path $repositoryRoot "docs\imgui-patches.md") "docs/imgui-patches.md"
-Add-PackageEntry (Join-Path $repositoryRoot "docs\img\menu.png") "docs/img/menu.png"
-Add-PackageEntry (Join-Path $repositoryRoot "docs\media\signup-light.png") `
-    "docs/media/signup-light.png"
-Add-PackageEntry (Join-Path $repositoryRoot "docs\media\signup-dark.png") `
-    "docs/media/signup-dark.png"
-Add-PackageEntry (Join-Path $repositoryRoot "docs\media\video-preview.jpg") `
-    "docs/media/video-preview.jpg"
+# The README screenshots are not packaged. They are not in the repository -
+# packaging has failed on the first of them for as long as that has been
+# true - and a release archive of a desktop application has no use for
+# marketing images even when they are present.
 Add-PackageEntry (Join-Path $repositoryRoot "thirdparty\freetype\LICENSE.TXT") `
     "thirdparty/freetype/LICENSE.TXT"
 Add-PackageEntry (Join-Path $repositoryRoot "thirdparty\freetype\FTL.TXT") `
@@ -200,7 +203,7 @@ if ($ValidateStartup) {
     $process = $null
     try {
         [IO.Compression.ZipFile]::ExtractToDirectory($archivePath, $validationRoot)
-        $packagedExecutable = Join-Path $validationRoot "$packageName\numbanine.exe"
+        $packagedExecutable = Join-Path $validationRoot "$packageName\$targetName.exe"
         $packagedWorkingDirectory = Split-Path -Parent $packagedExecutable
         $process = Start-Process -FilePath $packagedExecutable `
             -WorkingDirectory $packagedWorkingDirectory -WindowStyle Hidden -PassThru

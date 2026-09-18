@@ -66,8 +66,8 @@ ImRect plate()
         background_uv(rect, uv0, uv1);
         dl->AddImageRounded(bg->id, rect.Min, rect.Max, uv0, uv1, IM_COL32_WHITE,
                             round_px(rounding));
-        dl->AddRectFilled(rect.Min, rect.Max,
-                          mo::with_alpha(c_background, k_background_scrim), round_px(rounding));
+        dl->AddRectFilled(rect.Min, rect.Max, mo::with_alpha(c_background, k_background_scrim),
+                          round_px(rounding));
     }
 
     return rect;

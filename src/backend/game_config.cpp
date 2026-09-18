@@ -354,8 +354,8 @@ bool xml_set(std::string& doc, const xml_entry& entry)
     if (at != std::string::npos)
     {
         const std::string block = indent_before(at);
-        doc.insert(at, std::string("  <") + entry.tag + " value=\"" + entry.value + "\" />\n" +
-                           block);
+        doc.insert(at,
+                   std::string("  <") + entry.tag + " value=\"" + entry.value + "\" />\n" + block);
         return true;
     }
 
@@ -453,8 +453,8 @@ std::wstring gta5_settings_path()
             const std::wstring name = dir.path().filename().wstring();
             if (name.rfind(L"ros_documents", 0) != 0)
                 continue;
-            candidates.push_back((dir.path() / L"Rockstar Games" / L"GTA V" / L"settings.xml")
-                                     .wstring());
+            candidates.push_back(
+                (dir.path() / L"Rockstar Games" / L"GTA V" / L"settings.xml").wstring());
         }
     }
 

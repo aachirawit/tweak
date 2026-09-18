@@ -685,10 +685,10 @@ bool stateful_button_draw(const char* id, stateful_button_state& st, button_stat
     {
         const char* base = st.layers[0].text.c_str();
         for (size_t i = 0; i + 1 < st.layers[0].unit.size(); i++)
-            text_target += f->CalcTextSizeA(f->LegacySize, FLT_MAX, 0.f,
-                                            base + st.layers[0].unit[i],
-                                            base + st.layers[0].unit[i + 1])
-                               .x;
+            text_target +=
+                f->CalcTextSizeA(f->LegacySize, FLT_MAX, 0.f, base + st.layers[0].unit[i],
+                                 base + st.layers[0].unit[i + 1])
+                    .x;
     }
 
     const float text_w = st.text_width.to(text_target, mo::SPRING_SWAP, dt);

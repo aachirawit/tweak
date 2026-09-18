@@ -130,11 +130,10 @@ auth_action license_screen()
 
     // The banner wraps, so its open height depends on what it is saying.
     const char* banner_text = s.banner_text.empty() ? "" : i18n::tr(s.banner_text.c_str());
-    const int banner_lines =
-        s.banner_text.empty()
-            ? 1
-            : ImMax(1, wrapped_line_count(font_regular(text_xs), banner_text,
-                                          content_w - px(sp_3) * 2.f));
+    const int banner_lines = s.banner_text.empty()
+                                 ? 1
+                                 : ImMax(1, wrapped_line_count(font_regular(text_xs), banner_text,
+                                                               content_w - px(sp_3) * 2.f));
     const float k_banner_full =
         px(sp_5) + px(1.f + 10.f) + px(leading_xs) * (float)banner_lines + px(10.f + 1.f);
 

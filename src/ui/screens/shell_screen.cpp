@@ -394,10 +394,10 @@ void language_switch(const ImRect& rect, float alpha)
 
         // The inactive side lifts towards the foreground on hover so it reads
         // as the other half of a control rather than as static text.
-        const float lift = st->hover[i].to((hovered && i != active) ? 1.f : 0.f, mo::SPRING_SWAP, dt);
-        const ImU32 col = i == active
-                              ? c_foreground
-                              : mo::mix(c_muted_foreground, c_foreground, lift);
+        const float lift =
+            st->hover[i].to((hovered && i != active) ? 1.f : 0.f, mo::SPRING_SWAP, dt);
+        const ImU32 col =
+            i == active ? c_foreground : mo::mix(c_muted_foreground, c_foreground, lift);
 
         const float w = text_width(f, k_languages[i].label);
         draw_text(dl, f,
@@ -560,9 +560,10 @@ bool menu_screen(float alpha)
             if (group_label && label_a > 0.004f)
             {
                 ImFont* f = font_medium(k_label_size);
-                draw_text_tracked(
-                    dl, f, ImVec2(menu_x + px(8.f + label_dx), y + line_top(f, px(16.f))),
-                    mo::with_alpha(c_muted_foreground, label_a), i18n::tr(group_label), px(k_label_track));
+                draw_text_tracked(dl, f,
+                                  ImVec2(menu_x + px(8.f + label_dx), y + line_top(f, px(16.f))),
+                                  mo::with_alpha(c_muted_foreground, label_a),
+                                  i18n::tr(group_label), px(k_label_track));
             }
             if (group_label)
                 y += px(k_label_h + k_label_mb);
@@ -723,10 +724,9 @@ bool menu_screen(float alpha)
                 const ImU32 ground = mo::with_alpha(c_background, shell::card_scrim * alpha);
 
                 dl->AddRectFilled(ImVec2(ix, top), ImVec2(plate.Max.x - px(1.f), solid_to), ground);
-                dl->AddRectFilledMultiColor(ImVec2(ix, solid_to),
-                                            ImVec2(plate.Max.x - px(1.f), fade_to), ground, ground,
-                                            mo::with_alpha(c_background, 0.f),
-                                            mo::with_alpha(c_background, 0.f));
+                dl->AddRectFilledMultiColor(
+                    ImVec2(ix, solid_to), ImVec2(plate.Max.x - px(1.f), fade_to), ground, ground,
+                    mo::with_alpha(c_background, 0.f), mo::with_alpha(c_background, 0.f));
             }
 
             const ImRect trig(ImVec2(ix + px(16.f), origin.y + px(13.f)),
@@ -774,8 +774,7 @@ bool menu_screen(float alpha)
             // kind of choice: a display preference, not a setting about the
             // machine.
             const float lang_w = lang_cell_width(font_medium(text_xs)) * 2.f;
-            const float lang_top =
-                toggle_rect.GetCenter().y - px(k_lang_switch_h) * 0.5f;
+            const float lang_top = toggle_rect.GetCenter().y - px(k_lang_switch_h) * 0.5f;
             const ImRect lang_rect(ImVec2(toggle_rect.Min.x - gap - lang_w, lang_top),
                                    ImVec2(toggle_rect.Min.x - gap, lang_top + px(k_lang_switch_h)));
             language_switch(lang_rect, alpha);
@@ -820,7 +819,8 @@ bool menu_screen(float alpha)
 
             ImFont* f10 = font_regular(k_label_size);
             draw_text_tracked(dl, f10, ImVec2(bx, rule_y + px(12.f) + line_top(f10, px(15.f))),
-                              mo::with_alpha(c_muted_foreground, alpha), i18n::tr("ACTIVE VIEW"), px(1.6f));
+                              mo::with_alpha(c_muted_foreground, alpha), i18n::tr("ACTIVE VIEW"),
+                              px(1.6f));
 
             draw_text(dl, f14, ImVec2(bx, rule_y + px(31.f) + line_top(f14, px(leading_sm))),
                       mo::with_alpha(c_foreground, alpha), crumb_text);

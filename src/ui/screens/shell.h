@@ -34,8 +34,7 @@ void brand_avatar(ImDrawList* dl, const ImVec2& top_left, float size, float alph
 // chip drew the vector directly and so kept showing the old mark long after the
 // logo image replaced it everywhere else. vector_tint colours the fallback
 // only; an image mark carries its own colour.
-void brand_mark(ImDrawList* dl, const ImVec2& top_left, float size, ImU32 vector_tint,
-                float alpha);
+void brand_mark(ImDrawList* dl, const ImVec2& top_left, float size, ImU32 vector_tint, float alpha);
 
 // How much of the ground colour a surface must lay back over the image to keep
 // the text on it above WCAG AA in the worst case - a white area of the picture.

@@ -289,9 +289,8 @@ http_response http_post(const wchar_t* host, const wchar_t* path, const wchar_t*
         return out;
     }
 
-    HINTERNET request =
-        ::WinHttpOpenRequest(connection, L"POST", path, nullptr, WINHTTP_NO_REFERER,
-                             WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_SECURE);
+    HINTERNET request = ::WinHttpOpenRequest(connection, L"POST", path, nullptr, WINHTTP_NO_REFERER,
+                                             WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_SECURE);
     if (!request)
     {
         ::WinHttpCloseHandle(connection);
@@ -379,11 +378,21 @@ std::string json_escape(const std::string& in)
     {
         switch (c)
         {
-        case '"': out += "\\\""; break;
-        case '\\': out += "\\\\"; break;
-        case '\n': out += "\\n"; break;
-        case '\r': out += "\\r"; break;
-        case '\t': out += "\\t"; break;
+        case '"':
+            out += "\\\"";
+            break;
+        case '\\':
+            out += "\\\\";
+            break;
+        case '\n':
+            out += "\\n";
+            break;
+        case '\r':
+            out += "\\r";
+            break;
+        case '\t':
+            out += "\\t";
+            break;
         default:
             if (c < 0x20)
             {

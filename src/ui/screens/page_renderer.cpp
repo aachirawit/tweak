@@ -12,10 +12,10 @@
 #include "backend/os_tweaks.h"
 #include "backend/power_plan.h"
 #include "backend/reshade_manager.h"
-#include "core/i18n.h"
 #include "backend/system_monitor.h"
 #include "backend/task.h"
 #include "backend/updater.h"
+#include "core/i18n.h"
 #include "core/product_info.h"
 #include "ui/controls/form_controls.h"
 #include "ui/controls/scroll.h"
@@ -84,8 +84,8 @@ void panel(ImDrawList* dl, const ImRect& r, float alpha)
     {
         dl->AddImageRounded(images::background()->id, r.Min, r.Max, uv0, uv1,
                             mo::with_alpha(IM_COL32_WHITE, alpha), round_px(16.f));
-        dl->AddRectFilled(r.Min, r.Max,
-                          mo::with_alpha(c_background, shell::card_scrim * alpha), round_px(16.f));
+        dl->AddRectFilled(r.Min, r.Max, mo::with_alpha(c_background, shell::card_scrim * alpha),
+                          round_px(16.f));
         dl->AddRectFilled(r.Min, r.Max, mo::with_alpha(c_card, 0.55f * alpha), round_px(16.f));
     }
     else
@@ -255,7 +255,8 @@ bool row_hit(ImDrawList* dl, const char* id, const ImRect& r, float alpha, bool 
 
     if (draw_hover && (hovered || held))
         dl->AddRectFilled(r.Min, r.Max,
-                          mo::with_alpha(c_foreground, (held ? 0.06f : 0.035f) * alpha), round_px(10.f));
+                          mo::with_alpha(c_foreground, (held ? 0.06f : 0.035f) * alpha),
+                          round_px(10.f));
 
     return pressed;
 }
@@ -290,8 +291,7 @@ void settings_group_header(ImDrawList* dl, const ImRect& card, float head_h, con
     if (readable > 0)
         ImFormatString(meta, IM_ARRAYSIZE(meta), i18n::tr("%d of %d applied"), applied, readable);
     else
-        ImFormatString(meta, IM_ARRAYSIZE(meta), "%s",
-                       i18n::tr("Nothing here reports its state"));
+        ImFormatString(meta, IM_ARRAYSIZE(meta), "%s", i18n::tr("Nothing here reports its state"));
 
     ImFont* mf = font_regular(text_xs);
     const float mw = text_width(mf, meta);
@@ -562,8 +562,8 @@ constexpr module_row k_modules[] = {
     {"FiveM QoS Priority", "FiveM", 7, backend::check_fivem_qos_priority, finding_advised,
      "FiveM's packets are unmarked, so QoS-aware routers give them no priority."},
     {"FiveM Cache Auto-Clear", "FiveM", 7, backend::check_fivem_cache_autoclear},
-    {"FiveM High CPU Priority", "FiveM", 7, backend::check_fivem_high_cpu_priority,
-     finding_advised, "FiveM competes with background work for CPU time instead of winning it."},
+    {"FiveM High CPU Priority", "FiveM", 7, backend::check_fivem_high_cpu_priority, finding_advised,
+     "FiveM competes with background work for CPU time instead of winning it."},
     {"AMD Software Debloat", "AMD", 5},
     {"Disable AMD Chill", "AMD", 5, backend::check_amd_disable_chill},
     {"AMD Background Services", "AMD", 5, backend::check_amd_background_services},
@@ -847,7 +847,7 @@ bool run_recovery_action()
 
 const char* severity_label(finding_severity s)
 {
-    return s == finding_urgent   ? i18n::tr("Urgent")
+    return s == finding_urgent    ? i18n::tr("Urgent")
            : s == finding_advised ? i18n::tr("Advised")
                                   : i18n::tr("Optional");
 }
@@ -1691,10 +1691,10 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                                   mo::with_alpha(c_card_raised, alpha), px(10.f));
                 draw_border(dl, tile_rect, px(10.f), px(1.f),
                             mo::with_alpha(c_border_strong, alpha), 0);
-                icons::draw(feat.icon, dl,
-                            ImVec2(tile_rect.GetCenter().x - px(9.f),
-                                   tile_rect.GetCenter().y - px(9.f)),
-                            px(18.f), mo::with_alpha(c_foreground, alpha));
+                icons::draw(
+                    feat.icon, dl,
+                    ImVec2(tile_rect.GetCenter().x - px(9.f), tile_rect.GetCenter().y - px(9.f)),
+                    px(18.f), mo::with_alpha(c_foreground, alpha));
 
                 const float text_x = tile_rect.Max.x + px(sp_3);
                 const float text_w = card.Max.x - px(sp_4) - button_w - px(sp_3) - text_x;
@@ -1837,10 +1837,9 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 s.szk_apply_timer += dt;
                 if (s.szk_apply_timer > 0.6f)
                 {
-                    const bool ok =
-                        backend::power_plan_rename_active(
-                            product_info::name_wide,
-                            (std::wstring(product_info::name_wide) + L" powerplan").c_str());
+                    const bool ok = backend::power_plan_rename_active(
+                        product_info::name_wide,
+                        (std::wstring(product_info::name_wide) + L" powerplan").c_str());
                     s.szk_apply_btn = ok ? btn_success : btn_error;
                     toast(ok ? i18n::tr("Renamed") : i18n::tr("Failed"), power_plan_name(),
                           ok ? toast_success : toast_error);
@@ -1971,8 +1970,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 const float body_h = px(40.f) * (float)ImMax(per_col, 1);
 
                 const ImRect card(ImVec2(x, y),
-                                  ImVec2(x + list_w,
-                                         y + head_h + px(sp_2) + body_h + px(sp_3)));
+                                  ImVec2(x + list_w, y + head_h + px(sp_2) + body_h + px(sp_3)));
                 panel(dl, card, alpha);
 
                 settings_group_header(dl, card, head_h, i18n::tr(title), tab_applied,
@@ -1991,10 +1989,10 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                     // A hairline between the columns, so the two are read as two
                     // columns rather than as one column of oddly spaced pairs.
                     if (count > 1)
-                        dl->AddRectFilled(ImVec2(card.Min.x + col_w, top + px(4.f)),
-                                          ImVec2(card.Min.x + col_w + px(1.f),
-                                                 top + body_h - px(4.f)),
-                                          mo::with_alpha(c_border, alpha));
+                        dl->AddRectFilled(
+                            ImVec2(card.Min.x + col_w, top + px(4.f)),
+                            ImVec2(card.Min.x + col_w + px(1.f), top + body_h - px(4.f)),
+                            mo::with_alpha(c_border, alpha));
 
                     for (int k = 0; k < count; k++)
                     {
@@ -2049,8 +2047,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                     tile++;
 
                     const ImRect card(
-                        ImVec2(x + (card_w + gap) * (float)column,
-                               y + (card_h + gap) * (float)row),
+                        ImVec2(x + (card_w + gap) * (float)column, y + (card_h + gap) * (float)row),
                         ImVec2(x + (card_w + gap) * (float)column + card_w,
                                y + (card_h + gap) * (float)row + card_h));
                     panel(dl, card, alpha);
@@ -2061,8 +2058,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                         *sub = group.category;
 
                     ImFont* nf = font_semibold(text_sm);
-                    draw_text_ellipsis(dl, nf,
-                                       ImVec2(card.Min.x + px(sp_4), card.Min.y + px(16.f)),
+                    draw_text_ellipsis(dl, nf, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(16.f)),
                                        mo::with_alpha(c_foreground, alpha), i18n::tr(group.label),
                                        card_w - px(sp_4) * 2.f);
 
@@ -2074,8 +2070,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                         ImFormatString(meta, IM_ARRAYSIZE(meta), i18n::tr("%d actions"), total);
 
                     ImFont* mf = font_regular(text_xs);
-                    draw_text_ellipsis(dl, mf,
-                                       ImVec2(card.Min.x + px(sp_4), card.Min.y + px(40.f)),
+                    draw_text_ellipsis(dl, mf, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(40.f)),
                                        mo::with_alpha(c_muted_foreground, alpha), meta,
                                        card_w - px(sp_4) * 2.f);
 
@@ -2130,8 +2125,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
                     // Handed over one frame late so the spinner is on screen
                     // before the work starts, and only once.
-                    if (s.settings_apply_timer > 0.15f &&
-                        job().owner.load() == apply_owner_none && !backend::task_running())
+                    if (s.settings_apply_timer > 0.15f && job().owner.load() == apply_owner_none &&
+                        !backend::task_running())
                     {
                         if (!begin_apply(apply_owner_category, shown, count, false))
                             s.settings_apply_btn = btn_idle;
@@ -2156,8 +2151,6 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 y += bar_h;
             }
         }
-
-
 
         break;
     }
@@ -2266,7 +2259,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         else
             std::snprintf(value_buf[3], sizeof(value_buf[3]), "--");
 
-        const char* tile_labels[4] = {i18n::tr("CPU Usage"), i18n::tr("RAM Usage"), i18n::tr("Disk Usage"), i18n::tr("Ping")};
+        const char* tile_labels[4] = {i18n::tr("CPU Usage"), i18n::tr("RAM Usage"),
+                                      i18n::tr("Disk Usage"), i18n::tr("Ping")};
         const float tile_deltas[4] = {
             s.sys_snap.cpu_percent - s.sys_prev.cpu_percent,
             s.sys_snap.ram_percent - s.sys_prev.ram_percent,
@@ -2366,12 +2360,10 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 ImFormatString(headline, IM_ARRAYSIZE(headline), "%s",
                                i18n::tr("Nothing left to fix here"));
             else if (s.dash_finding_count == 1 && i18n::language() == i18n::lang::en)
-                ImFormatString(headline, IM_ARRAYSIZE(headline),
-                               "1 tweak would help this machine");
+                ImFormatString(headline, IM_ARRAYSIZE(headline), "1 tweak would help this machine");
             else
                 ImFormatString(headline, IM_ARRAYSIZE(headline),
-                               i18n::tr("%d tweaks would help this machine"),
-                               s.dash_finding_count);
+                               i18n::tr("%d tweaks would help this machine"), s.dash_finding_count);
 
             ImFont* tf = font_semibold(18.f);
             draw_text_tracked(dl, tf, ImVec2(text_x, card.Min.y + px(30.f)),
@@ -2434,8 +2426,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
                     // Handed over one frame late so the spinner is on screen
                     // before the work starts, and only once.
-                    if (s.dash_optimize_timer > 0.15f &&
-                        job().owner.load() == apply_owner_none && !backend::task_running())
+                    if (s.dash_optimize_timer > 0.15f && job().owner.load() == apply_owner_none &&
+                        !backend::task_running())
                     {
                         if (!begin_apply(apply_owner_dashboard, s.dash_findings,
                                          s.dash_finding_count, true))
@@ -2575,8 +2567,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             const ImRect card(ImVec2(x, y), ImVec2(x + dashboard_width, y + head_h + body_h));
             panel(dl, card, alpha);
 
-            row_label(dl, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(16.f)), i18n::tr("Needs attention"),
-                      nullptr, alpha);
+            row_label(dl, ImVec2(card.Min.x + px(sp_4), card.Min.y + px(16.f)),
+                      i18n::tr("Needs attention"), nullptr, alpha);
 
             {
                 const float rw = px(104.f);
@@ -2597,8 +2589,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
             if (shown == 0)
                 empty_state(dl, ImRect(ImVec2(card.Min.x, card.Min.y + head_h), card.Max),
-                            i18n::tr("Everything this app can verify is already applied."),
-                            alpha);
+                            i18n::tr("Everything this app can verify is already applied."), alpha);
 
             for (int k = 0; k < shown; k++)
             {
@@ -2701,8 +2692,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             const unsigned long long up_min = mi.uptime_seconds / 60ull;
 
             char stat_value[3][64];
-            ImFormatString(stat_value[0], IM_ARRAYSIZE(stat_value[0]),
-                           i18n::tr("%d of %d applied"), s.dash_ok, s.dash_checkable);
+            ImFormatString(stat_value[0], IM_ARRAYSIZE(stat_value[0]), i18n::tr("%d of %d applied"),
+                           s.dash_ok, s.dash_checkable);
             ImFormatString(stat_value[1], IM_ARRAYSIZE(stat_value[1]), "%s",
                            s.dash_power.available ? s.dash_power.name : i18n::tr("Unknown"));
             ImFormatString(stat_value[2], IM_ARRAYSIZE(stat_value[2]), "%lluh %llum",
@@ -2777,8 +2768,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 px(16.f), mo::with_alpha(c_foreground, alpha));
 
             row_label(dl, ImVec2(icon_rect.Max.x + px(10.f), community.Min.y + px(14.f)),
-                      i18n::tr("Community"),
-                      community_blurb(), alpha,
+                      i18n::tr("Community"), community_blurb(), alpha,
                       community.Max.x - (icon_rect.Max.x + px(10.f)) - px(sp_4));
 
             hairline(dl, community, community.Min.y + px(56.f), alpha);
@@ -3044,11 +3034,11 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         // Translated here rather than at each use: badge_width() measures this
         // same pointer, so the badge cannot be sized from one language and
         // drawn in another.
-        const char* status_label = !status.game_found  ? i18n::tr("FiveM not found")
-                                   : !status.installed ? i18n::tr("Not installed")
+        const char* status_label = !status.game_found          ? i18n::tr("FiveM not found")
+                                   : !status.installed         ? i18n::tr("Not installed")
                                    : !status.crash_ack_present ? i18n::tr("Needs Citizen.ini fix")
-                                   : status.road_mod_present ? i18n::tr("Installed + Road Mod")
-                                                             : i18n::tr("Installed");
+                                   : status.road_mod_present   ? i18n::tr("Installed + Road Mod")
+                                                               : i18n::tr("Installed");
         const badge_status status_kind = !status.game_found          ? badge_neutral
                                          : !status.installed         ? badge_bad
                                          : !status.crash_ack_present ? badge_warn
@@ -3159,7 +3149,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                 s.reshade_uninstall_btn = btn_idle;
         }
 
-        if (action("reshade-plugins", ImVec2(x3, button_y), w3_logical, btn_idle, i18n::tr("Open Folder")))
+        if (action("reshade-plugins", ImVec2(x3, button_y), w3_logical, btn_idle,
+                   i18n::tr("Open Folder")))
             backend::reshade_open_plugins_folder();
 
         y = button_y + px(sp_12) + px(sp_4);
@@ -3216,7 +3207,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
         ImFont* sf = font_regular(10.f);
         draw_text_tracked(dl, sf, ImVec2(x, y + line_top(sf, px(15.f))),
-                          mo::with_alpha(c_muted_foreground, alpha), i18n::tr("NOTIFICATIONS"), px(1.6f));
+                          mo::with_alpha(c_muted_foreground, alpha), i18n::tr("NOTIFICATIONS"),
+                          px(1.6f));
         y += px(24.f);
 
         const ImRect prefs(
@@ -3308,7 +3300,8 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             if (s.reset_cascade > 1.4f)
             {
                 s.reset_cascade = 1e6f;
-                toast(i18n::tr("Preferences reset"), i18n::tr("Back to how they shipped"), toast_info);
+                toast(i18n::tr("Preferences reset"), i18n::tr("Back to how they shipped"),
+                      toast_info);
             }
         }
 

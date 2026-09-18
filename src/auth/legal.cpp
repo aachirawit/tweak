@@ -228,8 +228,8 @@ bool legal_screen(legal_document document)
                            product_info::name);
 
             const int lines = wrapped_line_count(para_font, paragraph, content_w);
-            draw_text_wrapped(dl, para_font, ImVec2(x, by), c_muted_foreground, paragraph, content_w,
-                              px(k_para_leading));
+            draw_text_wrapped(dl, para_font, ImVec2(x, by), c_muted_foreground, paragraph,
+                              content_w, px(k_para_leading));
             by += px(k_para_leading) * (float)lines;
 
             if (i + 1 < d.count)

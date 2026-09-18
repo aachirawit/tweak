@@ -736,10 +736,9 @@ bool tabs(const char* id, const ImVec2& pos, const char* const* labels, int coun
             dl->AddRectFilled(ImVec2(ix, list.Max.y - px(1.f)), ImVec2(ix + iw, list.Max.y),
                               c_primary);
         else
-            dl->AddRectFilled(ImVec2(ix, active_rect.Min.y), ImVec2(ix + iw, active_rect.Max.y),
-                              c_primary,
-                              variant == tabs_pill ? round_dev(active_rect.GetHeight() * 0.5f)
-                                                   : round_px(8.f));
+            dl->AddRectFilled(
+                ImVec2(ix, active_rect.Min.y), ImVec2(ix + iw, active_rect.Max.y), c_primary,
+                variant == tabs_pill ? round_dev(active_rect.GetHeight() * 0.5f) : round_px(8.f));
     }
 
     x = list.Min.x + pad;

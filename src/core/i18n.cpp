@@ -50,8 +50,7 @@ constexpr entry k_table[] = {
      "เครื่องนี้กำลังทำอะไรอยู่ และอะไรจะทำให้เร็วขึ้น"},
     {"SCORE", "คะแนน"},
     {"Optimize now", "ปรับแต่งเลย"},
-    {"Takes a restore point when Windows allows",
-     "สร้างจุดคืนค่าให้ถ้า Windows ยอม"},
+    {"Takes a restore point when Windows allows", "สร้างจุดคืนค่าให้ถ้า Windows ยอม"},
     {"Needs attention", "ควรแก้"},
     {"Scan again", "สแกนใหม่"},
     {"Fix", "แก้"},
@@ -79,15 +78,13 @@ constexpr entry k_table[] = {
     {"%d of the %d settings this app can read back are already applied. The rest are listed "
      "below, loudest first.",
      "ใช้งานแล้ว %d จาก %d อย่างที่อ่านสถานะกลับได้ ที่เหลืออยู่ข้างล่าง เรียงตามความสำคัญ"},
-    {"Everything this app can verify is already applied.",
-     "ทุกอย่างที่อ่านสถานะกลับได้ ใช้งานครบแล้ว"},
+    {"Everything this app can verify is already applied.", "ทุกอย่างที่อ่านสถานะกลับได้ ใช้งานครบแล้ว"},
     {"%d of %d applied", "ใช้แล้ว %d จาก %d"},
     {"no route", "ไม่มีเส้นทาง"},
     {"live", "สด"},
 
     // ── Results ─────────────────────────────────────────────────────────────────
-    {"%d applied, %d failed, %d not wired yet",
-     "ใช้สำเร็จ %d ไม่สำเร็จ %d ยังไม่ได้ต่อ backend %d"},
+    {"%d applied, %d failed, %d not wired yet", "ใช้สำเร็จ %d ไม่สำเร็จ %d ยังไม่ได้ต่อ backend %d"},
     {"Open Windows Recovery Settings", "เปิดการตั้งค่ากู้คืน Windows"},
     {"%d applied, %d failed. No restore point - System Restore is off for this drive.",
      "ใช้สำเร็จ %d ไม่สำเร็จ %d ไม่ได้สร้างจุดคืนค่า — System Restore ปิดอยู่ในไดรฟ์นี้"},
@@ -97,8 +94,7 @@ constexpr entry k_table[] = {
     {"Not wired to a backend yet", "ยังไม่ได้ต่อ backend"},
 
     // ── Tweak pages ─────────────────────────────────────────────────────────
-    {"Everything you can change, and what it is set to.",
-     "ทุกอย่างที่ปรับได้ และตอนนี้ตั้งไว้เป็นอะไร"},
+    {"Everything you can change, and what it is set to.", "ทุกอย่างที่ปรับได้ และตอนนี้ตั้งไว้เป็นอะไร"},
     {"Apply", "ใช้งาน"},
     {"Open", "เปิด"},
     {"Applied", "ใช้งานแล้ว"},
@@ -178,7 +174,8 @@ constexpr entry k_table[] = {
     {"The app sent a request the server rejected. Update to the latest version.",
      "แอปส่งคำขอที่เซิร์ฟเวอร์ไม่รับ อัปเดตเป็นเวอร์ชันล่าสุด"},
     {"The licence server refused the key. Try again in a moment.",
-     "เซิร์ฟเวอร์ไลเซนส์ไม่รับรหัสนี้ รอสักครู่แล้วลองใหม่"},
+     "เซิร์ฟเวอร์ไลเซนส์ไม่รับรหัสนี้ รอสักครู่แล้วลองใหม่"},
+
     // ── Drivers ───────────────────────────────────────────────────────────────
     {"Board Lookup", "ค้นหาเมนบอร์ด"},
     {"Find the right drivers for this machine", "หาไดรเวอร์ที่ตรงกับเครื่องนี้"},
@@ -192,8 +189,7 @@ constexpr entry k_table[] = {
     {"Version", "เวอร์ชัน"},
     {"Community", "ชุมชน"},
     {"Join Discord", "เข้า Discord"},
-    {"Support, updates, and the rest of the %s crew",
-     "ซัพพอร์ต อัปเดต และคนอื่นๆ ของ %s"},
+    {"Support, updates, and the rest of the %s crew", "ซัพพอร์ต อัปเดต และคนอื่นๆ ของ %s"},
     {"System Recovery", "กู้คืนระบบ"},
     {"A safety net before you change anything risky", "ตาข่ายกันพลาดก่อนแก้อะไรที่เสี่ยง"},
     {"Create Restore Point", "สร้างจุดคืนค่า"},
@@ -217,8 +213,7 @@ constexpr entry k_table[] = {
     {"Drops ReShade + the 2K Road Mod into FiveM's plugin folder",
      "ติดตั้ง ReShade + 2K Road Mod ลงโฟลเดอร์ปลั๊กอินของ FiveM"},
     {"Include 2K Road Mod", "รวม 2K Road Mod ด้วย"},
-    {"QuantV add-on for higher-resolution road textures",
-     "ส่วนเสริมของ QuantV ให้พื้นถนนคมชัดขึ้น"},
+    {"QuantV add-on for higher-resolution road textures", "ส่วนเสริมของ QuantV ให้พื้นถนนคมชัดขึ้น"},
     {"FiveM not found", "ไม่พบ FiveM"},
     {"Not installed", "ยังไม่ได้ติดตั้ง"},
     {"Needs Citizen.ini fix", "ต้องแก้ Citizen.ini"},

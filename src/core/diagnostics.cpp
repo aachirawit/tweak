@@ -84,8 +84,9 @@ void write(const char* level, std::string_view subsystem, std::string_view messa
     }
     catch (...)
     {
-        const std::string note = std::string("[") + product_info::name + "] diagnostics write "
-                                                                         "failed.\n";
+        const std::string note = std::string("[") + product_info::name +
+                                 "] diagnostics write "
+                                 "failed.\n";
         ::OutputDebugStringA(note.c_str());
     }
 }

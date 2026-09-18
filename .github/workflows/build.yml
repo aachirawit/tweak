@@ -13,10 +13,13 @@ permissions:
 jobs:
   build:
     runs-on: windows-2022
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
+        # Two products ship from this tree and a change can break one without
+        # touching the other, so both are built rather than only the default.
+        brand: [numbanine, less]
         configuration: [Debug, Release]
 
     steps:
@@ -24,26 +27,39 @@ jobs:
 
       - uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57 # v3.0.0
 
+      # Formatting is the same source whichever brand is being built, so one
+      # job checks it instead of all four reporting the same violation.
       - name: Verify formatting
+        if: matrix.brand == 'numbanine' && matrix.configuration == 'Release'
         shell: pwsh
         run: .\scripts\format-source.ps1 -Check
 
       - name: Build
         shell: pwsh
-        run: .\scripts\build.ps1 -Configuration ${{ matrix.configuration }}
+        run: .\scripts\build.ps1 -Configuration ${{ matrix.configuration }} -Brand ${{ matrix.brand }}
 
       - name: Package release
         if: matrix.configuration == 'Release'
         shell: pwsh
-        run: .\scripts\package-release.ps1 -Version 0.1.0 -SkipBuild -ValidateStartup
+        run: >-
+          .\scripts\package-release.ps1 -Version 0.1.0 -Brand ${{ matrix.brand }}
+          -SkipBuild -ValidateStartup
+
+      - name: Name the package
+        if: matrix.configuration == 'Release'
+        id: package
+        shell: pwsh
+        run: |
+          $target = if ("${{ matrix.brand }}" -eq "less") { "Less" } else { "numbanine" }
+          "name=$target-0.1.0-win64" >> $env:GITHUB_OUTPUT
 
       - name: Upload release package
         if: matrix.configuration == 'Release'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: SZK-0.1.0-win64
+          name: ${{ steps.package.outputs.name }}
           path: |
-            artifacts/releases/SZK-0.1.0-win64.zip
-            artifacts/releases/SZK-0.1.0-win64.zip.sha256
+            artifacts/releases/${{ steps.package.outputs.name }}.zip
+            artifacts/releases/${{ steps.package.outputs.name }}.zip.sha256
           if-no-files-found: error
           retention-days: 14

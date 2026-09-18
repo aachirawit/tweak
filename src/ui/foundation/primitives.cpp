@@ -386,8 +386,7 @@ void draw_text_tabular(ImDrawList* dl, ImFont* f, const ImVec2& pos, ImU32 col, 
     if (!f || !s || (col & IM_COL32_A_MASK) == 0)
         return;
 
-    walk_tabular(f, s, tracking,
-                 [&](const char* b, const char* e, float x, float)
+    walk_tabular(f, s, tracking, [&](const char* b, const char* e, float x, float)
                  { dl->AddText(f, f->LegacySize, ImVec2(IM_ROUND(pos.x + x), pos.y), col, b, e); });
 }
 

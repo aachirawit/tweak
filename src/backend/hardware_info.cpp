@@ -174,9 +174,9 @@ bool set_service_manual(const wchar_t* service_name)
         return false;
     }
 
-    const bool ok = ::ChangeServiceConfigW(service, SERVICE_NO_CHANGE, SERVICE_DEMAND_START,
-                                           SERVICE_NO_CHANGE, nullptr, nullptr, nullptr, nullptr,
-                                           nullptr, nullptr, nullptr) != 0;
+    const bool ok =
+        ::ChangeServiceConfigW(service, SERVICE_NO_CHANGE, SERVICE_DEMAND_START, SERVICE_NO_CHANGE,
+                               nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr) != 0;
     ::CloseServiceHandle(service);
     ::CloseServiceHandle(scm);
     return ok;
@@ -193,8 +193,8 @@ bool run_and_wait(const std::wstring& command_line, DWORD timeout_ms)
     PROCESS_INFORMATION pi{};
 
     std::wstring mutable_command = command_line;
-    if (!::CreateProcessW(nullptr, mutable_command.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW,
-                          nullptr, nullptr, &si, &pi))
+    if (!::CreateProcessW(nullptr, mutable_command.data(), nullptr, nullptr, FALSE,
+                          CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi))
         return false;
 
     ::WaitForSingleObject(pi.hProcess, timeout_ms);

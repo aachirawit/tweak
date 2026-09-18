@@ -1,7 +1,7 @@
 #include "ui/foundation/typography/font_cache.h"
-#include "ui/foundation/runtime.h"
 #include "assets/asset_io.h"
 #include "generated/fonts/geist_data.h"
+#include "ui/foundation/runtime.h"
 #include "ui/foundation/typography/kerning.h"
 
 #include <algorithm>
@@ -242,10 +242,9 @@ ImFont* font_cache::add(const std::vector<unsigned char>& family, float size)
 #ifdef IMGUI_ENABLE_FREETYPE
         merge.FontLoaderFlags = 0;
 #endif
-        ImGui::GetIO().Fonts->AddFontFromMemoryTTF(const_cast<unsigned char*>(thai_blob.data()),
-                                                   (int)thai_blob.size(),
-                                                   floorf(pixels * k_thai_scale + 0.5f), &merge,
-                                                   thai_range);
+        ImGui::GetIO().Fonts->AddFontFromMemoryTTF(
+            const_cast<unsigned char*>(thai_blob.data()), (int)thai_blob.size(),
+            floorf(pixels * k_thai_scale + 0.5f), &merge, thai_range);
     }
 
     data.push_back({&family, size, result});
