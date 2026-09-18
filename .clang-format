@@ -1,4 +1,8 @@
 ---
+# Formatted with clang-format 22.1.3. The output of this config changes
+# between major versions, so CI pins the same one - see
+# .github/workflows/build.yml. Visual Studio 2026 ships 22.x; older
+# toolchains need "pip install clang-format==22.1.3".
 BasedOnStyle: Microsoft
 Language: Cpp
 Standard: c++20
