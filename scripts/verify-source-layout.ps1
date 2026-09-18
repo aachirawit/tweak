@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param()
 
 Set-StrictMode -Version Latest
@@ -103,6 +103,19 @@ $includeRoots = @(
 $sourceFiles = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
     Where-Object { $_.Extension -in $sourceExtensions }
 foreach ($file in $sourceFiles) {
+    # Headers a file only includes when they happen to exist. The build is meant
+    # to work without them - keyauth_secrets.h is gitignored, so a fresh clone
+    # and every CI run compiles without it - and requiring one to resolve turns
+    # "this is optional" into a build failure on exactly the machines it was
+    # made optional for.
+    $optionalIncludes = [System.Collections.Generic.HashSet[string]]::new(
+        [StringComparer]::OrdinalIgnoreCase)
+    foreach ($line in Get-Content -LiteralPath $file.FullName) {
+        if ($line -match '__has_include\s*\(\s*"([^"]+)"') {
+            [void] $optionalIncludes.Add($Matches[1])
+        }
+    }
+
     $lineNumber = 0
     foreach ($line in Get-Content -LiteralPath $file.FullName) {
         $lineNumber++
@@ -111,6 +124,9 @@ foreach ($file in $sourceFiles) {
         }
 
         $include = $Matches[1]
+        if ($optionalIncludes.Contains($include)) {
+            continue
+        }
         $includePath = $include.Replace("/", [IO.Path]::DirectorySeparatorChar)
         $candidates = @((Join-Path $file.DirectoryName $includePath))
         $candidates += $includeRoots | ForEach-Object { Join-Path $_ $includePath }
