@@ -83,6 +83,19 @@ else {
     Write-Host "Skipping translation check (no Python on PATH)."
 }
 
+# keyauth_secrets.h is pulled in through __has_include. If keyauth.cpp was ever
+# compiled while the file was absent, MSBuild records no dependency on it, so
+# adding or restoring it later never triggers a recompile and the exe keeps
+# saying "no licence server configured". Drop the object whenever the secrets
+# file is newer than it, or whenever it is missing from a stale build.
+$secretsPath = Join-Path $repositoryRoot "src\backend\keyauth_secrets.h"
+$keyauthObject = Join-Path $repositoryRoot "$Configuration\obj\$Brand\keyauth.obj"
+if ((Test-Path $secretsPath) -and (Test-Path $keyauthObject) -and
+    ((Get-Item $secretsPath).LastWriteTimeUtc -gt (Get-Item $keyauthObject).LastWriteTimeUtc -or
+     -not (Select-String -Path $keyauthObject -Pattern "keyauth_secrets" -SimpleMatch -Quiet))) {
+    Remove-Item -LiteralPath $keyauthObject -Force
+}
+
 Write-Host "Building $targetName ($Configuration|x64)..."
 & $msbuild $solutionPath "/t:$target" "/p:Configuration=$Configuration" "/p:Platform=x64" `
     "/p:Brand=$Brand" "/m" "/nologo" "/v:minimal"
