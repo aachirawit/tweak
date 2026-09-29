@@ -1,4 +1,5 @@
 #include "ui/screens/search_overlay.h"
+#include "core/i18n.h"
 #include "ui/controls/caret.h"
 #include "ui/controls/scroll.h"
 #include "ui/foundation/motion/motion.h"
@@ -69,7 +70,7 @@ struct search_state
     smooth_scroll list_scroll;
     ImRect anchor;
     bool have_anchor = false;
-    const char* placeholder = "Search";
+    const char* placeholder = i18n::tr("Search");
     const char* shortcut = "F";
 };
 

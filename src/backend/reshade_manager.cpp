@@ -1,5 +1,6 @@
 #include "backend/reshade_manager.h"
 
+#include "assets/asset_io.h"
 #include "backend/activity_log.h"
 
 #include <windows.h>
@@ -48,9 +49,11 @@ fs::path plugins_dir()
 // its own exe (not embedded — the shader library alone is ~100 MB).
 fs::path assets_dir()
 {
-    wchar_t exe_path[MAX_PATH] = {};
-    ::GetModuleFileNameW(nullptr, exe_path, MAX_PATH);
-    return fs::path(exe_path).parent_path() / L"assets" / L"reshade";
+    // Found the same way as every other asset the app loads - next to the exe,
+    // then up to three folders above it - rather than next to the exe only.
+    // Only-next-to-the-exe meant the install could not find its own payload
+    // from a Debug build, or from an exe run anywhere but its build folder.
+    return asset_io::asset_directory(L"reshade", L"RESHADE");
 }
 
 // dxgi.dll gets memory-mapped into FiveM's game process the moment it
@@ -104,10 +107,39 @@ bool other_proxy_dll_present(const fs::path& target)
     return false;
 }
 
-bool copy_one(const fs::path& source, const fs::path& target)
+// The deepest shader (CorgiFX\StageDepthPlus with depth buffer modification\
+// StageDepthPlusMap.fxh) sits ~125 characters below plugins\, so a long
+// profile path pushes it past MAX_PATH and a plain copy fails. The \\?\ form
+// lifts that limit; it needs an absolute path with backslashes only.
+fs::path extended(const fs::path& path)
 {
+    const std::wstring text = path.lexically_normal().wstring();
+    if (text.rfind(L"\\\\?\\", 0) == 0 || !path.is_absolute())
+        return path;
+    if (text.rfind(L"\\\\", 0) == 0)
+        return fs::path(L"\\\\?\\UNC\\" + text.substr(2));
+    return fs::path(L"\\\\?\\" + text);
+}
+
+bool copy_one(const fs::path& source_path, const fs::path& target_path)
+{
+    const fs::path source = extended(source_path);
+    const fs::path target = extended(target_path);
     std::error_code ec;
     fs::copy_file(source, target, fs::copy_options::overwrite_existing, ec);
+    if (!ec)
+        return true;
+
+    // overwrite_existing still refuses a read-only file, which a manual
+    // install or an extracted archive can leave behind. Clear it and retry
+    // once; anything else is a real failure.
+    const DWORD attributes = ::GetFileAttributesW(target.c_str());
+    if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_READONLY))
+    {
+        ::SetFileAttributesW(target.c_str(), attributes & ~FILE_ATTRIBUTE_READONLY);
+        ec.clear();
+        fs::copy_file(source, target, fs::copy_options::overwrite_existing, ec);
+    }
     return !ec;
 }
 
@@ -206,16 +238,33 @@ bool ensure_citizenfx_ack()
     if (content.find(k_reshade_ack_line) != std::string::npos)
         return true;
 
-    std::ofstream out(ini_path, std::ios::binary | std::ios::app);
+    // Appending blindly put the line under whichever section came last, so a
+    // file with [Addons] followed by another section got the ack in the wrong
+    // place and FiveM still skipped ReShade. Insert it directly under the
+    // [Addons] header when there is one.
+    const std::string ack = std::string(k_reshade_ack_line) + "\r\n";
+    std::string updated = content;
+    const size_t addons = updated.find("[Addons]");
+    if (addons == std::string::npos)
+    {
+        if (!updated.empty() && updated.back() != '\n')
+            updated += "\r\n";
+        updated += "[Addons]\r\n" + ack;
+    }
+    else
+    {
+        const size_t eol = updated.find('\n', addons);
+        if (eol == std::string::npos)
+            updated += "\r\n" + ack;
+        else
+            updated.insert(eol + 1, ack);
+    }
+
+    std::ofstream out(ini_path, std::ios::binary | std::ios::trunc);
     if (!out)
         return false;
-
-    if (content.find("[Addons]") == std::string::npos)
-        out << "\r\n[Addons]\r\n";
-    else
-        out << "\r\n";
-    out << k_reshade_ack_line << "\r\n";
-    return true;
+    out << updated;
+    return static_cast<bool>(out);
 }
 } // namespace
 
@@ -234,27 +283,32 @@ reshade_status reshade_check()
     return status;
 }
 
-bool reshade_install(bool include_road_mod)
+reshade_install_result reshade_install(bool include_road_mod)
 {
+    reshade_install_result result;
+
     const fs::path target = plugins_dir();
     if (target.empty())
     {
         log("ReShade", "FiveM isn't installed on this machine (no FiveM.app folder)");
-        return false;
+        result.outcome = reshade_outcome::no_fivem;
+        return result;
     }
 
     const fs::path source = assets_dir();
     if (!fs::exists(source / L"dxgi.dll"))
     {
-        log("ReShade", "Bundled ReShade files are missing next to the app (assets\\reshade)");
-        return false;
+        log("ReShade", "Bundled ReShade files are missing (assets\\reshade)");
+        result.outcome = reshade_outcome::bundle_missing;
+        return result;
     }
 
     if (fivem_is_running())
     {
         log("ReShade", "FiveM is running — close it first, dxgi.dll can't be replaced while it's "
                        "loaded");
-        return false;
+        result.outcome = reshade_outcome::fivem_running;
+        return result;
     }
 
     std::error_code dir_ec;
@@ -264,20 +318,52 @@ bool reshade_install(bool include_road_mod)
         log("ReShade", "Another proxy DLL (d3d9/d3d10/d3d11/d3d12/opengl32/dinput8) is already in "
                        "the plugins folder — it may conflict with ReShade's dxgi.dll hook");
 
-    bool ok = true;
-    ok &= copy_one(source / L"dxgi.dll", target / L"dxgi.dll");
-    ok &= copy_one(source / L"ReShade.ini", target / L"ReShade.ini");
-    ok &= copy_one(source / L"ReShadePreset.ini", target / L"ReShadePreset.ini");
+    // The first file that would not copy, kept so the page can name it.
+    std::wstring first_failure;
+    const auto copy = [&](const fs::path& from, const fs::path& to)
+    {
+        if (copy_one(from, to))
+            return true;
+        if (first_failure.empty())
+            first_failure = to.filename().wstring();
+        return false;
+    };
 
-    std::error_code ec;
-    fs::copy(source / L"reshade-shaders", target / L"reshade-shaders",
-             fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
-    ok &= !ec;
+    bool ok = true;
+    ok &= copy(source / L"dxgi.dll", target / L"dxgi.dll");
+    ok &= copy(source / L"ReShade.ini", target / L"ReShade.ini");
+    ok &= copy(source / L"ReShadePreset.ini", target / L"ReShadePreset.ini");
+
+    // One file at a time rather than one fs::copy for the tree: that call
+    // stops at the first thing it cannot write and says nothing about what it
+    // was, so a single stubborn file left the rest of a thousand uncopied and
+    // the reason unknowable.
+    {
+        const fs::path from_root = extended(source / L"reshade-shaders");
+        const fs::path to_root = extended(target / L"reshade-shaders");
+        std::error_code walk_ec;
+        for (fs::recursive_directory_iterator it(from_root, walk_ec), end; !walk_ec && it != end;
+             it.increment(walk_ec))
+        {
+            std::error_code ec;
+            const fs::path to = to_root / fs::relative(it->path(), from_root, ec);
+            if (it->is_directory(ec))
+                fs::create_directories(to, ec);
+            else
+                ok &= copy(it->path(), to);
+        }
+        if (walk_ec)
+        {
+            ok = false;
+            if (first_failure.empty())
+                first_failure = L"reshade-shaders";
+        }
+    }
 
     if (include_road_mod)
     {
-        ok &= copy_one(source / L"QuantV.addon", target / L"QuantV.addon");
-        ok &= copy_one(source / L"QuantV.preset.ini", target / L"QuantV.preset.ini");
+        ok &= copy(source / L"QuantV.addon", target / L"QuantV.addon");
+        ok &= copy(source / L"QuantV.preset.ini", target / L"QuantV.preset.ini");
     }
     else
     {
@@ -289,8 +375,13 @@ bool reshade_install(bool include_road_mod)
     // Relative to the folder the DLL is in, so it survives being installed
     // anywhere. With the road mod that is QuantV's own preset, which is the
     // only preset this app ships with anything enabled in it.
-    ok &= set_preset_path(target / L"ReShade.ini",
-                          include_road_mod ? ".\\QuantV.preset.ini" : ".\\ReShadePreset.ini");
+    if (!set_preset_path(target / L"ReShade.ini",
+                         include_road_mod ? ".\\QuantV.preset.ini" : ".\\ReShadePreset.ini"))
+    {
+        ok = false;
+        if (first_failure.empty())
+            first_failure = L"ReShade.ini";
+    }
 
     const bool ack_ok = ensure_citizenfx_ack();
     const char* ack_note = ack_ok ? ""
@@ -303,7 +394,24 @@ bool reshade_install(bool include_road_mod)
                        : std::string("Installed, but some files failed to copy — check the "
                                      "plugins folder")) +
                        ack_note);
-    return ok;
+
+    // Files in place but no ack line means FiveM will not load ReShade at all,
+    // which looks exactly like a failed install from inside the game.
+    result.outcome = !ok      ? reshade_outcome::copy_failed
+                     : ack_ok ? reshade_outcome::installed
+                              : reshade_outcome::needs_fivem_run;
+    if (!ok)
+    {
+        const int size = ::WideCharToMultiByte(CP_UTF8, 0, first_failure.c_str(), -1, nullptr, 0,
+                                               nullptr, nullptr);
+        if (size > 1)
+        {
+            result.detail.resize(static_cast<size_t>(size - 1));
+            ::WideCharToMultiByte(CP_UTF8, 0, first_failure.c_str(), -1, result.detail.data(), size,
+                                  nullptr, nullptr);
+        }
+    }
+    return result;
 }
 
 bool reshade_uninstall()
@@ -328,7 +436,7 @@ bool reshade_uninstall()
     fs::remove(target / L"ReShadePreset.ini", ec);
     fs::remove(target / L"QuantV.addon", ec);
     fs::remove(target / L"QuantV.preset.ini", ec);
-    fs::remove_all(target / L"reshade-shaders", ec);
+    fs::remove_all(extended(target / L"reshade-shaders"), ec);
 
     log("ReShade", "Removed from FiveM's plugins folder");
     return true;

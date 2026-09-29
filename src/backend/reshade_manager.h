@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 namespace szk::backend
 {
 struct reshade_status
@@ -30,7 +32,27 @@ reshade_status reshade_check();
 // sits in plugins\ but never runs). Only appends — never rewrites or
 // reorders the rest of CitizenFX.ini, and does nothing if FiveM has never
 // been run (the file won't exist yet).
-bool reshade_install(bool include_road_mod);
+// Why an install came out the way it did. The page used to get a bool and
+// report every false as "some files failed to copy" - including FiveM being
+// open, which is the commonest reason and needs a different action from the
+// user. Each outcome now has its own message; copy_failed carries the file.
+enum class reshade_outcome
+{
+    installed,
+    no_fivem,        // no FiveM.app on this machine
+    bundle_missing,  // the app's own assets/reshade could not be found
+    fivem_running,   // dxgi.dll is loaded and cannot be replaced
+    copy_failed,     // a specific file could not be written; see detail
+    needs_fivem_run, // files in place, but CitizenFX.ini does not exist yet
+};
+
+struct reshade_install_result
+{
+    reshade_outcome outcome = reshade_outcome::copy_failed;
+    std::string detail; // the file that failed, for copy_failed
+};
+
+reshade_install_result reshade_install(bool include_road_mod);
 
 // Removes everything reshade_install() places in the subprocess folder.
 bool reshade_uninstall();

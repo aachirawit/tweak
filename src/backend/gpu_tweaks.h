@@ -17,9 +17,20 @@ bool has_amd_gpu();
 
 bool nvidia_disable_hdcp();
 bool nvidia_disable_telemetry(); // global keys, no GPU lookup needed
-bool nvidia_disable_ecc();       // needs nvidia-smi; conditional on ECC-capable hardware
+// What an nvidia-smi tweak came to. "not_supported" is its own answer rather
+// than a failure: ECC and application clock policy only exist on workstation
+// and datacentre cards, and a GeForce reports them as N/A - there is nothing to
+// set, so nothing went wrong.
+enum class nvidia_result
+{
+    applied,
+    not_supported,
+    failed,
+};
+
+nvidia_result nvidia_disable_ecc(); // ECC-capable hardware only
 bool nvidia_unrestricted_pstate();
-bool nvidia_unrestricted_clocks(); // needs nvidia-smi; conditional on supported hardware
+nvidia_result nvidia_unrestricted_clocks(); // supported hardware only
 
 // NVIDIA Profile Inspector (by Orbmu2k) is embedded as a resource so the
 // app stays a single exe. This extracts it (and its Reference.xml setting

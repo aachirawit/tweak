@@ -683,6 +683,10 @@ enum apply_result
     apply_unwired = 0, // no backend behind this row yet
     apply_ok,
     apply_failed,
+    // The thing this row configures does not exist on this machine - ECC on a
+    // GeForce, say. Nothing to set is not a failure, and reporting it as one
+    // made every Apply on such a machine look broken.
+    apply_skipped,
 };
 
 // A tweak that is off but reads back cleanly is worth arguing for; one whose
@@ -856,6 +860,15 @@ apply_result apply_module(int index)
 {
     bool ok = false;
     bool wired = true;
+    bool skipped = false;
+
+    // nvidia-smi rows answer in three ways rather than two.
+    const auto nvidia = [&](backend::nvidia_result result)
+    {
+        ok = result == backend::nvidia_result::applied;
+        skipped = result == backend::nvidia_result::not_supported;
+    };
+
     switch (index)
     {
     case 0:
@@ -916,13 +929,13 @@ apply_result apply_module(int index)
         ok = backend::nvidia_disable_telemetry();
         break;
     case 19:
-        ok = backend::nvidia_disable_ecc();
+        nvidia(backend::nvidia_disable_ecc());
         break;
     case 20:
         ok = backend::nvidia_unrestricted_pstate();
         break;
     case 21:
-        ok = backend::nvidia_unrestricted_clocks();
+        nvidia(backend::nvidia_unrestricted_clocks());
         break;
     case 22:
         ok = backend::apply_fivem_qos_priority();
@@ -1034,6 +1047,8 @@ apply_result apply_module(int index)
     }
     if (!wired)
         return apply_unwired;
+    if (skipped)
+        return apply_skipped;
     return ok ? apply_ok : apply_failed;
 }
 
@@ -1070,6 +1085,11 @@ struct apply_job
     std::atomic<int> applied{0};
     std::atomic<int> failed{0};
     std::atomic<int> unwired{0};
+    std::atomic<int> skipped{0};
+
+    // Per-row outcome, written by the job and read after it ends, so the
+    // summary can say which rows failed instead of only how many.
+    std::atomic<int> outcome[k_module_count] = {};
     std::atomic<bool> restore_point_ok{true};
 };
 
@@ -1097,6 +1117,9 @@ bool begin_apply(apply_owner owner, const int* modules, int count, bool take_res
     j.applied.store(0);
     j.failed.store(0);
     j.unwired.store(0);
+    j.skipped.store(0);
+    for (std::atomic<int>& o : j.outcome)
+        o.store(apply_unwired);
     j.restore_point_ok.store(true);
     j.result_ready.store(false);
     j.owner.store(owner);
@@ -1116,16 +1139,21 @@ bool begin_apply(apply_owner owner, const int* modules, int count, bool take_res
                     work.restore_point_ok.store(backend::create_restore_point() ==
                                                 backend::restore_point::created);
 
-                int applied = 0, failed = 0, unwired = 0;
+                int applied = 0, failed = 0, unwired = 0, skipped = 0;
                 for (int i = 0; i < work.count; i++)
                 {
-                    switch (apply_module(work.modules[i]))
+                    const apply_result result = apply_module(work.modules[i]);
+                    work.outcome[i].store(result);
+                    switch (result)
                     {
                     case apply_ok:
                         applied++;
                         break;
                     case apply_failed:
                         failed++;
+                        break;
+                    case apply_skipped:
+                        skipped++;
                         break;
                     default:
                         unwired++;
@@ -1136,6 +1164,7 @@ bool begin_apply(apply_owner owner, const int* modules, int count, bool take_res
                 work.applied.store(applied);
                 work.failed.store(failed);
                 work.unwired.store(unwired);
+                work.skipped.store(skipped);
                 work.result_ready.store(true);
             }))
     {
@@ -1144,6 +1173,41 @@ bool begin_apply(apply_owner owner, const int* modules, int count, bool take_res
     }
 
     return true;
+}
+
+// The names of the rows that failed in the last job, comma separated, so a
+// summary says which ones rather than only how many. Tweak names are left in
+// English on purpose - see the note on the translation table.
+std::string failed_names()
+{
+    const apply_job& j = job();
+    std::string names;
+    for (int i = 0; i < j.count; i++)
+    {
+        if (j.outcome[i].load() != apply_failed)
+            continue;
+        if (!names.empty())
+            names += ", ";
+        names += k_modules[j.modules[i]].name;
+    }
+    return names;
+}
+
+// "N applied, N failed, N skipped" plus the failed names, in the current
+// language. One place, so every Apply button says the same kind of thing.
+std::string apply_summary()
+{
+    const apply_job& j = job();
+    char counts[160];
+    ImFormatString(counts, IM_ARRAYSIZE(counts),
+                   i18n::tr("%d applied, %d failed, %d not on this machine"), j.applied.load(),
+                   j.failed.load(), j.skipped.load());
+
+    std::string text = counts;
+    const std::string names = failed_names();
+    if (!names.empty())
+        text += std::string(" ") + i18n::tr("Failed:") + " " + names;
+    return text;
 }
 
 // True once, on the frame the job for `owner` has finished. Clears the slot, so
@@ -1933,11 +1997,6 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                           ImVec2(card.Min.x + px(sp_4), ry - nf->LegacySize * 0.5f + px(12.f)),
                           mo::with_alpha(c_foreground, alpha), m.name);
 
-                ImFont* rf = font_regular(text_xs);
-                const float rw = text_width(rf, m.role);
-                const float dot_reserve = m.check ? px(14.f) : 0.f;
-                const float role_x = card.Max.x - px(sp_4) - dot_reserve - rw;
-
                 if (m.check)
                 {
                     // Shape carries the state as well as the colour - filled for
@@ -1951,9 +2010,6 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                     else
                         dl->AddCircle(dot_center, px(3.5f), dot_color, 0, px(1.4f));
                 }
-
-                draw_text(dl, rf, ImVec2(role_x, ry + px(3.f)),
-                          mo::with_alpha(c_muted_foreground, alpha), m.role);
             };
 
             // The body is 540px tall and the list area inside it is about 330.
@@ -2094,12 +2150,14 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             }
 
             {
-                const char* apply_label = *sub == 1   ? "Apply Gaming Tweaks"
-                                          : *sub == 2 ? "Apply Network Optimization"
-                                          : *sub == 4 ? "Apply NVIDIA"
-                                          : *sub == 5 ? "Apply AMD"
-                                          : *sub == 6 ? "Apply Cleanup"
-                                                      : "Apply All Settings";
+                const char* apply_label = i18n::tr(*sub == 1   ? "Apply Performance"
+                                                   : *sub == 2 ? "Apply Network"
+                                                   : *sub == 4 ? "Apply NVIDIA"
+                                                   : *sub == 5 ? "Apply AMD"
+                                                   : *sub == 6 ? "Apply Cleanup"
+                                                   : *sub == 7 ? "Apply FiveM"
+                                                   : *sub == 8 ? "Apply Windows"
+                                                               : "Apply All Settings");
 
                 // The list can run to 50+ rows now — pin Apply to the bottom of
                 // the viewport instead of the end of the scrolled content, so
@@ -2134,18 +2192,13 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
                     if (take_apply_result(apply_owner_category))
                     {
-                        const apply_job& j = job();
-                        const int applied = j.applied.load();
-                        const int failed = j.failed.load();
-                        const int unwired = j.unwired.load();
-
-                        char summary[128];
-                        ImFormatString(summary, IM_ARRAYSIZE(summary),
-                                       i18n::tr("%d applied, %d failed, %d not wired yet"), applied,
-                                       failed, unwired);
+                        const int failed = job().failed.load();
+                        const std::string summary = apply_summary();
                         s.settings_apply_btn = (failed == 0) ? btn_success : btn_error;
-                        toast(apply_label, summary, (failed == 0) ? toast_success : toast_error);
+                        toast(apply_label, summary.c_str(),
+                              (failed == 0) ? toast_success : toast_error);
                         s.row_status_dirty = true;
+                        s.dash_scanned = false;
                     }
                 }
                 y += bar_h;
@@ -2439,22 +2492,20 @@ route draw_page(route destination, const char* title, const char* const* subs, i
                         const apply_job& j = job();
                         s.dash_optimize_timer = 0.f;
 
-                        const int applied = j.applied.load();
                         const int failed = j.failed.load();
 
-                        // The summary says which of the two happened rather
-                        // than claiming a checkpoint that may not exist.
-                        char summary[192];
-                        ImFormatString(
-                            summary, IM_ARRAYSIZE(summary),
-                            j.restore_point_ok.load()
-                                ? i18n::tr("%d applied, %d failed. Restore point taken first.")
-                                : i18n::tr("%d applied, %d failed. No restore point - System "
-                                           "Restore is off for this drive."),
-                            applied, failed);
+                        // Says which of the two happened with the restore
+                        // point rather than claiming one that may not exist,
+                        // and names any row that failed.
+                        const std::string summary =
+                            apply_summary() + " " +
+                            (j.restore_point_ok.load()
+                                 ? i18n::tr("Restore point taken first.")
+                                 : i18n::tr("No restore point - System Restore is off for this "
+                                            "drive."));
 
                         s.dash_optimize_btn = failed == 0 ? btn_success : btn_error;
-                        toast(i18n::tr("Optimize now"), summary,
+                        toast(i18n::tr("Optimize now"), summary.c_str(),
                               failed == 0 ? toast_success : toast_error);
 
                         s.dash_scanned = false;    // the score is stale now
@@ -2620,7 +2671,7 @@ route draw_page(route destination, const char* title, const char* const* subs, i
 
                 ImFont* costf = font_regular(text_xs);
                 draw_text_ellipsis(dl, costf, ImVec2(tx, ry + px(38.f)),
-                                   mo::with_alpha(c_muted_foreground, alpha), row.cost,
+                                   mo::with_alpha(c_muted_foreground, alpha), i18n::tr(row.cost),
                                    fix_x - tx - px(sp_4));
 
                 // Outlined, not filled. Eight of these sit under one white
@@ -2674,13 +2725,15 @@ route draw_page(route destination, const char* title, const char* const* subs, i
         {
             const apply_job& j = job();
             const bool ok = j.applied.load() > 0;
+            const bool skipped = j.skipped.load() > 0;
             const bool wired = j.unwired.load() == 0;
 
             toast(k_modules[s.dash_fix_module].name,
-                  ok      ? i18n::tr("Applied")
-                  : wired ? i18n::tr("Windows refused the change")
-                          : i18n::tr("Not wired to a backend yet"),
-                  ok ? toast_success : toast_error);
+                  ok        ? i18n::tr("Applied")
+                  : skipped ? i18n::tr("Not available on this machine")
+                  : wired   ? i18n::tr("Windows refused the change")
+                            : i18n::tr("Not wired to a backend yet"),
+                  (ok || skipped) ? toast_success : toast_error);
 
             s.dash_scanned = false;
             s.row_status_dirty = true;
@@ -3104,14 +3157,38 @@ route draw_page(route destination, const char* title, const char* const* subs, i
             s.reshade_install_timer += dt;
             if (s.reshade_install_timer > 0.8f)
             {
-                const bool ok = backend::reshade_install(s.reshade_road_mod);
+                const backend::reshade_install_result result =
+                    backend::reshade_install(s.reshade_road_mod);
+                const bool ok = result.outcome == backend::reshade_outcome::installed;
                 s.reshade_install_btn = ok ? btn_success : btn_error;
                 s.reshade_install_timer = 0.f;
-                toast("ReShade",
-                      ok ? (s.reshade_road_mod ? i18n::tr("Installed with the 2K Road Mod")
-                                               : i18n::tr("Installed"))
-                         : i18n::tr("Some files failed to copy"),
-                      ok ? toast_success : toast_error);
+
+                // Each reason asks something different of the user, so each
+                // gets its own message instead of one "copy failed" for all.
+                std::string message;
+                switch (result.outcome)
+                {
+                case backend::reshade_outcome::installed:
+                    message = s.reshade_road_mod ? i18n::tr("Installed with the 2K Road Mod")
+                                                 : i18n::tr("Installed");
+                    break;
+                case backend::reshade_outcome::no_fivem:
+                    message = i18n::tr("FiveM is not installed on this machine.");
+                    break;
+                case backend::reshade_outcome::bundle_missing:
+                    message = i18n::tr("The app's ReShade files are missing. Reinstall the app.");
+                    break;
+                case backend::reshade_outcome::fivem_running:
+                    message = i18n::tr("Close FiveM first - its files are in use.");
+                    break;
+                case backend::reshade_outcome::needs_fivem_run:
+                    message = i18n::tr("Launch FiveM once, close it, then press Install again.");
+                    break;
+                default:
+                    message = std::string(i18n::tr("Could not write:")) + " " + result.detail;
+                    break;
+                }
+                toast("ReShade", message.c_str(), ok ? toast_success : toast_error);
             }
         }
         else if (s.reshade_install_btn == btn_success || s.reshade_install_btn == btn_error)

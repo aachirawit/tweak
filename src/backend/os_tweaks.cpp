@@ -51,8 +51,12 @@ bool set_service_start_type(const wchar_t* service_name, bool disable)
         ::OpenServiceW(scm, service_name, SERVICE_CHANGE_CONFIG | SERVICE_STOP | SERVICE_START);
     if (!svc)
     {
+        // A service that is not installed cannot run in the background, so
+        // disabling it is already done. Debloated installs remove WSearch,
+        // and treating that as a failure left the tweak stuck forever.
+        const bool absent = ::GetLastError() == ERROR_SERVICE_DOES_NOT_EXIST;
         ::CloseServiceHandle(scm);
-        return false;
+        return disable && absent;
     }
 
     const DWORD start_type = disable ? SERVICE_DISABLED : SERVICE_AUTO_START;
@@ -93,17 +97,15 @@ bool set_network_autotuning(bool enable)
     // latency on some NICs. MTU is intentionally left untouched — the
     // correct value depends on the specific adapter/route and a wrong one
     // can break connectivity outright.
-    const bool a = run_system_command(L"netsh int tcp set global autotuninglevel=" +
-                                      std::wstring(enable ? L"disabled" : L"normal"));
-    const bool b = run_system_command(L"netsh int tcp set global chimney=" +
-                                      std::wstring(enable ? L"disabled" : L"enabled"));
-    const bool c = run_system_command(L"netsh int tcp set global netdma=" +
-                                      std::wstring(enable ? L"disabled" : L"enabled"));
-
-    const bool ok = a && b && c;
+    //
+    // TCP Chimney and NetDMA used to be set here too. Both were removed from
+    // Windows - netsh no longer lists either parameter - so the commands could
+    // only fail, and failed this whole tweak with them.
+    const bool ok = run_system_command(L"netsh int tcp set global autotuninglevel=" +
+                                       std::wstring(enable ? L"disabled" : L"normal"));
     log("Network stack",
-        enable ? (ok ? "Autotuning/chimney/netdma tweaks applied" : "Some netsh commands failed")
-               : (ok ? "Reverted to Windows defaults" : "Some netsh commands failed"));
+        enable ? (ok ? "Receive window autotuning disabled" : "netsh refused the autotuning change")
+               : (ok ? "Reverted to Windows defaults" : "netsh refused the autotuning change"));
     return ok;
 }
 
@@ -275,8 +277,10 @@ bool service_start_type_is(const wchar_t* service_name, DWORD expected_start_typ
     SC_HANDLE svc = ::OpenServiceW(scm, service_name, SERVICE_QUERY_CONFIG);
     if (!svc)
     {
+        // Not installed reads as disabled: it is as off as a service can be.
+        const bool absent = ::GetLastError() == ERROR_SERVICE_DOES_NOT_EXIST;
         ::CloseServiceHandle(scm);
-        return false;
+        return absent && expected_start_type == SERVICE_DISABLED;
     }
 
     BYTE buf[8192];
@@ -326,8 +330,6 @@ namespace
 int run_default_netsh_bundle()
 {
     const wchar_t* const commands[] = {
-        L"netsh int tcp set global dca=enabled",
-        L"netsh int tcp set global netdma=enabled",
         L"netsh interface isatap set state disabled",
         L"netsh int tcp set global timestamps=disabled",
         L"netsh int tcp set global rss=enabled",
@@ -479,7 +481,7 @@ bool apply_network_driver_tweaks()
     const bool bindings_ok = run_system_command(
         L"powershell -NoProfile -Command \"Disable-NetAdapterBinding -Name '*' -ComponentID "
         L"vmware_bridge,ms_lldp,ms_lltdio,ms_implat,ms_tcpip6,ms_rspndr,ms_server,ms_msclient "
-        L"-Confirm:$false\"");
+        L"-Confirm:$false -ErrorAction SilentlyContinue\"");
 
     const int failed = run_default_netsh_bundle();
     const bool ok = adapters > 0 && bindings_ok && failed == 0;

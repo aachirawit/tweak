@@ -68,7 +68,7 @@ constexpr nav_item k_items[] = {
      {"All tweaks", "Performance", "Network", "Power plan", "NVIDIA", "AMD", "Cleanup", "FiveM",
       "Windows"},
      9},
-    {"Auto Reshade", icons::id::building_2, nullptr, {nullptr}, 0}, // presets
+    {"Auto ReShade", icons::id::building_2, nullptr, {nullptr}, 0}, // presets
     {"Drivers", icons::id::workflow, nullptr, {nullptr}, 0},        // automation
     {"Dashboard", icons::id::layout_grid, nullptr, {nullptr}, 0},   // dashboard
 };
@@ -825,7 +825,7 @@ bool menu_screen(float alpha)
             draw_text(dl, f14, ImVec2(bx, rule_y + px(31.f) + line_top(f14, px(leading_sm))),
                       mo::with_alpha(c_foreground, alpha), crumb_text);
 
-            const char* hint = "Press Ctrl+B to toggle";
+            const char* hint = i18n::tr("Press Ctrl+B to toggle");
             const float hw = text_width(f12, hint);
             draw_text(dl, f12,
                       ImVec2(plate.Max.x - px(29.f) - hw,

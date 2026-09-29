@@ -11,6 +11,7 @@
 #include <shellapi.h>
 #include <shlwapi.h>
 
+#include <cctype>
 #include <string>
 
 #pragma comment(lib, "wbemuuid.lib")
@@ -223,10 +224,91 @@ bool set_string(HKEY root, const wchar_t* subkey, const wchar_t* value, const wc
     return ok;
 }
 
+// Where nvidia-smi is. Current drivers are DCH packages and install it into
+// System32; the NVSMI folder under Program Files is where pre-2019 drivers put
+// it and does not exist on a machine with a recent driver. Looking only there
+// meant every nvidia-smi tweak failed to start on exactly the machines most
+// likely to be running this app.
+std::wstring nvidia_smi_path()
+{
+    wchar_t system_dir[MAX_PATH] = {};
+    if (::GetSystemDirectoryW(system_dir, MAX_PATH) != 0)
+    {
+        const std::wstring current = std::wstring(system_dir) + L"\\nvidia-smi.exe";
+        if (::GetFileAttributesW(current.c_str()) != INVALID_FILE_ATTRIBUTES)
+            return current;
+    }
+
+    const std::wstring legacy = L"C:\\Program Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe";
+    if (::GetFileAttributesW(legacy.c_str()) != INVALID_FILE_ATTRIBUTES)
+        return legacy;
+
+    return std::wstring();
+}
+
+// Runs nvidia-smi and keeps what it printed, because the exit code alone
+// cannot tell "this card has no ECC" from "the command went wrong".
+nvidia_result run_nvidia_smi_checked(const wchar_t* args)
+{
+    const std::wstring exe = nvidia_smi_path();
+    if (exe.empty())
+        return nvidia_result::failed;
+
+    SECURITY_ATTRIBUTES sa{sizeof(sa), nullptr, TRUE};
+    HANDLE read_end = nullptr, write_end = nullptr;
+    if (!::CreatePipe(&read_end, &write_end, &sa, 0))
+        return nvidia_result::failed;
+    ::SetHandleInformation(read_end, HANDLE_FLAG_INHERIT, 0);
+
+    STARTUPINFOW si{};
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+    si.wShowWindow = SW_HIDE;
+    si.hStdOutput = write_end;
+    si.hStdError = write_end;
+    PROCESS_INFORMATION pi{};
+
+    std::wstring cmd = L"\"" + exe + L"\" " + args;
+    const BOOL started = ::CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, TRUE,
+                                          CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi);
+    ::CloseHandle(write_end);
+    if (!started)
+    {
+        ::CloseHandle(read_end);
+        return nvidia_result::failed;
+    }
+
+    std::string output;
+    char buffer[512];
+    DWORD got = 0;
+    while (::ReadFile(read_end, buffer, sizeof(buffer), &got, nullptr) && got > 0)
+        output.append(buffer, got);
+    ::CloseHandle(read_end);
+
+    ::WaitForSingleObject(pi.hProcess, 10000);
+    DWORD exit_code = 1;
+    ::GetExitCodeProcess(pi.hProcess, &exit_code);
+    ::CloseHandle(pi.hProcess);
+    ::CloseHandle(pi.hThread);
+
+    if (exit_code == 0)
+        return nvidia_result::applied;
+
+    for (char& c : output)
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    if (output.find("not supported") != std::string::npos ||
+        output.find("n/a") != std::string::npos)
+        return nvidia_result::not_supported;
+
+    return nvidia_result::failed;
+}
+
 bool run_nvidia_smi(const wchar_t* args)
 {
-    const std::wstring cmd =
-        L"\"C:\\Program Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe\" " + std::wstring(args);
+    const std::wstring exe = nvidia_smi_path();
+    if (exe.empty())
+        return false;
+    const std::wstring cmd = L"\"" + exe + L"\" " + std::wstring(args);
 
     STARTUPINFOW si{};
     si.cb = sizeof(si);
@@ -284,12 +366,13 @@ bool nvidia_disable_telemetry()
     return ok;
 }
 
-bool nvidia_disable_ecc()
+nvidia_result nvidia_disable_ecc()
 {
-    const bool ok = run_nvidia_smi(L"-e 0");
-    log("NVIDIA ECC", ok ? "Disabled (only has an effect on ECC-capable GPUs)"
-                         : "nvidia-smi not found, or this GPU doesn't support ECC control");
-    return ok;
+    const nvidia_result result = run_nvidia_smi_checked(L"-e 0");
+    log("NVIDIA ECC", result == nvidia_result::applied         ? "Disabled"
+                      : result == nvidia_result::not_supported ? "Not available on this GPU"
+                                                               : "nvidia-smi could not change it");
+    return result;
 }
 
 bool nvidia_unrestricted_pstate()
@@ -305,13 +388,14 @@ bool nvidia_unrestricted_pstate()
     return ok;
 }
 
-bool nvidia_unrestricted_clocks()
+nvidia_result nvidia_unrestricted_clocks()
 {
-    const bool ok = run_nvidia_smi(L"-acp 0");
+    const nvidia_result result = run_nvidia_smi_checked(L"-acp 0");
     log("NVIDIA clock policy",
-        ok ? "Application Clock Policy unrestricted"
-           : "nvidia-smi not found, or this GPU doesn't support clock policy control");
-    return ok;
+        result == nvidia_result::applied         ? "Application Clock Policy unrestricted"
+        : result == nvidia_result::not_supported ? "Not available on this GPU"
+                                                 : "nvidia-smi could not change it");
+    return result;
 }
 
 namespace
